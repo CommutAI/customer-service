@@ -227,7 +227,17 @@ export const supabaseApiCalls = {
     contactNumber: string;
     passengerType: 'Regular' | 'Student' | 'Senior Citizen' | 'PWD';
   }): Promise<QRCard> => {
-    const uid = `CAI-${Date.now().toString(36).toUpperCase()}`;
+    // Generate card type indicator + 8-digit random number
+    const typeIndicators: Record<string, string> = {
+      'Regular': 'RC',
+      'Student': 'SC',
+      'Senior Citizen': 'SCC',
+      'PWD': 'PC'
+    };
+    const indicator = typeIndicators[registration.passengerType] || 'RC';
+    const randomNum = Math.floor(10000000 + Math.random() * 90000000).toString();
+    const formattedNum = `${randomNum.slice(0, 3)}-${randomNum.slice(3, 5)}-${randomNum.slice(5)}`;
+    const uid = `${indicator}—${formattedNum}`;
     const { data: { session } } = await supabase.auth.getSession();
 
     const { data, error } = await supabase
@@ -330,7 +340,7 @@ export const supabaseApiCalls = {
     amount: number,
     method: 'cash' | 'card'
   ): Promise<Transaction> => {
-    // 1. Fetch current card by card_uid (the human-readable ID like "CAI-MRSOCZTU")
+    // 1. Fetch current card by card_uid (the format like "RC—12345678", "SC—12345678", etc.)
     const { data: card, error: cardErr } = await supabase
       .from('qr_cards')
       .select('*')
@@ -395,7 +405,17 @@ export const supabaseApiCalls = {
 
   // ── Temporary QR Cards ─────────────────────────────────────────────────
   createTemporaryQRCard: async (passengerType: 'Regular' | 'Student' | 'Senior Citizen' | 'PWD' = 'Regular'): Promise<QRCard> => {
-    const uid = `TEMP${Date.now().toString(36).toUpperCase()}`;
+    // Generate temporary card type indicator + 8-digit random number
+    const typeIndicators: Record<string, string> = {
+      'Regular': 'TRC',
+      'Student': 'TSC',
+      'Senior Citizen': 'TSCC',
+      'PWD': 'TPC'
+    };
+    const indicator = typeIndicators[passengerType] || 'TRC';
+    const randomNum = Math.floor(10000000 + Math.random() * 90000000).toString();
+    const formattedNum = `${randomNum.slice(0, 3)}-${randomNum.slice(3, 5)}-${randomNum.slice(5)}`;
+    const uid = `${indicator}—${formattedNum}`;
     const { data: { session } } = await supabase.auth.getSession();
 
     const { data, error } = await supabase
