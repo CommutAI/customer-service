@@ -6,6 +6,7 @@
  */
 
 import { supabase } from './supabase';
+import { sendTopUpConfirmation } from './smsService';
 import type {
   Passenger,
   QRCard,
@@ -390,6 +391,20 @@ export const supabaseApiCalls = {
       .single();
 
     if (txErr) throw new Error(txErr.message);
+
+    // Send SMS confirmation if phone number is available
+    if (card.contact_number) {
+      sendTopUpConfirmation(
+        card.contact_number,
+        card.owner_name,
+        amount,
+        newBalance,
+        card.card_uid
+      ).catch((error) => {
+        console.error('Failed to send SMS confirmation:', error);
+        // Don't throw error - SMS failure shouldn't block the transaction
+      });
+    }
 
     return {
       id: tx.id,
