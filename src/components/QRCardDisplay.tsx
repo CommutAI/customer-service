@@ -121,7 +121,7 @@ export default function QRCardDisplay({ card, onClose }: Props) {
         {/* Card Display */}
         <>
             <div ref={qrRef} className="absolute opacity-0 pointer-events-none">
-              <QRCodeCanvas value={card.cardId} size={512} level="H" includeMargin={false} />
+              <QRCodeCanvas value={card.cardId} size={512} level="H" includeMargin={true} />
             </div>
 
             <div className="px-5 pt-4 pb-3">

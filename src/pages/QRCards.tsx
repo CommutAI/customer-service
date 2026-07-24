@@ -290,7 +290,7 @@ function RegisterCardModal({
                     value={previewCardId}
                     size={100}
                     level="H"
-                    includeMargin={false}
+                    includeMargin={true}
                     className="rounded"
                   />
                   <p className="text-[8px] text-secondary-400 mt-1.5 font-mono text-center break-all leading-tight">

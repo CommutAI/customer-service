@@ -326,7 +326,7 @@ function GenerateModal({
           {/* Right side - Card Preview */}
           <div className="flex-1 flex flex-col items-center justify-center">
             <div ref={qrRef} className="absolute opacity-0 pointer-events-none">
-              <QRCodeCanvas value={previewCard.cardId} size={512} level="H" includeMargin={false} />
+              <QRCodeCanvas value={previewCard.cardId} size={512} level="H" includeMargin={true} />
             </div>
             
             <canvas
@@ -529,7 +529,7 @@ function CardDetailModal({ card, onClose }: { card: QRCard; onClose: () => void 
           {/* Right column — QR Card */}
           <div className="flex flex-col items-center justify-center gap-4 min-w-56 max-w-72">
             <div ref={qrRef} className="absolute opacity-0 pointer-events-none">
-              <QRCodeCanvas value={card.cardId} size={512} level="H" includeMargin={false} />
+              <QRCodeCanvas value={card.cardId} size={512} level="H" includeMargin={true} />
             </div>
             
             {showBack ? (

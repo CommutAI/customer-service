@@ -238,7 +238,7 @@ export const supabaseApiCalls = {
     const indicator = typeIndicators[registration.passengerType] || 'RC';
     const randomNum = Math.floor(10000000 + Math.random() * 90000000).toString();
     const formattedNum = `${randomNum.slice(0, 3)}-${randomNum.slice(3, 5)}-${randomNum.slice(5)}`;
-    const uid = `${indicator}—${formattedNum}`;
+    const uid = `${indicator}-${formattedNum}`;
     const { data: { session } } = await supabase.auth.getSession();
 
     const { data, error } = await supabase
@@ -430,7 +430,7 @@ export const supabaseApiCalls = {
     const indicator = typeIndicators[passengerType] || 'TRC';
     const randomNum = Math.floor(10000000 + Math.random() * 90000000).toString();
     const formattedNum = `${randomNum.slice(0, 3)}-${randomNum.slice(3, 5)}-${randomNum.slice(5)}`;
-    const uid = `${indicator}—${formattedNum}`;
+    const uid = `${indicator}-${formattedNum}`;
     const { data: { session } } = await supabase.auth.getSession();
 
     const { data, error } = await supabase
