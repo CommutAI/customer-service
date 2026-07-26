@@ -28,6 +28,12 @@ function formatRelativeTime(timestamp: string): string {
   }
 }
 
+// Normalize card ID by converting special dash characters to regular hyphens
+function normalizeCardId(cardId: string): string {
+  return cardId
+    .replace(/[\u2013\u2014\u2212\uFF0D]/g, '-'); // en dash, em dash, minus sign, fullwidth hyphen-minus
+}
+
 const DESTINATIONS = [
   { name: 'Dicklum', fare: 15 },
   { name: 'San Miguel', fare: 20 },
@@ -72,18 +78,19 @@ export default function TopUp() {
   });
 
   // Find card by card ID to determine passenger type (exclude temporary cards)
-  const cardData = qrCards?.find(c => c.cardId === cardId && !c.isTemporary);
+  const normalizedCardId = normalizeCardId(cardId);
+  const cardData = qrCards?.find(c => normalizeCardId(c.cardId) === normalizedCardId && !c.isTemporary);
   const currentPassengerType = cardData?.passengerType || 'Regular';
 
   // Filter card suggestions based on input (exclude temporary cards)
   const cardSuggestions = qrCards?.filter(c => 
-    c.cardId.toLowerCase().includes(cardId.toLowerCase()) &&
+    normalizeCardId(c.cardId).toLowerCase().includes(normalizedCardId.toLowerCase()) &&
     c.status === 'active' &&
     !c.isTemporary
   ).slice(0, 5) || [];
 
   // Check if card exists when cardId has value (exclude temporary cards)
-  const cardExists = qrCards?.some(c => c.cardId === cardId && !c.isTemporary);
+  const cardExists = qrCards?.some(c => normalizeCardId(c.cardId) === normalizedCardId && !c.isTemporary);
 
   // Derive error without state (avoids infinite re-render)
   const cardError = cardId && qrCards && !cardExists ? 'Card ID not found' : '';

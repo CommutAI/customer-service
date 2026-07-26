@@ -82,11 +82,18 @@ function RegisterCardModal({
   };
 
   // Pre-generate the card ID so it shows in the preview before hitting DB
-  const previewCardId = useMemo(
-    () => `CAI-${Date.now().toString(36).toUpperCase()}`,
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    []
-  );
+  const previewCardId = useMemo(() => {
+    const typeIndicators: Record<string, string> = {
+      'Regular': 'RC',
+      'Student': 'SC',
+      'Senior Citizen': 'SCC',
+      'PWD': 'PC'
+    };
+    const indicator = typeIndicators[data.passengerType] || 'RC';
+    const randomNum = Math.floor(10000000 + Math.random() * 90000000).toString();
+    const formattedNum = `${randomNum.slice(0, 3)}-${randomNum.slice(3, 5)}-${randomNum.slice(5)}`;
+    return `${indicator}-${formattedNum}`;
+  }, [data.passengerType]);
 
   const handleSubmit = () => {
     setError(null);

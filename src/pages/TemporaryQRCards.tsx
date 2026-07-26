@@ -257,16 +257,27 @@ function GenerateModal({
   const qrRef = useRef<HTMLDivElement>(null);
   
   // Preview card data
+  const typeIndicators: Record<string, string> = {
+    'Regular': 'TRC',
+    'Student': 'TSC',
+    'Senior Citizen': 'TSCC',
+    'PWD': 'TPC'
+  };
+  const indicator = typeIndicators[passengerType] || 'TRC';
+  const randomNum = Math.floor(10000000 + Math.random() * 90000000).toString();
+  const formattedNum = `${randomNum.slice(0, 3)}-${randomNum.slice(3, 5)}-${randomNum.slice(5)}`;
+  const previewCardId = `${indicator}-${formattedNum}`;
+  
   const previewCard: QRCard = {
     id: 'preview',
     passengerId: 'preview',
-    cardId: 'TMP-2025-000001',
+    cardId: previewCardId,
     passengerName: 'Temporary Card',
     passengerType,
     contactNumber: '',
     status: 'active',
     issuedAt: new Date().toISOString(),
-    qrCode: 'TMP-2025-000001',
+    qrCode: previewCardId,
     isTemporary: true,
   };
   
