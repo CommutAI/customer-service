@@ -27,7 +27,7 @@ DO $$ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 DO $$ BEGIN
-  CREATE TYPE transaction_type AS ENUM ('fare_validation', 'balance_topup', 'card_issuance');
+  CREATE TYPE transaction_type AS ENUM ('fare_validation', 'balance_topup', 'reload', 'card_issuance');
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 DO $$ BEGIN
@@ -138,7 +138,47 @@ CREATE TABLE IF NOT EXISTS transactions (
   amount           NUMERIC(10,2)    NOT NULL,
   channel          TEXT             NOT NULL, -- 'qr_card', 'temp_ticket', 'cash', 'card'
   staff_id         UUID             REFERENCES staff_users (id),
-  created_at       TIMESTAMPTZ      NOT NULL DEFAULT NOW()
+  created_at       TIMESTAMPTZ      NOT NULL DEFAULT NOW(),
+  -- Baggage-related columns
+  baggage_category TEXT,
+  baggage_weight   NUMERIC(10,2),
+  baggage_fee      NUMERIC(10,2)
+);
+
+-- Add baggage columns to existing transactions table if they don't exist
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'transactions' AND column_name = 'baggage_category'
+  ) THEN
+    ALTER TABLE transactions ADD COLUMN baggage_category TEXT;
+  END IF;
+  
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'transactions' AND column_name = 'baggage_weight'
+  ) THEN
+    ALTER TABLE transactions ADD COLUMN baggage_weight NUMERIC(10,2);
+  END IF;
+  
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'transactions' AND column_name = 'baggage_fee'
+  ) THEN
+    ALTER TABLE transactions ADD COLUMN baggage_fee NUMERIC(10,2);
+  END IF;
+END $$;
+
+-- ── 6.1. Baggage Transactions ─────────────────────────────────────────────────
+-- Detailed tracking of baggage fees for audit and reporting
+CREATE TABLE IF NOT EXISTS baggage_transactions (
+  id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  transaction_id  UUID        REFERENCES transactions (id) ON DELETE CASCADE,
+  category        TEXT        NOT NULL,
+  weight_kg       NUMERIC(10,2) NOT NULL,
+  fee             NUMERIC(10,2) NOT NULL,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- ── 7. Passenger Counts ───────────────────────────────────────────────────────
@@ -360,6 +400,21 @@ DO $$ BEGIN
   END IF;
 END $$;
 
+-- Baggage transactions: full access for authenticated staff
+ALTER TABLE baggage_transactions ENABLE ROW LEVEL SECURITY;
+
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'baggage_transactions' AND policyname = 'baggage_transactions_rw_authenticated'
+  ) THEN
+    CREATE POLICY "baggage_transactions_rw_authenticated"
+      ON baggage_transactions FOR ALL
+      USING (auth.role() = 'authenticated')
+      WITH CHECK (auth.role() = 'authenticated');
+  END IF;
+END $$;
+
 -- Passenger counts
 DO $$ BEGIN
   IF NOT EXISTS (
@@ -450,6 +505,18 @@ CREATE INDEX IF NOT EXISTS idx_temp_tickets_uid
 
 CREATE INDEX IF NOT EXISTS idx_transactions_trip
   ON transactions(trip_id);
+
+CREATE INDEX IF NOT EXISTS idx_transactions_baggage_category
+  ON transactions(baggage_category) WHERE baggage_category IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_transactions_baggage_fee
+  ON transactions(baggage_fee) WHERE baggage_fee IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_baggage_transactions_transaction
+  ON baggage_transactions(transaction_id);
+
+CREATE INDEX IF NOT EXISTS idx_baggage_transactions_category
+  ON baggage_transactions(category);
 
 CREATE INDEX IF NOT EXISTS idx_boarded_passengers_trip
   ON boarded_passengers(trip_id);

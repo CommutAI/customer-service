@@ -33,6 +33,7 @@ export interface QRCard {
   expiresAt?: string;
   qrCode: string;       // qr_cards.card_uid
   isTemporary?: boolean; // Flag to identify temporary QR cards
+  balance?: number;     // qr_cards.balance
 }
 
 export interface Transaction {
