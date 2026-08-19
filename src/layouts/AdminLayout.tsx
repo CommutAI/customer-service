@@ -3,7 +3,6 @@ import {
   LayoutDashboard,
   Users,
   CreditCard,
-  DollarSign,
   Ticket,
   History,
   Menu,
@@ -21,7 +20,6 @@ const navigation = [
   { name: 'QR Cards', href: '/qr-cards', icon: CreditCard },
   { name: 'Temporary QR Cards', href: '/temporary-qr-cards', icon: Ticket },
   { name: 'Reload Card', href: '/reload-card', icon: RefreshCw },
-  { name: 'Top Up', href: '/top-up', icon: DollarSign },
   { name: 'Transactions', href: '/transactions', icon: History },
 ];
 

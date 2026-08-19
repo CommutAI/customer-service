@@ -78,7 +78,6 @@ function rowToQRCard(row: any): QRCard {
 /** Map DB transactions row → app Transaction (needs card owner name lookup) */
 function rowToTransaction(row: any, ownerName = 'Unknown'): Transaction {
   const typeMap: Record<string, Transaction['type']> = {
-    balance_topup: 'top_up',
     fare_validation: 'fare',
     card_issuance: 'ticket_purchase',
   };
@@ -93,7 +92,7 @@ function rowToTransaction(row: any, ownerName = 'Unknown'): Transaction {
     passengerId: row.card_id ?? '',
     passengerName: ownerName,
     type: typeMap[row.type] ?? 'fare',
-    amount: row.type === 'balance_topup' ? Math.abs(Number(row.amount)) : -Math.abs(Number(row.amount)),
+    amount: -Math.abs(Number(row.amount)),
     balanceAfter: 0, // Not stored; would need a separate query
     timestamp: row.created_at,
     method: methodMap[row.channel] ?? 'cash',
@@ -108,7 +107,7 @@ export const supabaseApiCalls = {
     const start = `${today()}T00:00:00.000Z`;
     const end = `${today()}T23:59:59.999Z`;
 
-    const [cardsResult, topupsResult, txResult] = await Promise.all([
+    const [cardsResult, txResult] = await Promise.all([
       supabase
         .from('qr_cards')
         .select('id', { count: 'exact', head: true })
@@ -116,14 +115,7 @@ export const supabaseApiCalls = {
         .lte('created_at', end),
       supabase
         .from('transactions')
-        .select('id', { count: 'exact', head: true })
-        .eq('type', 'balance_topup')
-        .gte('created_at', start)
-        .lte('created_at', end),
-      supabase
-        .from('transactions')
         .select('amount')
-        .eq('type', 'balance_topup')
         .gte('created_at', start)
         .lte('created_at', end),
     ]);
@@ -141,7 +133,7 @@ export const supabaseApiCalls = {
 
     return {
       todayRegistrations: cardsResult.count ?? 0,
-      todayTopUps: topupsResult.count ?? 0,
+      todayTopUps: 0,
       todayTransactions: txCount ?? 0,
       totalRevenue,
     };
@@ -387,7 +379,7 @@ export const supabaseApiCalls = {
       .from('transactions')
       .insert({
         card_id: card.id,
-        type: 'balance_topup',
+        type: 'card_issuance',
         amount: finalAmount,
         channel: method,
         staff_id: session?.user?.id ?? null,
