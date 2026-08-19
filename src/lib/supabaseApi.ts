@@ -244,11 +244,14 @@ export const supabaseApiCalls = {
         card_uid: uid,
         owner_name: registration.ownerName,
         contact_number: registration.contactNumber,
-        balance: 0,
+        balance: 100, // Initial balance of ₱100
         status: 'active',
         issued_by: session?.user?.id ?? null,
         // Store passenger type as a tag in allowed_routes array
         allowed_routes: [`type:${registration.passengerType}`],
+        // Map passenger type to database card_type enum
+        card_type: registration.passengerType === 'Senior Citizen' ? 'senior_citizen' : registration.passengerType.toLowerCase(),
+        purchase_price: 110, // ₱100 initial balance + ₱10 card fee
       })
       .select()
       .single();
@@ -440,6 +443,8 @@ export const supabaseApiCalls = {
         status: 'active',
         allowed_routes: ['temporary', `type:${passengerType}`], // Tag to identify temporary cards and type
         issued_by: session?.user?.id ?? null,
+        // Map passenger type to database card_type enum
+        card_type: passengerType === 'Senior Citizen' ? 'senior_citizen' : passengerType.toLowerCase(),
       })
       .select()
       .single();

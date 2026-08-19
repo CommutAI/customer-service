@@ -6,6 +6,7 @@ import {
   QrCode, X, User, Phone, CheckCircle, ChevronRight, Ticket,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import QRCardDisplay from '../components/QRCardDisplay';
 import TemporaryCardDisplay from '../components/TemporaryCardDisplay';
@@ -266,7 +267,13 @@ function RegisterCardModal({
                 {/* Balance */}
                 <div className="p-3 bg-emerald-50 rounded-2xl border border-emerald-100">
                   <p className="text-[10px] font-semibold text-emerald-600 uppercase tracking-wider mb-0.5">Initial Balance</p>
-                  <p className="font-bold text-emerald-700 text-lg">₱0.00</p>
+                  <p className="font-bold text-emerald-700 text-lg">₱100.00</p>
+                </div>
+                {/* Payment Amount */}
+                <div className="p-3 bg-amber-50 rounded-2xl border border-amber-100">
+                  <p className="text-[10px] font-semibold text-amber-600 uppercase tracking-wider mb-0.5">Payment Required</p>
+                  <p className="font-bold text-amber-700 text-lg">₱110.00</p>
+                  <p className="text-[9px] text-amber-500 mt-0.5">₱100 balance + ₱10 card fee</p>
                 </div>
               </div>
 
@@ -382,6 +389,7 @@ function ReplaceCardModal({
 // ── Main page ──────────────────────────────────────────────────────────────
 
 export default function QRCards() {
+  const navigate = useNavigate();
   const [showRegister, setShowRegister]   = useState(false);
   const [newCard, setNewCard]             = useState<QRCard | null>(null);
   const [replaceTarget, setReplaceTarget] = useState<QRCard | null>(null);
@@ -439,10 +447,11 @@ export default function QRCards() {
     },
   });
 
-  const handleRegistered = (card: QRCard) => {
+  const handleRegistered = () => {
     queryClient.invalidateQueries({ queryKey: ['qrCards'] });
+    queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
     setShowRegister(false);
-    setNewCard(card);  // immediately show the generated card for printing
+    navigate('/');  // Navigate to dashboard
   };
 
   if (isLoading) {
