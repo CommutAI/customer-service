@@ -9,6 +9,7 @@ import QRCards from './pages/QRCards';
 import ReloadCard from './pages/ReloadCard';
 import TemporaryQRCards from './pages/TemporaryQRCards';
 import Transactions from './pages/Transactions';
+import Reports from './pages/Reports';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -42,6 +43,7 @@ function App() {
               <Route path="temporary-qr-cards" element={<TemporaryQRCards />} />
               <Route path="reload-card" element={<ReloadCard />} />
               <Route path="transactions" element={<Transactions />} />
+              <Route path="reports" element={<Reports />} />
             </Route>
 
             {/* Catch-all */}

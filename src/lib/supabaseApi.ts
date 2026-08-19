@@ -79,7 +79,7 @@ function rowToQRCard(row: any): QRCard {
 function rowToTransaction(row: any, ownerName = 'Unknown', currentBalance?: number): Transaction {
   const typeMap: Record<string, Transaction['type']> = {
     fare_validation: 'fare',
-    card_issuance: 'top_up',
+    card_issuance: 'reload',
   };
   const methodMap: Record<string, Transaction['method']> = {
     qr_card: 'qr',
@@ -424,7 +424,7 @@ export const supabaseApiCalls = {
       id: tx.id,
       passengerId: card.id,
       passengerName: card.owner_name,
-      type: 'top_up',
+      type: 'reload',
       amount,
       balanceAfter: newBalance,
       timestamp: tx.created_at,

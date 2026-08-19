@@ -40,7 +40,7 @@ export interface Transaction {
   id: string;
   passengerId: string;
   passengerName: string;
-  type: 'top_up' | 'fare' | 'refund' | 'ticket_purchase';
+  type: 'reload' | 'card_issuance' | 'refund';
   amount: number;
   balanceAfter: number;
   timestamp: string;

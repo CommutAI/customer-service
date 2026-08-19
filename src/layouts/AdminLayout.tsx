@@ -8,6 +8,7 @@ import {
   X,
   LogOut,
   RefreshCw,
+  BarChart3,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
@@ -19,6 +20,7 @@ const navigation = [
   { name: 'Temporary QR Cards', href: '/temporary-qr-cards', icon: Ticket },
   { name: 'Reload Card', href: '/reload-card', icon: RefreshCw },
   { name: 'Transactions', href: '/transactions', icon: History },
+  { name: 'Reports', href: '/reports', icon: BarChart3 },
 ];
 
 export default function AdminLayout() {
