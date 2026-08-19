@@ -76,10 +76,10 @@ function rowToQRCard(row: any): QRCard {
 }
 
 /** Map DB transactions row → app Transaction (needs card owner name lookup) */
-function rowToTransaction(row: any, ownerName = 'Unknown'): Transaction {
+function rowToTransaction(row: any, ownerName = 'Unknown', currentBalance?: number): Transaction {
   const typeMap: Record<string, Transaction['type']> = {
     fare_validation: 'fare',
-    card_issuance: 'ticket_purchase',
+    card_issuance: 'top_up',
   };
   const methodMap: Record<string, Transaction['method']> = {
     qr_card: 'qr',
@@ -92,8 +92,8 @@ function rowToTransaction(row: any, ownerName = 'Unknown'): Transaction {
     passengerId: row.card_id ?? '',
     passengerName: ownerName,
     type: typeMap[row.type] ?? 'fare',
-    amount: -Math.abs(Number(row.amount)),
-    balanceAfter: 0, // Not stored; would need a separate query
+    amount: Number(row.amount), // Don't negate - show positive amounts for reloads
+    balanceAfter: row.balance_after ? Number(row.balance_after) : (currentBalance ?? 0),
     timestamp: row.created_at,
     method: methodMap[row.channel] ?? 'cash',
   };
@@ -107,7 +107,7 @@ export const supabaseApiCalls = {
     const start = `${today()}T00:00:00.000Z`;
     const end = `${today()}T23:59:59.999Z`;
 
-    const [cardsResult, txResult] = await Promise.all([
+    const [cardsResult, txResult, topUpResult] = await Promise.all([
       supabase
         .from('qr_cards')
         .select('id', { count: 'exact', head: true })
@@ -116,6 +116,12 @@ export const supabaseApiCalls = {
       supabase
         .from('transactions')
         .select('amount')
+        .gte('created_at', start)
+        .lte('created_at', end),
+      supabase
+        .from('transactions')
+        .select('id', { count: 'exact', head: true })
+        .eq('type', 'card_issuance')
         .gte('created_at', start)
         .lte('created_at', end),
     ]);
@@ -133,7 +139,7 @@ export const supabaseApiCalls = {
 
     return {
       todayRegistrations: cardsResult.count ?? 0,
-      todayTopUps: 0,
+      todayTopUps: topUpResult.count ?? 0,
       todayTransactions: txCount ?? 0,
       totalRevenue,
     };
@@ -342,7 +348,7 @@ export const supabaseApiCalls = {
   getTransactions: async (): Promise<Transaction[]> => {
     const { data, error } = await supabase
       .from('transactions')
-      .select('*, qr_cards(owner_name)')
+      .select('*, qr_cards(owner_name, balance)')
       .order('created_at', { ascending: false })
       .limit(200);
 
@@ -350,7 +356,8 @@ export const supabaseApiCalls = {
 
     return (data ?? []).map((row) => {
       const ownerName = (row as any).qr_cards?.owner_name ?? 'Unknown';
-      return rowToTransaction(row, ownerName);
+      const currentBalance = (row as any).qr_cards?.balance ?? 0;
+      return rowToTransaction(row, ownerName, currentBalance);
     });
   },
 
@@ -368,20 +375,8 @@ export const supabaseApiCalls = {
 
     if (cardErr) throw new Error(cardErr.message);
 
-    // 2. Get passenger type for discount calculation
-    const typeTag = (card.allowed_routes ?? []).find((r: string) => r.startsWith('type:'));
-    const passengerType = typeTag
-      ? typeTag.replace('type:', '')
-      : 'Regular';
-
-    // 3. Apply 20% discount for Student, Senior Citizen, and PWD (Philippine law)
-    let finalAmount = amount;
-    let discountApplied = 0;
-    if (['Student', 'Senior Citizen', 'PWD'].includes(passengerType)) {
-      discountApplied = amount * 0.20; // 20% discount
-      finalAmount = amount - discountApplied;
-    }
-
+    // 2. No discount for reloads/top-ups - full amount is added to balance
+    const finalAmount = amount;
     const newBalance = Number(card.balance) + finalAmount;
 
     // 4. Update balance using the card's UUID (id field)
@@ -404,6 +399,7 @@ export const supabaseApiCalls = {
         amount: finalAmount,
         channel: method,
         staff_id: session?.user?.id ?? null,
+        balance_after: newBalance,
       })
       .select()
       .single();

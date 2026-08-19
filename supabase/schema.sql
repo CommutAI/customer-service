@@ -196,7 +196,8 @@ CREATE TABLE IF NOT EXISTS transactions (
   -- Baggage-related columns
   baggage_category TEXT,
   baggage_weight   NUMERIC(10,2),
-  baggage_fee      NUMERIC(10,2)
+  baggage_fee      NUMERIC(10,2),
+  balance_after    NUMERIC(10,2)    -- Balance after transaction
 );
 
 -- Add baggage columns to existing transactions table if they don't exist
@@ -221,6 +222,13 @@ BEGIN
     WHERE table_name = 'transactions' AND column_name = 'baggage_fee'
   ) THEN
     ALTER TABLE transactions ADD COLUMN baggage_fee NUMERIC(10,2);
+  END IF;
+  
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'transactions' AND column_name = 'balance_after'
+  ) THEN
+    ALTER TABLE transactions ADD COLUMN balance_after NUMERIC(10,2);
   END IF;
 END $$;
 
@@ -1115,7 +1123,7 @@ END $$;
 
 -- ── 27. Seed: Test Bus Data ───────────────────────────────────────────────────
 INSERT INTO buses (plate_number, bus_number, route, seat_capacity, status) VALUES
-  ('BUS-001', 1001, 'Manalo Fortich Terminal ↔ Agora Terminal', 35, 'active'),
+  ('BUS-001', 1001, 'Manalo Fortich Terminal ↔ Agora Terminal', 35, 'active')
 ON CONFLICT (plate_number) DO UPDATE SET
   bus_number = EXCLUDED.bus_number,
   route = EXCLUDED.route,
@@ -1155,7 +1163,7 @@ ON CONFLICT DO NOTHING;
 
 -- ── 29. Seed: Trip Schedule Data ─────────────────────────────────────────────────
 INSERT INTO trip_schedules (trip_number, arrival_time_start, arrival_time_end, departure_time_start, departure_time_end) VALUES
-  (1, '04:15:00', '04:25:00', '04:30:00', '04:30:00'),
+  (1, '04:15:00', '04:25:00', '04:30:00', '04:30:00')
 ON CONFLICT (trip_number) DO NOTHING;
 
 -- ── 30. Seed: Bus Schedule Data ───────────────────────────────────────────────────
