@@ -3,7 +3,8 @@ import { apiCalls } from '../lib/api';
 import type { QRCard } from '../types';
 import {
   CreditCard, Plus, Power, PowerOff, RefreshCw,
-  QrCode, X, User, Phone, CheckCircle, ChevronRight, Ticket,
+  X, User, Phone, CheckCircle, ChevronRight, Ticket,
+  Edit, Trash2, Eye,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -16,11 +17,6 @@ import studentImg  from '../assets/student.png';
 import seniorImg   from '../assets/senior_citizien.png';
 import pwdImg      from '../assets/pwd.png';
 
-import tempRegularCard from '../assets/temp-regular.png';
-import tempStudentCard from '../assets/temp-student.png';
-import tempSeniorCard from '../assets/temp-senior.png';
-import tempPwdCard from '../assets/temp-pwd.png';
-
 type PassengerType = 'Regular' | 'Student' | 'Senior Citizen' | 'PWD';
 
 const TYPE_OPTIONS: { value: PassengerType; label: string; desc: string; img: string; color: string }[] = [
@@ -29,13 +25,6 @@ const TYPE_OPTIONS: { value: PassengerType; label: string; desc: string; img: st
   { value: 'Senior Citizen',   label: 'Senior Citizen',  desc: 'Senior citizen discount',    img: seniorImg,  color: 'border-orange-400 bg-orange-50'},
   { value: 'PWD',              label: 'PWD',             desc: 'Persons with disability',    img: pwdImg,     color: 'border-purple-400 bg-purple-50'},
 ];
-
-const TEMP_TYPE_OPTIONS: Record<string, string> = {
-  'Regular': tempRegularCard,
-  'Student': tempStudentCard,
-  'Senior Citizen': tempSeniorCard,
-  'PWD': tempPwdCard,
-};
 
 // ── Registration wizard ────────────────────────────────────────────────────
 
@@ -347,6 +336,174 @@ function RegisterCardModal({
   );
 }
 
+// ── Edit card modal ─────────────────────────────────────────────────────────
+
+function EditCardModal({
+  card,
+  onClose,
+  onSuccess,
+}: {
+  card: QRCard;
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
+  const [formData, setFormData] = useState({
+    ownerName: card.passengerName,
+    contactNumber: card.contactNumber,
+    passengerType: card.passengerType,
+  });
+  const [error, setError] = useState<string | null>(null);
+
+  const updateMutation = useMutation({
+    mutationFn: (updates: { owner_name: string; contact_number: string }) => 
+      apiCalls.updateQRCard(card.cardId, updates),
+    onSuccess: () => {
+      onSuccess();
+      onClose();
+    },
+    onError: (err: Error) => {
+      setError(err.message);
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    updateMutation.mutate({
+      owner_name: formData.ownerName,
+      contact_number: formData.contactNumber,
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md border border-secondary-100 overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-secondary-100">
+          <h2 className="text-base font-bold text-secondary-900">Edit Card</h2>
+          <button onClick={onClose} className="p-2 rounded-xl hover:bg-secondary-100 text-secondary-400">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
+          <div>
+            <label className="block text-sm font-semibold text-secondary-700 mb-1.5">
+              Card ID
+            </label>
+            <input
+              type="text"
+              value={card.cardId}
+              disabled
+              className="w-full px-4 py-3 border border-secondary-200 rounded-2xl bg-secondary-100 text-sm font-mono text-secondary-600"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-secondary-700 mb-1.5">
+              Full Name
+            </label>
+            <input
+              type="text"
+              required
+              value={formData.ownerName}
+              onChange={e => setFormData(d => ({ ...d, ownerName: e.target.value }))}
+              className="w-full px-4 py-3 border border-secondary-200 rounded-2xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-secondary-50/50 text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-secondary-700 mb-1.5">
+              Contact Number
+            </label>
+            <input
+              type="tel"
+              required
+              value={formData.contactNumber}
+              onChange={e => setFormData(d => ({ ...d, contactNumber: e.target.value }))}
+              className="w-full px-4 py-3 border border-secondary-200 rounded-2xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-secondary-50/50 text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-secondary-700 mb-1.5">
+              Passenger Type
+            </label>
+            <input
+              type="text"
+              value={formData.passengerType}
+              disabled
+              className="w-full px-4 py-3 border border-secondary-200 rounded-2xl bg-secondary-100 text-sm"
+            />
+          </div>
+          {error && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-600">
+              {error}
+            </div>
+          )}
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 py-2.5 border border-secondary-200 rounded-2xl text-sm font-medium text-secondary-600 hover:bg-secondary-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={updateMutation.isPending}
+              className="flex-1 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-2xl text-sm font-semibold transition-colors shadow-soft disabled:opacity-60"
+            >
+              {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ── Delete card confirm ─────────────────────────────────────────────────────
+
+function DeleteCardModal({
+  card,
+  onClose,
+  onConfirm,
+}: {
+  card: QRCard;
+  onClose: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm border border-secondary-100 p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+            <Trash2 className="w-6 h-6 text-red-600" />
+          </div>
+          <div>
+            <h2 className="text-base font-bold text-secondary-900">Delete Card</h2>
+            <p className="text-sm text-secondary-500">This action cannot be undone</p>
+          </div>
+        </div>
+        <p className="text-sm text-secondary-600 mb-5">
+          Are you sure you want to delete card <span className="font-mono font-bold text-secondary-800">{card.cardId}</span> for{' '}
+          <span className="font-semibold text-secondary-900">{card.passengerName}</span>?
+        </p>
+        <div className="flex gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 py-2.5 border border-secondary-200 rounded-2xl text-sm font-medium text-secondary-600 hover:bg-secondary-50 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className="flex-1 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-2xl text-sm font-semibold transition-colors shadow-soft"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Replace card confirm ───────────────────────────────────────────────────
 
 function ReplaceCardModal({
@@ -394,6 +551,8 @@ export default function QRCards() {
   const [newCard, setNewCard]             = useState<QRCard | null>(null);
   const [replaceTarget, setReplaceTarget] = useState<QRCard | null>(null);
   const [viewCard, setViewCard]           = useState<QRCard | null>(null);
+  const [editCard, setEditCard]           = useState<QRCard | null>(null);
+  const [deleteCard, setDeleteCard]       = useState<QRCard | null>(null);
   const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
@@ -444,6 +603,14 @@ export default function QRCards() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['qrCards'] });
       setReplaceTarget(null);
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: apiCalls.deleteQRCard,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['qrCards'] });
+      setDeleteCard(null);
     },
   });
 
@@ -563,7 +730,7 @@ export default function QRCards() {
         </button>
       </div>
 
-      {/* Cards grid */}
+      {/* Cards list */}
       {(() => {
         let displayCards = cards || [];
         if (selectedFilter === 'temporary') {
@@ -583,79 +750,114 @@ export default function QRCards() {
         }
 
         return (
-          <div className="flex gap-4 overflow-x-auto pb-4">
-            {displayCards.map((card) => (
-            <div
-              key={card.id}
-              className="min-w-70 bg-white rounded-2xl shadow-soft border border-secondary-100 overflow-hidden"
-            >
-              {/* Card template thumbnail */}
-              <div className="relative h-24 bg-secondary-100">
-                <img
-                  src={card.isTemporary
-                    ? (TEMP_TYPE_OPTIONS[card.passengerType] ?? tempRegularCard)
-                    : (TYPE_OPTIONS.find(t => t.value === card.passengerType)?.img ?? regularImg)
-                  }
-                  alt={card.passengerType}
-                  className="w-full h-full object-cover object-top"
-                />
-                <span className={`absolute top-2 right-2 px-2 py-0.5 text-xs font-bold rounded-full ${
-                  card.status === 'active'
-                    ? 'bg-emerald-500 text-white'
-                    : 'bg-red-400 text-white'
-                }`}>
-                  {card.status}
-                </span>
-                {card.isTemporary && (
-                  <span className="absolute top-2 left-2 px-2 py-0.5 text-xs font-bold rounded-full bg-orange-500 text-white">
-                    TEMP
-                  </span>
-                )}
-              </div>
-
-              {/* Info */}
-              <div className="p-4">
-                <p className="font-bold text-secondary-900 truncate">{card.passengerName}</p>
-                <p className="text-xs text-secondary-400 mt-0.5">{card.passengerType}</p>
-                <p className="font-mono text-xs text-secondary-500 mt-1">{card.cardId}</p>
-                <p className="text-xs text-secondary-400 mt-0.5">
-                  Issued {new Date(card.issuedAt).toLocaleDateString()}
-                </p>
-
-                {/* Actions */}
-                <div className="flex flex-wrap gap-1.5 mt-3">
-                  {card.status === 'active' ? (
-                    <button
-                      onClick={() => disableMutation.mutate(card.cardId)}
-                      className="flex items-center gap-1 px-3 py-1.5 text-xs bg-red-50 text-red-600 rounded-xl hover:bg-red-100 transition-colors"
-                    >
-                      <PowerOff className="w-3.5 h-3.5" /> Disable
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => activateMutation.mutate(card.cardId)}
-                      className="flex items-center gap-1 px-3 py-1.5 text-xs bg-emerald-50 text-emerald-600 rounded-xl hover:bg-emerald-100 transition-colors"
-                    >
-                      <Power className="w-3.5 h-3.5" /> Activate
-                    </button>
-                  )}
-                  <button
-                    onClick={() => setReplaceTarget(card)}
-                    className="flex items-center gap-1 px-3 py-1.5 text-xs bg-secondary-50 text-secondary-600 rounded-xl hover:bg-secondary-100 transition-colors"
-                  >
-                    <RefreshCw className="w-3.5 h-3.5" /> Replace
-                  </button>
-                  <button
-                    onClick={() => setViewCard(card)}
-                    className="flex items-center gap-1 px-3 py-1.5 text-xs bg-primary-50 text-primary-600 rounded-xl hover:bg-primary-100 transition-colors"
-                  >
-                    <QrCode className="w-3.5 h-3.5" /> View Card
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+          <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-soft border border-secondary-100 overflow-hidden">
+            <table className="w-full">
+              <thead className="bg-secondary-50 border-b border-secondary-100">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-secondary-600 uppercase tracking-wider">Card ID</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-secondary-600 uppercase tracking-wider">Passenger Name</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-secondary-600 uppercase tracking-wider">Type</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-secondary-600 uppercase tracking-wider">Balance</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-secondary-600 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-secondary-600 uppercase tracking-wider">Issued Date</th>
+                  <th className="px-6 py-3 text-right text-xs font-semibold text-secondary-600 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-secondary-100">
+                {displayCards.map((card) => (
+                  <tr key={card.id} className="hover:bg-secondary-50 transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-sm font-medium text-secondary-900">{card.cardId}</span>
+                        {card.isTemporary && (
+                          <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-orange-100 text-orange-600">TEMP</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <p className="text-sm font-medium text-secondary-900">{card.passengerName}</p>
+                      <p className="text-xs text-secondary-500">{card.contactNumber}</p>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-block px-2 py-1 rounded-lg text-xs font-medium ${
+                        card.passengerType === 'Regular' ? 'bg-blue-100 text-blue-700' :
+                        card.passengerType === 'Student' ? 'bg-green-100 text-green-700' :
+                        card.passengerType === 'Senior Citizen' ? 'bg-orange-100 text-orange-700' :
+                        'bg-purple-100 text-purple-700'
+                      }`}>
+                        {card.passengerType}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <p className="text-sm font-medium text-emerald-600">₱{(card.balance ?? 0).toFixed(2)}</p>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        card.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
+                      }`}>
+                        <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
+                          card.status === 'active' ? 'bg-emerald-500' : 'bg-red-500'
+                        }`} />
+                        {card.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <p className="text-sm text-secondary-600">{new Date(card.issuedAt).toLocaleDateString()}</p>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => setViewCard(card)}
+                          className="p-2 text-secondary-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+                          title="View Card"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => setEditCard(card)}
+                          className="p-2 text-secondary-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          title="Edit Card"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        {card.status === 'active' ? (
+                          <button
+                            onClick={() => disableMutation.mutate(card.cardId)}
+                            className="p-2 text-secondary-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Disable Card"
+                          >
+                            <PowerOff className="w-4 h-4" />
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => activateMutation.mutate(card.cardId)}
+                            className="p-2 text-secondary-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                            title="Activate Card"
+                          >
+                            <Power className="w-4 h-4" />
+                          </button>
+                        )}
+                        <button
+                          onClick={() => setReplaceTarget(card)}
+                          className="p-2 text-secondary-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
+                          title="Replace Card"
+                        >
+                          <RefreshCw className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => setDeleteCard(card)}
+                          className="p-2 text-secondary-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Delete Card"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         );
       })()}
 
@@ -696,6 +898,24 @@ export default function QRCards() {
           card={replaceTarget}
           onClose={() => setReplaceTarget(null)}
           onConfirm={() => replaceMutation.mutate(replaceTarget.cardId)}
+        />
+      )}
+
+      {/* Edit card */}
+      {editCard && (
+        <EditCardModal
+          card={editCard}
+          onClose={() => setEditCard(null)}
+          onSuccess={() => queryClient.invalidateQueries({ queryKey: ['qrCards'] })}
+        />
+      )}
+
+      {/* Delete card */}
+      {deleteCard && (
+        <DeleteCardModal
+          card={deleteCard}
+          onClose={() => setDeleteCard(null)}
+          onConfirm={() => deleteMutation.mutate(deleteCard.cardId)}
         />
       )}
     </div>

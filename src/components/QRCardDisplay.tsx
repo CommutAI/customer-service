@@ -24,7 +24,7 @@ interface Props {
 }
 
 // ── Canvas hook ────────────────────────────────────────────────────────────
-function useCardCanvas(card: QRCard, qrRef: React.RefObject<HTMLDivElement | null>) {
+function useCardCanvas(card: QRCard, qrRef: React.RefObject<HTMLDivElement | null>, showBack: boolean) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -86,7 +86,7 @@ function useCardCanvas(card: QRCard, qrRef: React.RefObject<HTMLDivElement | nul
     }, 120);
 
     return () => clearTimeout(timer);
-  }, [card, qrRef]);
+  }, [card, qrRef, showBack]);
 
   return canvasRef;
 }
@@ -96,7 +96,7 @@ function useCardCanvas(card: QRCard, qrRef: React.RefObject<HTMLDivElement | nul
 export default function QRCardDisplay({ card, onClose }: Props) {
   const [showBack, setShowBack] = useState(false);
   const qrRef     = useRef<HTMLDivElement>(null);
-  const canvasRef = useCardCanvas(card, qrRef);
+  const canvasRef = useCardCanvas(card, qrRef, showBack);
 
   const handleGoToTopUp = () => {
     // Navigate to TopUp page with card ID pre-filled

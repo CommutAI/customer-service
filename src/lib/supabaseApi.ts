@@ -278,6 +278,24 @@ export const supabaseApiCalls = {
     if (error) throw new Error(error.message);
   },
 
+  updateQRCard: async (cardId: string, updates: { owner_name: string; contact_number: string }): Promise<void> => {
+    const { error } = await supabase
+      .from('qr_cards')
+      .update(updates)
+      .eq('card_uid', cardId);
+
+    if (error) throw new Error(error.message);
+  },
+
+  deleteQRCard: async (cardId: string): Promise<void> => {
+    const { error } = await supabase
+      .from('qr_cards')
+      .delete()
+      .eq('card_uid', cardId);
+
+    if (error) throw new Error(error.message);
+  },
+
   replaceCard: async (cardId: string): Promise<QRCard> => {
     // Mark old card as replaced
     const { data: old, error: oldErr } = await supabase

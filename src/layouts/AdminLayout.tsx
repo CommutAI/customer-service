@@ -1,7 +1,6 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
-  Users,
   CreditCard,
   Ticket,
   History,
@@ -16,7 +15,6 @@ import logo from '../assets/logo.png';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-  { name: 'Card Management', href: '/passengers', icon: Users },
   { name: 'QR Cards', href: '/qr-cards', icon: CreditCard },
   { name: 'Temporary QR Cards', href: '/temporary-qr-cards', icon: Ticket },
   { name: 'Reload Card', href: '/reload-card', icon: RefreshCw },

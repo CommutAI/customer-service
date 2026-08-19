@@ -5,7 +5,6 @@ import ProtectedRoute from './components/ProtectedRoute';
 import AdminLayout from './layouts/AdminLayout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
-import Passengers from './pages/Passengers';
 import QRCards from './pages/QRCards';
 import ReloadCard from './pages/ReloadCard';
 import TemporaryQRCards from './pages/TemporaryQRCards';
@@ -39,7 +38,6 @@ function App() {
               }
             >
               <Route index element={<Dashboard />} />
-              <Route path="passengers" element={<Passengers />} />
               <Route path="qr-cards" element={<QRCards />} />
               <Route path="temporary-qr-cards" element={<TemporaryQRCards />} />
               <Route path="reload-card" element={<ReloadCard />} />
