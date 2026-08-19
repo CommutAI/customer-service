@@ -76,11 +76,10 @@ function rowToQRCard(row: any): QRCard {
 }
 
 /** Map DB transactions row → app Transaction (needs card owner name lookup) */
-function rowToTransaction(row: any, ownerName = 'Unknown'): Transaction {
+function rowToTransaction(row: any, ownerName = 'Unknown', currentBalance?: number): Transaction {
   const typeMap: Record<string, Transaction['type']> = {
-    balance_topup: 'top_up',
     fare_validation: 'fare',
-    card_issuance: 'ticket_purchase',
+    card_issuance: 'reload',
   };
   const methodMap: Record<string, Transaction['method']> = {
     qr_card: 'qr',
@@ -93,8 +92,8 @@ function rowToTransaction(row: any, ownerName = 'Unknown'): Transaction {
     passengerId: row.card_id ?? '',
     passengerName: ownerName,
     type: typeMap[row.type] ?? 'fare',
-    amount: row.type === 'balance_topup' ? Math.abs(Number(row.amount)) : -Math.abs(Number(row.amount)),
-    balanceAfter: 0, // Not stored; would need a separate query
+    amount: Number(row.amount), // Don't negate - show positive amounts for reloads
+    balanceAfter: row.balance_after ? Number(row.balance_after) : (currentBalance ?? 0),
     timestamp: row.created_at,
     method: methodMap[row.channel] ?? 'cash',
   };
@@ -108,7 +107,7 @@ export const supabaseApiCalls = {
     const start = `${today()}T00:00:00.000Z`;
     const end = `${today()}T23:59:59.999Z`;
 
-    const [cardsResult, topupsResult, txResult] = await Promise.all([
+    const [cardsResult, txResult, topUpResult] = await Promise.all([
       supabase
         .from('qr_cards')
         .select('id', { count: 'exact', head: true })
@@ -116,14 +115,13 @@ export const supabaseApiCalls = {
         .lte('created_at', end),
       supabase
         .from('transactions')
-        .select('id', { count: 'exact', head: true })
-        .eq('type', 'balance_topup')
+        .select('amount')
         .gte('created_at', start)
         .lte('created_at', end),
       supabase
         .from('transactions')
-        .select('amount')
-        .eq('type', 'balance_topup')
+        .select('id', { count: 'exact', head: true })
+        .eq('type', 'card_issuance')
         .gte('created_at', start)
         .lte('created_at', end),
     ]);
@@ -141,7 +139,7 @@ export const supabaseApiCalls = {
 
     return {
       todayRegistrations: cardsResult.count ?? 0,
-      todayTopUps: topupsResult.count ?? 0,
+      todayTopUps: topUpResult.count ?? 0,
       todayTransactions: txCount ?? 0,
       totalRevenue,
     };
@@ -252,11 +250,14 @@ export const supabaseApiCalls = {
         card_uid: uid,
         owner_name: registration.ownerName,
         contact_number: registration.contactNumber,
-        balance: 0,
+        balance: 100, // Initial balance of ₱100
         status: 'active',
         issued_by: session?.user?.id ?? null,
         // Store passenger type as a tag in allowed_routes array
         allowed_routes: [`type:${registration.passengerType}`],
+        // Map passenger type to database card_type enum
+        card_type: registration.passengerType === 'Senior Citizen' ? 'senior_citizen' : registration.passengerType.toLowerCase(),
+        purchase_price: 110, // ₱100 initial balance + ₱10 card fee
       })
       .select()
       .single();
@@ -278,6 +279,24 @@ export const supabaseApiCalls = {
     const { error } = await supabase
       .from('qr_cards')
       .update({ status: 'deactivated' })
+      .eq('card_uid', cardId);
+
+    if (error) throw new Error(error.message);
+  },
+
+  updateQRCard: async (cardId: string, updates: { owner_name: string; contact_number: string }): Promise<void> => {
+    const { error } = await supabase
+      .from('qr_cards')
+      .update(updates)
+      .eq('card_uid', cardId);
+
+    if (error) throw new Error(error.message);
+  },
+
+  deleteQRCard: async (cardId: string): Promise<void> => {
+    const { error } = await supabase
+      .from('qr_cards')
+      .delete()
       .eq('card_uid', cardId);
 
     if (error) throw new Error(error.message);
@@ -329,7 +348,7 @@ export const supabaseApiCalls = {
   getTransactions: async (): Promise<Transaction[]> => {
     const { data, error } = await supabase
       .from('transactions')
-      .select('*, qr_cards(owner_name)')
+      .select('*, qr_cards(owner_name, balance)')
       .order('created_at', { ascending: false })
       .limit(200);
 
@@ -337,7 +356,8 @@ export const supabaseApiCalls = {
 
     return (data ?? []).map((row) => {
       const ownerName = (row as any).qr_cards?.owner_name ?? 'Unknown';
-      return rowToTransaction(row, ownerName);
+      const currentBalance = (row as any).qr_cards?.balance ?? 0;
+      return rowToTransaction(row, ownerName, currentBalance);
     });
   },
 
@@ -355,20 +375,8 @@ export const supabaseApiCalls = {
 
     if (cardErr) throw new Error(cardErr.message);
 
-    // 2. Get passenger type for discount calculation
-    const typeTag = (card.allowed_routes ?? []).find((r: string) => r.startsWith('type:'));
-    const passengerType = typeTag
-      ? typeTag.replace('type:', '')
-      : 'Regular';
-
-    // 3. Apply 20% discount for Student, Senior Citizen, and PWD (Philippine law)
-    let finalAmount = amount;
-    let discountApplied = 0;
-    if (['Student', 'Senior Citizen', 'PWD'].includes(passengerType)) {
-      discountApplied = amount * 0.20; // 20% discount
-      finalAmount = amount - discountApplied;
-    }
-
+    // 2. No discount for reloads/top-ups - full amount is added to balance
+    const finalAmount = amount;
     const newBalance = Number(card.balance) + finalAmount;
 
     // 4. Update balance using the card's UUID (id field)
@@ -387,10 +395,11 @@ export const supabaseApiCalls = {
       .from('transactions')
       .insert({
         card_id: card.id,
-        type: 'balance_topup',
+        type: 'card_issuance',
         amount: finalAmount,
         channel: method,
         staff_id: session?.user?.id ?? null,
+        balance_after: newBalance,
       })
       .select()
       .single();
@@ -415,7 +424,7 @@ export const supabaseApiCalls = {
       id: tx.id,
       passengerId: card.id,
       passengerName: card.owner_name,
-      type: 'top_up',
+      type: 'reload',
       amount,
       balanceAfter: newBalance,
       timestamp: tx.created_at,
@@ -448,6 +457,8 @@ export const supabaseApiCalls = {
         status: 'active',
         allowed_routes: ['temporary', `type:${passengerType}`], // Tag to identify temporary cards and type
         issued_by: session?.user?.id ?? null,
+        // Map passenger type to database card_type enum
+        card_type: passengerType === 'Senior Citizen' ? 'senior_citizen' : passengerType.toLowerCase(),
       })
       .select()
       .single();

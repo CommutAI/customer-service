@@ -1,15 +1,14 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
-  Users,
   CreditCard,
-  DollarSign,
   Ticket,
   History,
   Menu,
   X,
   LogOut,
   RefreshCw,
+  BarChart3,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
@@ -17,12 +16,11 @@ import logo from '../assets/logo.png';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
-  { name: 'Card Management', href: '/passengers', icon: Users },
   { name: 'QR Cards', href: '/qr-cards', icon: CreditCard },
   { name: 'Temporary QR Cards', href: '/temporary-qr-cards', icon: Ticket },
   { name: 'Reload Card', href: '/reload-card', icon: RefreshCw },
-  { name: 'Top Up', href: '/top-up', icon: DollarSign },
   { name: 'Transactions', href: '/transactions', icon: History },
+  { name: 'Reports', href: '/reports', icon: BarChart3 },
 ];
 
 export default function AdminLayout() {

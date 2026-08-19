@@ -6,7 +6,7 @@ export type BusStatus = 'active' | 'maintenance' | 'inactive';
 export type TripStatus = 'in_progress' | 'completed' | 'cancelled';
 export type QRCardStatus = 'active' | 'lost' | 'replaced' | 'deactivated';
 export type TicketStatus = 'issued' | 'validated' | 'expired';
-export type TransactionType = 'fare_validation' | 'balance_topup' | 'card_issuance';
+export type TransactionType = 'fare_validation' | 'card_issuance';
 export type IrregularityType = 'double_scan' | 'count_mismatch' | 'fare_evasion' | 'other';
 export type CsActionType = 'complaint' | 'inquiry' | 'refund' | 'lost_card' | 'other';
 
