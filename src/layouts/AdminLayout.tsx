@@ -9,6 +9,7 @@ import {
   Menu,
   X,
   LogOut,
+  RefreshCw,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
@@ -19,6 +20,7 @@ const navigation = [
   { name: 'Card Management', href: '/passengers', icon: Users },
   { name: 'QR Cards', href: '/qr-cards', icon: CreditCard },
   { name: 'Temporary QR Cards', href: '/temporary-qr-cards', icon: Ticket },
+  { name: 'Reload Card', href: '/reload-card', icon: RefreshCw },
   { name: 'Top Up', href: '/top-up', icon: DollarSign },
   { name: 'Transactions', href: '/transactions', icon: History },
 ];

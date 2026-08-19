@@ -47,11 +47,15 @@ function rowToQRCard(row: any): QRCard {
     replaced: 'disabled',
     deactivated: 'disabled',
   };
-  // passenger type stored in allowed_routes[0] as a tag e.g. "type:Student"
-  const typeTag = (row.allowed_routes ?? []).find((r: string) => r.startsWith('type:'));
-  const passengerType = typeTag
-    ? (typeTag.replace('type:', '') as QRCard['passengerType'])
-    : 'Regular';
+  
+  // Map database card_type enum to app passengerType
+  const cardTypeMap: Record<string, QRCard['passengerType']> = {
+    regular: 'Regular',
+    student: 'Student',
+    senior_citizen: 'Senior Citizen',
+    pwd: 'PWD',
+  };
+  const passengerType = cardTypeMap[row.card_type] ?? 'Regular';
   
   // Detect temporary cards by checking for "temporary" tag in allowed_routes
   const isTemporary = (row.allowed_routes ?? []).some((r: string) => r === 'temporary');
@@ -67,6 +71,7 @@ function rowToQRCard(row: any): QRCard {
     issuedAt: row.created_at,
     qrCode: row.card_uid,
     isTemporary,
+    balance: row.balance ?? 0,
   };
 }
 

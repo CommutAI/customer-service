@@ -8,6 +8,7 @@ import Dashboard from './pages/Dashboard';
 import Passengers from './pages/Passengers';
 import QRCards from './pages/QRCards';
 import TopUp from './pages/TopUp';
+import ReloadCard from './pages/ReloadCard';
 import TemporaryQRCards from './pages/TemporaryQRCards';
 import Transactions from './pages/Transactions';
 
@@ -42,6 +43,7 @@ function App() {
               <Route path="passengers" element={<Passengers />} />
               <Route path="qr-cards" element={<QRCards />} />
               <Route path="temporary-qr-cards" element={<TemporaryQRCards />} />
+              <Route path="reload-card" element={<ReloadCard />} />
               <Route path="top-up" element={<TopUp />} />
               <Route path="transactions" element={<Transactions />} />
             </Route>
