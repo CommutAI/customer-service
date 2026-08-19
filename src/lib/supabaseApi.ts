@@ -80,6 +80,10 @@ function rowToTransaction(row: any, ownerName = 'Unknown', currentBalance?: numb
   const typeMap: Record<string, Transaction['type']> = {
     fare_validation: 'fare',
     card_issuance: 'reload',
+    reload: 'reload',
+    top_up: 'top_up',
+    refund: 'refund',
+    ticket_purchase: 'ticket_purchase',
   };
   const methodMap: Record<string, Transaction['method']> = {
     qr_card: 'qr',

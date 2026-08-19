@@ -256,7 +256,7 @@ export default function ReloadCard() {
           </h2>
           <div className="space-y-3 max-h-96 overflow-y-auto">
             {transactions
-              ?.filter(t => t.type === 'top_up')
+              ?.filter(t => t.type === 'reload')
               .slice(0, 10)
               .map((transaction) => (
                 <div key={transaction.id} className="p-4 bg-gradient-to-r from-secondary-50 to-white rounded-2xl border border-secondary-100">
