@@ -1,8 +1,44 @@
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { apiCalls } from '../lib/api';
-import { Users, DollarSign, CreditCard, TrendingUp, RefreshCw, Ticket } from 'lucide-react';
+import { Users, DollarSign, CreditCard, TrendingUp, RefreshCw, Ticket, type LucideIcon } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
+
+const KPICard = ({ title, value, change, icon: Icon, color }: { title: string; value: string | number; change: string; icon: LucideIcon; color: string }) => (
+  <div className="glass-card p-6 hover:scale-105 transition-transform duration-300">
+    <div className="flex items-center justify-between mb-4">
+      <div className={`w-12 h-12 rounded-xl ${color} flex items-center justify-center`}>
+        <Icon className="w-6 h-6 text-white" />
+      </div>
+      <span className={`text-sm ${change.startsWith('+') ? 'text-green-400' : 'text-red-400'}`}>
+        {change}
+      </span>
+    </div>
+    <h3 className="text-white/60 text-sm mb-1">{title}</h3>
+    <p className="text-white text-3xl font-bold">{value}</p>
+  </div>
+);
+
+const ShortcutCard = ({ title, value, icon: Icon, color, link, onClick }: { title: string; value: string; icon: LucideIcon; color: string; link: string; onClick: (link: string) => void }) => (
+  <button 
+    onClick={() => onClick(link)}
+    className="block border border-white/20 rounded-2xl hover:border-white/30 transition-colors"
+  >
+    <div className="glass-card p-4 hover:scale-105 transition-transform duration-300 cursor-pointer">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className={`w-10 h-10 rounded-lg ${color} flex items-center justify-center`}>
+            <Icon className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <p className="text-white/60 text-xs">{title}</p>
+            <p className="text-white font-bold">{value}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </button>
+);
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -37,81 +73,49 @@ export default function Dashboard() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-white text-3xl font-bold mb-2">Dashboard</h1>
+          <p className="text-white/60">Loading data...</p>
+        </div>
       </div>
     );
   }
 
-  const statCards = [
-    {
-      title: "Today's Registrations",
-      value: stats?.todayRegistrations || 0,
-      icon: Users,
-      gradient: 'from-primary-500 to-primary-600',
-      change: '+12%',
-    },
-    {
-      title: "Today's Top Ups",
-      value: stats?.todayTopUps || 0,
-      icon: DollarSign,
-      gradient: 'from-emerald-500 to-emerald-600',
-      change: '+8%',
-    },
-    {
-      title: "Today's Transactions",
-      value: stats?.todayTransactions || 0,
-      icon: CreditCard,
-      gradient: 'from-accent-500 to-accent-600',
-      change: '+15%',
-    },
-    {
-      title: "Transaction Summary",
-      value: `${stats?.todayTransactions || 0} txns`,
-      icon: TrendingUp,
-      gradient: 'from-orange-500 to-orange-600',
-      change: `₱${stats?.totalRevenue?.toFixed(2) || '0.00'}`,
-    },
+  const kpis = [
+    { title: "Today's Registrations", value: stats?.todayRegistrations || 0, change: '+12%', icon: Users, color: 'bg-blue-500' },
+    { title: "Today's Top Ups", value: stats?.todayTopUps || 0, change: '+8%', icon: DollarSign, color: 'bg-green-500' },
+    { title: "Today's Transactions", value: stats?.todayTransactions || 0, change: '+15%', icon: CreditCard, color: 'bg-purple-500' },
+    { title: "Total Revenue", value: `₱${stats?.totalRevenue?.toFixed(2) || '0.00'}`, change: '+12%', icon: TrendingUp, color: 'bg-orange-500' },
   ];
 
   return (
-    <div>
-      <h1 className="text-xl font-bold text-secondary-900 mb-4">Dashboard</h1>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {statCards.map((stat) => (
-          <div key={stat.title} className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-soft p-6 border border-secondary-100">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-secondary-600">{stat.title}</p>
-                <p className="text-3xl font-bold text-secondary-900 mt-2">{stat.value}</p>
-              </div>
-              <div className={`bg-linear-to-br ${stat.gradient} p-4 rounded-2xl shadow-soft`}>
-                <stat.icon className="w-7 h-7 text-white" />
-              </div>
-            </div>
-            <div className="mt-4 flex items-center text-sm">
-              <span className="text-emerald-600 font-semibold">{stat.change}</span>
-              <span className="text-secondary-500 ml-2">from yesterday</span>
-            </div>
-          </div>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-white text-3xl font-bold mb-2">Dashboard</h1>
+        <p className="text-white/60">Welcome back! Here's what's happening today.</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {kpis.map((kpi, index) => (
+          <KPICard key={index} {...kpi} />
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-soft p-6 border border-secondary-100">
-          <h2 className="text-xl font-semibold text-secondary-900 mb-6">Weekly Transactions</h2>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="glass-card p-6">
+          <h2 className="text-white text-xl font-bold mb-6">Weekly Transactions</h2>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={weeklyData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis dataKey="day" stroke="#6b7280" fontSize={12} />
-              <YAxis stroke="#6b7280" fontSize={12} />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+              <XAxis dataKey="day" stroke="rgba(255,255,255,0.6)" fontSize={12} />
+              <YAxis stroke="rgba(255,255,255,0.6)" fontSize={12} />
               <Tooltip 
                 contentStyle={{ 
-                  backgroundColor: 'white', 
+                  backgroundColor: 'rgba(0,0,0,0.8)', 
                   borderRadius: '12px', 
-                  border: '1px solid #e5e7eb',
-                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  color: 'white'
                 }}
               />
               <Bar dataKey="transactions" fill="#3b82f6" radius={[8, 8, 0, 0]} />
@@ -119,19 +123,19 @@ export default function Dashboard() {
           </ResponsiveContainer>
         </div>
 
-        <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-soft p-6 border border-secondary-100">
-          <h2 className="text-xl font-semibold text-secondary-900 mb-6">Weekly Revenue</h2>
+        <div className="glass-card p-6">
+          <h2 className="text-white text-xl font-bold mb-6">Weekly Revenue</h2>
           <ResponsiveContainer width="100%" height={250}>
             <LineChart data={weeklyData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis dataKey="day" stroke="#6b7280" fontSize={12} />
-              <YAxis stroke="#6b7280" fontSize={12} />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+              <XAxis dataKey="day" stroke="rgba(255,255,255,0.6)" fontSize={12} />
+              <YAxis stroke="rgba(255,255,255,0.6)" fontSize={12} />
               <Tooltip 
                 contentStyle={{ 
-                  backgroundColor: 'white', 
+                  backgroundColor: 'rgba(0,0,0,0.8)', 
                   borderRadius: '12px', 
-                  border: '1px solid #e5e7eb',
-                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  color: 'white'
                 }}
                 formatter={(value) => [`₱${value}`, 'Revenue']}
               />
@@ -142,8 +146,8 @@ export default function Dashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-soft p-6 border border-secondary-100">
-          <h2 className="text-xl font-semibold text-secondary-900 mb-6">Card Type Distribution</h2>
+        <div className="glass-card p-6">
+          <h2 className="text-white text-xl font-bold mb-6">Card Type Distribution</h2>
           <ResponsiveContainer width="100%" height={250}>
             <PieChart>
               <Pie
@@ -161,10 +165,10 @@ export default function Dashboard() {
               </Pie>
               <Tooltip 
                 contentStyle={{ 
-                  backgroundColor: 'white', 
+                  backgroundColor: 'rgba(0,0,0,0.8)', 
                   borderRadius: '12px', 
-                  border: '1px solid #e5e7eb',
-                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  color: 'white'
                 }}
               />
             </PieChart>
@@ -173,43 +177,47 @@ export default function Dashboard() {
             {cardTypeData.map((item) => (
               <div key={item.name} className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
-                <span className="text-xs text-secondary-600">{item.name}: {item.value}</span>
+                <span className="text-xs text-white/60">{item.name}: {item.value}</span>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="lg:col-span-2 bg-white/80 backdrop-blur-xl rounded-3xl shadow-soft p-6 border border-secondary-100">
-          <h2 className="text-xl font-semibold text-secondary-900 mb-6">Quick Actions</h2>
+        <div className="lg:col-span-2 glass-card p-6">
+          <h2 className="text-white text-xl font-bold mb-6">Quick Actions</h2>
           <div className="grid grid-cols-2 gap-4">
-            <button 
-              onClick={() => navigate('/reload-card')}
-              className="p-5 bg-gradient-to-br from-emerald-50 to-emerald-100 hover:from-emerald-100 hover:to-emerald-200 rounded-2xl transition-all duration-200 text-left border border-emerald-200"
-            >
-              <RefreshCw className="w-7 h-7 text-emerald-600 mb-3" />
-              <p className="text-sm font-semibold text-secondary-900">Reload Card</p>
-            </button>
-            <button 
-              onClick={() => navigate('/qr-cards')}
-              className="p-5 bg-gradient-to-br from-accent-50 to-accent-100 hover:from-accent-100 hover:to-accent-200 rounded-2xl transition-all duration-200 text-left border border-accent-200"
-            >
-              <CreditCard className="w-7 h-7 text-accent-600 mb-3" />
-              <p className="text-sm font-semibold text-secondary-900">Issue QR Card</p>
-            </button>
-            <button 
-              onClick={() => navigate('/temporary-qr-cards')}
-              className="p-5 bg-gradient-to-br from-purple-50 to-purple-100 hover:from-purple-100 hover:to-purple-200 rounded-2xl transition-all duration-200 text-left border border-purple-200"
-            >
-              <Ticket className="w-7 h-7 text-purple-600 mb-3" />
-              <p className="text-sm font-semibold text-secondary-900">Temporary Card</p>
-            </button>
-            <button 
-              onClick={() => navigate('/transactions')}
-              className="p-5 bg-gradient-to-br from-orange-50 to-orange-100 hover:from-orange-100 hover:to-orange-200 rounded-2xl transition-all duration-200 text-left border border-orange-200"
-            >
-              <TrendingUp className="w-7 h-7 text-orange-600 mb-3" />
-              <p className="text-sm font-semibold text-secondary-900">Transactions</p>
-            </button>
+            <ShortcutCard 
+              title="Reload Card" 
+              value="Go" 
+              icon={RefreshCw} 
+              color="bg-emerald-500" 
+              link="/reload-card"
+              onClick={navigate}
+            />
+            <ShortcutCard 
+              title="Issue QR Card" 
+              value="Go" 
+              icon={CreditCard} 
+              color="bg-purple-500" 
+              link="/qr-cards"
+              onClick={navigate}
+            />
+            <ShortcutCard 
+              title="Temporary Card" 
+              value="Go" 
+              icon={Ticket} 
+              color="bg-blue-500" 
+              link="/temporary-qr-cards"
+              onClick={navigate}
+            />
+            <ShortcutCard 
+              title="Transactions" 
+              value="Go" 
+              icon={TrendingUp} 
+              color="bg-orange-500" 
+              link="/transactions"
+              onClick={navigate}
+            />
           </div>
         </div>
       </div>

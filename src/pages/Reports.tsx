@@ -148,18 +148,18 @@ export default function Reports() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-bold text-secondary-900">Reports & Analytics</h1>
+        <h1 className="text-xl font-bold text-white">Reports & Analytics</h1>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 bg-white rounded-lg border border-secondary-200 p-1">
+            <div className="flex items-center gap-2 bg-white/10 rounded-lg border border-white/20 p-1">
               {(['weekly', 'monthly', 'yearly', 'custom'] as const).map((range) => (
                 <button
                   key={range}
                   onClick={() => setDateRange(range)}
-                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all border ${
                     dateRange === range
-                      ? 'bg-primary-500 text-white'
-                      : 'text-secondary-600 hover:bg-secondary-100'
+                      ? 'bg-primary-500 text-white border-primary-400'
+                      : 'text-white/60 hover:bg-white/10 border-transparent'
                   }`}
                 >
                   {range === 'weekly' ? 'Weekly' : range === 'monthly' ? 'Monthly' : range === 'yearly' ? 'Yearly' : 'Custom'}
@@ -167,30 +167,30 @@ export default function Reports() {
               ))}
             </div>
             {dateRange === 'custom' && (
-              <div className="flex items-center gap-2 bg-white rounded-lg border border-secondary-200 p-2">
+              <div className="flex items-center gap-2 bg-white/10 rounded-lg border border-white/20 p-2">
                 <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-secondary-500" />
+                  <Calendar className="w-4 h-4 text-white/60" />
                   <input
                     type="date"
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
-                    className="text-sm border border-secondary-200 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="text-sm border border-white/20 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white/10 text-white"
                   />
                 </div>
-                <span className="text-secondary-500">to</span>
+                <span className="text-white/60">to</span>
                 <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-secondary-500" />
+                  <Calendar className="w-4 h-4 text-white/60" />
                   <input
                     type="date"
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
-                    className="text-sm border border-secondary-200 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="text-sm border border-white/20 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white/10 text-white"
                   />
                 </div>
               </div>
             )}
           </div>
-          <button className="flex items-center gap-2 px-4 py-2 bg-white rounded-lg border border-secondary-200 text-sm font-medium text-secondary-700 hover:bg-secondary-50 transition-colors">
+          <button className="flex items-center gap-2 px-4 py-2 bg-white/10 rounded-lg border border-white/20 text-sm font-medium text-white hover:bg-white/20 transition-colors">
             <Download className="w-4 h-4" />
             Export
           </button>
@@ -200,11 +200,11 @@ export default function Reports() {
       {/* Stat Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {statCards.map((stat) => (
-          <div key={stat.title} className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-soft p-6 border border-secondary-100">
+          <div key={stat.title} className="glass-card p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-secondary-600">{stat.title}</p>
-                <p className="text-3xl font-bold text-secondary-900 mt-2">{stat.value}</p>
+                <p className="text-sm font-medium text-white/60">{stat.title}</p>
+                <p className="text-3xl font-bold text-white mt-2">{stat.value}</p>
               </div>
               <div className={`bg-linear-to-br ${stat.gradient} p-4 rounded-2xl shadow-soft`}>
                 <stat.icon className="w-7 h-7 text-white" />
@@ -216,8 +216,8 @@ export default function Reports() {
 
       {/* Charts Row 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-soft p-6 border border-secondary-100">
-          <h2 className="text-xl font-semibold text-secondary-900 mb-6">
+        <div className="glass-card p-6">
+          <h2 className="text-xl font-semibold text-white mb-6">
             {dateRange === 'custom' 
               ? 'Custom Range' 
               : dateRange === 'weekly' 
@@ -228,15 +228,15 @@ export default function Reports() {
           </h2>
           <ResponsiveContainer width="100%" height={300}>
             <AreaChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis dataKey="date" stroke="#6b7280" fontSize={12} />
-              <YAxis stroke="#6b7280" fontSize={12} />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+              <XAxis dataKey="date" stroke="rgba(255,255,255,0.6)" fontSize={12} />
+              <YAxis stroke="rgba(255,255,255,0.6)" fontSize={12} />
               <Tooltip 
                 contentStyle={{ 
-                  backgroundColor: 'white', 
+                  backgroundColor: 'rgba(0,0,0,0.8)', 
                   borderRadius: '12px', 
-                  border: '1px solid #e5e7eb',
-                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  color: 'white'
                 }}
                 formatter={(value) => [value, 'Transactions']}
               />
@@ -245,8 +245,8 @@ export default function Reports() {
           </ResponsiveContainer>
         </div>
 
-        <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-soft p-6 border border-secondary-100">
-          <h2 className="text-xl font-semibold text-secondary-900 mb-6">
+        <div className="glass-card p-6">
+          <h2 className="text-xl font-semibold text-white mb-6">
             {dateRange === 'custom' 
               ? 'Custom Range' 
               : dateRange === 'weekly' 
@@ -257,15 +257,15 @@ export default function Reports() {
           </h2>
           <ResponsiveContainer width="100%" height={300}>
             <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <XAxis dataKey="date" stroke="#6b7280" fontSize={12} />
-              <YAxis stroke="#6b7280" fontSize={12} />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+              <XAxis dataKey="date" stroke="rgba(255,255,255,0.6)" fontSize={12} />
+              <YAxis stroke="rgba(255,255,255,0.6)" fontSize={12} />
               <Tooltip 
                 contentStyle={{ 
-                  backgroundColor: 'white', 
+                  backgroundColor: 'rgba(0,0,0,0.8)', 
                   borderRadius: '12px', 
-                  border: '1px solid #e5e7eb',
-                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  color: 'white'
                 }}
                 formatter={(value) => [`₱${value}`, 'Revenue']}
               />
@@ -277,8 +277,8 @@ export default function Reports() {
 
       {/* Charts Row 2 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-soft p-6 border border-secondary-100">
-          <h2 className="text-xl font-semibold text-secondary-900 mb-6">Card Type Distribution</h2>
+        <div className="glass-card p-6">
+          <h2 className="text-xl font-semibold text-white mb-6">Card Type Distribution</h2>
           <ResponsiveContainer width="100%" height={250}>
             <PieChart>
               <Pie
@@ -296,10 +296,10 @@ export default function Reports() {
               </Pie>
               <Tooltip 
                 contentStyle={{ 
-                  backgroundColor: 'white', 
+                  backgroundColor: 'rgba(0,0,0,0.8)', 
                   borderRadius: '12px', 
-                  border: '1px solid #e5e7eb',
-                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  color: 'white'
                 }}
               />
             </PieChart>
@@ -308,14 +308,14 @@ export default function Reports() {
             {cardTypeData.map((item) => (
               <div key={item.name} className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
-                <span className="text-xs text-secondary-600">{item.name}: {item.value}</span>
+                <span className="text-xs text-white/60">{item.name}: {item.value}</span>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-soft p-6 border border-secondary-100">
-          <h2 className="text-xl font-semibold text-secondary-900 mb-6">Transaction Types</h2>
+        <div className="glass-card p-6">
+          <h2 className="text-xl font-semibold text-white mb-6">Transaction Types</h2>
           <ResponsiveContainer width="100%" height={250}>
             <PieChart>
               <Pie
@@ -333,10 +333,10 @@ export default function Reports() {
               </Pie>
               <Tooltip 
                 contentStyle={{ 
-                  backgroundColor: 'white', 
+                  backgroundColor: 'rgba(0,0,0,0.8)', 
                   borderRadius: '12px', 
-                  border: '1px solid #e5e7eb',
-                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  color: 'white'
                 }}
               />
             </PieChart>
@@ -345,7 +345,7 @@ export default function Reports() {
             {transactionTypeData.map((item) => (
               <div key={item.name} className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
-                <span className="text-xs text-secondary-600">{item.name}: {item.value}</span>
+                <span className="text-xs text-white/60">{item.name}: {item.value}</span>
               </div>
             ))}
           </div>
@@ -353,8 +353,8 @@ export default function Reports() {
       </div>
 
       {/* Card Status Chart */}
-      <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-soft p-6 border border-secondary-100">
-        <h2 className="text-xl font-semibold text-secondary-900 mb-6">Card Status Distribution</h2>
+      <div className="glass-card p-6">
+        <h2 className="text-xl font-semibold text-white mb-6">Card Status Distribution</h2>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <ResponsiveContainer width="100%" height={250}>
             <PieChart>
@@ -373,21 +373,21 @@ export default function Reports() {
               </Pie>
               <Tooltip 
                 contentStyle={{ 
-                  backgroundColor: 'white', 
+                  backgroundColor: 'rgba(0,0,0,0.8)', 
                   borderRadius: '12px', 
-                  border: '1px solid #e5e7eb',
-                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  color: 'white'
                 }}
               />
             </PieChart>
           </ResponsiveContainer>
           <div className="grid grid-cols-2 gap-4">
             {cardStatusData.map((item) => (
-              <div key={item.name} className="flex items-center gap-3 p-3 bg-secondary-50 rounded-xl">
+              <div key={item.name} className="flex items-center gap-3 p-3 bg-white/10 rounded-xl">
                 <div className="w-4 h-4 rounded-full" style={{ backgroundColor: item.color }} />
                 <div>
-                  <p className="text-sm font-semibold text-secondary-900">{item.name}</p>
-                  <p className="text-xs text-secondary-600">{item.value} cards</p>
+                  <p className="text-sm font-semibold text-white">{item.name}</p>
+                  <p className="text-xs text-white/60">{item.value} cards</p>
                 </div>
               </div>
             ))}

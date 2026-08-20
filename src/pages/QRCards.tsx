@@ -98,12 +98,12 @@ function RegisterCardModal({
 
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg border border-secondary-100 overflow-hidden">
+      <div className="glass-card w-full max-w-lg border border-white/20 overflow-hidden">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-secondary-100">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-white/20">
           <div>
-            <h2 className="text-base font-bold text-secondary-900">Register New QR Card</h2>
+            <h2 className="text-base font-bold text-white">Register New QR Card</h2>
             <div className="flex items-center gap-2 mt-1.5">
               {(['info', 'type', 'confirm'] as Step[]).map((s, i) => (
                 <div key={s} className="flex items-center gap-2">
@@ -112,17 +112,17 @@ function RegisterCardModal({
                       ? 'bg-primary-500 text-white'
                       : (['info', 'type', 'confirm'].indexOf(step) > i)
                       ? 'bg-emerald-500 text-white'
-                      : 'bg-secondary-100 text-secondary-400'
+                      : 'bg-white/10 text-white/40'
                   }`}>
                     {(['info', 'type', 'confirm'].indexOf(step) > i) ? '✓' : i + 1}
                   </div>
-                  {i < 2 && <div className="w-6 h-px bg-secondary-200" />}
+                  {i < 2 && <div className="w-6 h-px bg-white/20" />}
                 </div>
               ))}
-              <span className="text-xs text-secondary-400 ml-1 capitalize">{step}</span>
+              <span className="text-xs text-white/40 ml-1 capitalize">{step}</span>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 rounded-xl hover:bg-secondary-100 text-secondary-400">
+          <button onClick={onClose} className="p-2 rounded-xl hover:bg-white/10 text-white/60 border border-white/20">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -131,8 +131,8 @@ function RegisterCardModal({
         {step === 'info' && (
           <form onSubmit={handleInfoNext} className="px-6 py-5 space-y-4">
             <div>
-              <label className="block text-sm font-semibold text-secondary-700 mb-1.5">
-                <User className="w-4 h-4 inline mr-1.5 text-secondary-400" />
+              <label className="block text-sm font-semibold text-white/60 mb-1.5">
+                <User className="w-4 h-4 inline mr-1.5 text-white/40" />
                 Full Name
               </label>
               <input
@@ -142,12 +142,12 @@ function RegisterCardModal({
                 placeholder="e.g. Juan dela Cruz"
                 value={data.ownerName}
                 onChange={e => setData(d => ({ ...d, ownerName: e.target.value }))}
-                className="w-full px-4 py-3 border border-secondary-200 rounded-2xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-secondary-50/50 text-sm"
+                className="w-full px-4 py-3 border border-white/20 rounded-2xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white/10 text-sm text-white"
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-secondary-700 mb-1.5">
-                <Phone className="w-4 h-4 inline mr-1.5 text-secondary-400" />
+              <label className="block text-sm font-semibold text-white/60 mb-1.5">
+                <Phone className="w-4 h-4 inline mr-1.5 text-white/40" />
                 Contact Number
               </label>
               <input
@@ -156,13 +156,13 @@ function RegisterCardModal({
                 placeholder="e.g. 09171234567"
                 value={data.contactNumber}
                 onChange={e => setData(d => ({ ...d, contactNumber: e.target.value }))}
-                className="w-full px-4 py-3 border border-secondary-200 rounded-2xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-secondary-50/50 text-sm"
+                className="w-full px-4 py-3 border border-white/20 rounded-2xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white/10 text-sm text-white"
               />
             </div>
             <div className="flex justify-end pt-2">
               <button
                 type="submit"
-                className="flex items-center gap-2 px-5 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-2xl text-sm font-semibold transition-colors shadow-soft"
+                className="flex items-center gap-2 px-5 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-2xl text-sm font-semibold transition-colors shadow-soft border border-primary-400"
               >
                 Next <ChevronRight className="w-4 h-4" />
               </button>
@@ -173,8 +173,8 @@ function RegisterCardModal({
         {/* ── Step 2: Passenger Type ── */}
         {step === 'type' && (
           <div className="px-6 py-5">
-            <p className="text-sm text-secondary-600 mb-4">
-              Select the passenger category for <span className="font-semibold text-secondary-900">{data.ownerName}</span>:
+            <p className="text-sm text-white/60 mb-4">
+              Select the passenger category for <span className="font-semibold text-white">{data.ownerName}</span>:
             </p>
             <div className="grid grid-cols-2 gap-3 mb-5">
               {TYPE_OPTIONS.map(opt => (
@@ -184,7 +184,7 @@ function RegisterCardModal({
                   className={`relative rounded-2xl border-2 overflow-hidden transition-all text-left ${
                     data.passengerType === opt.value
                       ? opt.color + ' border-opacity-100 shadow-soft'
-                      : 'border-secondary-200 hover:border-secondary-300 bg-white'
+                      : 'border-white/20 hover:border-white/30 bg-white/10'
                   }`}
                 >
                   <img
@@ -193,8 +193,8 @@ function RegisterCardModal({
                     className="w-full h-14 object-cover object-top"
                   />
                   <div className="px-3 py-2">
-                    <p className="text-xs font-bold text-secondary-900">{opt.label}</p>
-                    <p className="text-[10px] text-secondary-500">{opt.desc}</p>
+                    <p className="text-xs font-bold text-white">{opt.label}</p>
+                    <p className="text-[10px] text-white/60">{opt.desc}</p>
                   </div>
                   {data.passengerType === opt.value && (
                     <div className="absolute top-2 right-2 w-4 h-4 bg-primary-500 rounded-full flex items-center justify-center">
@@ -207,13 +207,13 @@ function RegisterCardModal({
             <div className="flex justify-between">
               <button
                 onClick={() => setStep('info')}
-                className="px-4 py-2.5 text-sm text-secondary-600 hover:bg-secondary-100 rounded-2xl transition-colors"
+                className="px-4 py-2.5 text-sm text-white/60 hover:bg-white/10 rounded-2xl transition-colors border border-white/20"
               >
                 Back
               </button>
               <button
                 onClick={handleTypeNext}
-                className="flex items-center gap-2 px-5 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-2xl text-sm font-semibold transition-colors shadow-soft"
+                className="flex items-center gap-2 px-5 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-2xl text-sm font-semibold transition-colors shadow-soft border border-primary-400"
               >
                 Next <ChevronRight className="w-4 h-4" />
               </button>
@@ -224,7 +224,7 @@ function RegisterCardModal({
         {/* ── Step 3: Confirm & Issue ── */}
         {step === 'confirm' && (
           <div className="px-6 py-5">
-            <p className="text-xs text-secondary-400 mb-4">Review the details before issuing the card.</p>
+            <p className="text-xs text-white/40 mb-4">Review the details before issuing the card.</p>
 
             {/* Two-column: info left, card preview right */}
             <div className="flex gap-4 mb-4">
@@ -232,37 +232,37 @@ function RegisterCardModal({
               {/* Left — details */}
               <div className="flex-1 space-y-2.5">
                 {/* Card ID (preview) */}
-                <div className="p-3 bg-secondary-50 rounded-2xl">
-                  <p className="text-[10px] font-semibold text-secondary-400 uppercase tracking-wider mb-0.5">Card ID</p>
-                  <p className="font-mono font-bold text-secondary-900 text-sm truncate">{previewCardId}</p>
+                <div className="p-3 bg-white/10 rounded-2xl border border-white/20">
+                  <p className="text-[10px] font-semibold text-white/40 uppercase tracking-wider mb-0.5">Card ID</p>
+                  <p className="font-mono font-bold text-white text-sm truncate">{previewCardId}</p>
                 </div>
                 {/* Name */}
-                <div className="p-3 bg-secondary-50 rounded-2xl">
-                  <p className="text-[10px] font-semibold text-secondary-400 uppercase tracking-wider mb-0.5">Full Name</p>
-                  <p className="font-semibold text-secondary-900 text-sm truncate">{data.ownerName}</p>
+                <div className="p-3 bg-white/10 rounded-2xl border border-white/20">
+                  <p className="text-[10px] font-semibold text-white/40 uppercase tracking-wider mb-0.5">Full Name</p>
+                  <p className="font-semibold text-white text-sm truncate">{data.ownerName}</p>
                 </div>
                 {/* Contact */}
-                <div className="p-3 bg-secondary-50 rounded-2xl">
-                  <p className="text-[10px] font-semibold text-secondary-400 uppercase tracking-wider mb-0.5">Contact Number</p>
-                  <p className="font-semibold text-secondary-900 text-sm">{data.contactNumber}</p>
+                <div className="p-3 bg-white/10 rounded-2xl border border-white/20">
+                  <p className="text-[10px] font-semibold text-white/40 uppercase tracking-wider mb-0.5">Contact Number</p>
+                  <p className="font-semibold text-white text-sm">{data.contactNumber}</p>
                 </div>
                 {/* Type */}
-                <div className="p-3 bg-secondary-50 rounded-2xl">
-                  <p className="text-[10px] font-semibold text-secondary-400 uppercase tracking-wider mb-0.5">Passenger Type</p>
+                <div className="p-3 bg-white/10 rounded-2xl border border-white/20">
+                  <p className="text-[10px] font-semibold text-white/40 uppercase tracking-wider mb-0.5">Passenger Type</p>
                   <span className={`inline-block px-2 py-0.5 rounded-lg text-xs font-bold ${selectedType.color}`}>
                     {data.passengerType}
                   </span>
                 </div>
                 {/* Balance */}
-                <div className="p-3 bg-emerald-50 rounded-2xl border border-emerald-100">
-                  <p className="text-[10px] font-semibold text-emerald-600 uppercase tracking-wider mb-0.5">Initial Balance</p>
-                  <p className="font-bold text-emerald-700 text-lg">₱100.00</p>
+                <div className="p-3 bg-emerald-500/20 rounded-2xl border border-emerald-500/30">
+                  <p className="text-[10px] font-semibold text-emerald-400 uppercase tracking-wider mb-0.5">Initial Balance</p>
+                  <p className="font-bold text-emerald-300 text-lg">₱100.00</p>
                 </div>
                 {/* Payment Amount */}
-                <div className="p-3 bg-amber-50 rounded-2xl border border-amber-100">
-                  <p className="text-[10px] font-semibold text-amber-600 uppercase tracking-wider mb-0.5">Payment Required</p>
-                  <p className="font-bold text-amber-700 text-lg">₱110.00</p>
-                  <p className="text-[9px] text-amber-500 mt-0.5">₱100 balance + ₱10 card fee</p>
+                <div className="p-3 bg-amber-500/20 rounded-2xl border border-amber-500/30">
+                  <p className="text-[10px] font-semibold text-amber-400 uppercase tracking-wider mb-0.5">Payment Required</p>
+                  <p className="font-bold text-amber-300 text-lg">₱110.00</p>
+                  <p className="text-[9px] text-amber-400/70 mt-0.5">₱100 balance + ₱10 card fee</p>
                 </div>
               </div>
 
@@ -287,8 +287,8 @@ function RegisterCardModal({
                 </div>
 
                 {/* Live QR code */}
-                <div className="bg-white border border-secondary-200 rounded-xl p-2 flex flex-col items-center shadow-soft">
-                  <p className="text-[9px] text-secondary-400 mb-1.5 font-semibold uppercase tracking-wide">QR Preview</p>
+                <div className="bg-white/10 border border-white/20 rounded-xl p-2 flex flex-col items-center shadow-soft">
+                  <p className="text-[9px] text-white/40 mb-1.5 font-semibold uppercase tracking-wide">QR Preview</p>
                   <QRCodeSVG
                     value={previewCardId}
                     size={100}
@@ -296,7 +296,7 @@ function RegisterCardModal({
                     includeMargin={true}
                     className="rounded"
                   />
-                  <p className="text-[8px] text-secondary-400 mt-1.5 font-mono text-center break-all leading-tight">
+                  <p className="text-[8px] text-white/40 mt-1.5 font-mono text-center break-all leading-tight">
                     {previewCardId}
                   </p>
                 </div>
@@ -304,7 +304,7 @@ function RegisterCardModal({
             </div>
 
             {error && (
-              <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-600">
+              <div className="mb-3 p-3 bg-red-500/20 border border-red-500/30 rounded-xl text-xs text-red-400">
                 {error}
               </div>
             )}
@@ -312,14 +312,14 @@ function RegisterCardModal({
             <div className="flex justify-between">
               <button
                 onClick={() => setStep('type')}
-                className="px-4 py-2.5 text-sm text-secondary-600 hover:bg-secondary-100 rounded-2xl transition-colors"
+                className="px-4 py-2.5 text-sm text-white/60 hover:bg-white/10 rounded-2xl transition-colors border border-white/20"
               >
                 Back
               </button>
               <button
                 onClick={handleSubmit}
                 disabled={issueMutation.isPending}
-                className="flex items-center gap-2 px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl text-sm font-semibold transition-colors shadow-soft disabled:opacity-60"
+                className="flex items-center gap-2 px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl text-sm font-semibold transition-colors shadow-soft disabled:opacity-60 border border-emerald-400"
               >
                 {issueMutation.isPending ? (
                   <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
@@ -377,27 +377,27 @@ function EditCardModal({
 
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md border border-secondary-100 overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-secondary-100">
-          <h2 className="text-base font-bold text-secondary-900">Edit Card</h2>
-          <button onClick={onClose} className="p-2 rounded-xl hover:bg-secondary-100 text-secondary-400">
+      <div className="glass-card w-full max-w-md border border-white/20 overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-white/20">
+          <h2 className="text-base font-bold text-white">Edit Card</h2>
+          <button onClick={onClose} className="p-2 rounded-xl hover:bg-white/10 text-white/60 border border-white/20">
             <X className="w-4 h-4" />
           </button>
         </div>
         <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
           <div>
-            <label className="block text-sm font-semibold text-secondary-700 mb-1.5">
+            <label className="block text-sm font-semibold text-white/60 mb-1.5">
               Card ID
             </label>
             <input
               type="text"
               value={card.cardId}
               disabled
-              className="w-full px-4 py-3 border border-secondary-200 rounded-2xl bg-secondary-100 text-sm font-mono text-secondary-600"
+              className="w-full px-4 py-3 border border-white/20 rounded-2xl bg-white/10 text-sm font-mono text-white/60"
             />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-secondary-700 mb-1.5">
+            <label className="block text-sm font-semibold text-white/60 mb-1.5">
               Full Name
             </label>
             <input
@@ -405,11 +405,11 @@ function EditCardModal({
               required
               value={formData.ownerName}
               onChange={e => setFormData(d => ({ ...d, ownerName: e.target.value }))}
-              className="w-full px-4 py-3 border border-secondary-200 rounded-2xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-secondary-50/50 text-sm"
+              className="w-full px-4 py-3 border border-white/20 rounded-2xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white/10 text-sm text-white"
             />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-secondary-700 mb-1.5">
+            <label className="block text-sm font-semibold text-white/60 mb-1.5">
               Contact Number
             </label>
             <input
@@ -417,22 +417,22 @@ function EditCardModal({
               required
               value={formData.contactNumber}
               onChange={e => setFormData(d => ({ ...d, contactNumber: e.target.value }))}
-              className="w-full px-4 py-3 border border-secondary-200 rounded-2xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-secondary-50/50 text-sm"
+              className="w-full px-4 py-3 border border-white/20 rounded-2xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white/10 text-sm text-white"
             />
           </div>
           <div>
-            <label className="block text-sm font-semibold text-secondary-700 mb-1.5">
+            <label className="block text-sm font-semibold text-white/60 mb-1.5">
               Passenger Type
             </label>
             <input
               type="text"
               value={formData.passengerType}
               disabled
-              className="w-full px-4 py-3 border border-secondary-200 rounded-2xl bg-secondary-100 text-sm"
+              className="w-full px-4 py-3 border border-white/20 rounded-2xl bg-white/10 text-sm text-white/60"
             />
           </div>
           {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-600">
+            <div className="p-3 bg-red-500/20 border border-red-500/30 rounded-xl text-xs text-red-400">
               {error}
             </div>
           )}
@@ -440,14 +440,14 @@ function EditCardModal({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-2.5 border border-secondary-200 rounded-2xl text-sm font-medium text-secondary-600 hover:bg-secondary-50 transition-colors"
+              className="flex-1 py-2.5 border border-white/20 rounded-2xl text-sm font-medium text-white/60 hover:bg-white/10 transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={updateMutation.isPending}
-              className="flex-1 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-2xl text-sm font-semibold transition-colors shadow-soft disabled:opacity-60"
+              className="flex-1 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-2xl text-sm font-semibold transition-colors shadow-soft disabled:opacity-60 border border-primary-400"
             >
               {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
             </button>
@@ -471,30 +471,30 @@ function DeleteCardModal({
 }) {
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm border border-secondary-100 p-6">
+      <div className="glass-card w-full max-w-sm border border-white/20 p-6">
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
-            <Trash2 className="w-6 h-6 text-red-600" />
+          <div className="w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center">
+            <Trash2 className="w-6 h-6 text-red-400" />
           </div>
           <div>
-            <h2 className="text-base font-bold text-secondary-900">Delete Card</h2>
-            <p className="text-sm text-secondary-500">This action cannot be undone</p>
+            <h2 className="text-base font-bold text-white">Delete Card</h2>
+            <p className="text-sm text-white/60">This action cannot be undone</p>
           </div>
         </div>
-        <p className="text-sm text-secondary-600 mb-5">
-          Are you sure you want to delete card <span className="font-mono font-bold text-secondary-800">{card.cardId}</span> for{' '}
-          <span className="font-semibold text-secondary-900">{card.passengerName}</span>?
+        <p className="text-sm text-white/70 mb-5">
+          Are you sure you want to delete card <span className="font-mono font-bold text-white">{card.cardId}</span> for{' '}
+          <span className="font-semibold text-white">{card.passengerName}</span>?
         </p>
         <div className="flex gap-3">
           <button
             onClick={onClose}
-            className="flex-1 py-2.5 border border-secondary-200 rounded-2xl text-sm font-medium text-secondary-600 hover:bg-secondary-50 transition-colors"
+            className="flex-1 py-2.5 border border-white/20 rounded-2xl text-sm font-medium text-white/60 hover:bg-white/10 transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={onConfirm}
-            className="flex-1 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-2xl text-sm font-semibold transition-colors shadow-soft"
+            className="flex-1 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-2xl text-sm font-semibold transition-colors shadow-soft border border-red-400"
           >
             Delete
           </button>
@@ -517,23 +517,23 @@ function ReplaceCardModal({
 }) {
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-sm border border-secondary-100 p-6">
-        <h2 className="text-base font-bold text-secondary-900 mb-2">Replace Card</h2>
-        <p className="text-sm text-secondary-500 mb-5">
-          Card <span className="font-mono font-bold text-secondary-800">{card.cardId}</span> will be
+      <div className="glass-card w-full max-w-sm border border-white/20 p-6">
+        <h2 className="text-base font-bold text-white mb-2">Replace Card</h2>
+        <p className="text-sm text-white/60 mb-5">
+          Card <span className="font-mono font-bold text-white">{card.cardId}</span> will be
           marked as replaced and a new card will be issued for{' '}
-          <span className="font-semibold text-secondary-900">{card.passengerName}</span>.
+          <span className="font-semibold text-white">{card.passengerName}</span>.
         </p>
         <div className="flex gap-3">
           <button
             onClick={onClose}
-            className="flex-1 py-2.5 border border-secondary-200 rounded-2xl text-sm font-medium text-secondary-600 hover:bg-secondary-50 transition-colors"
+            className="flex-1 py-2.5 border border-white/20 rounded-2xl text-sm font-medium text-white/60 hover:bg-white/10 transition-colors"
           >
             Cancel
           </button>
           <button
             onClick={onConfirm}
-            className="flex-1 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-2xl text-sm font-semibold transition-colors shadow-soft"
+            className="flex-1 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-2xl text-sm font-semibold transition-colors shadow-soft border border-primary-400"
           >
             Confirm
           </button>
@@ -633,10 +633,10 @@ export default function QRCards() {
     <div>
       {/* Page header */}
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-xl font-bold text-secondary-900">QR Card Management</h1>
+        <h1 className="text-xl font-bold text-white">QR Card Management</h1>
         <button
           onClick={() => setShowRegister(true)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-2xl text-sm font-semibold transition-colors shadow-soft"
+          className="flex items-center gap-2 px-4 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-2xl text-sm font-semibold transition-colors shadow-soft border border-primary-400"
         >
           <Plus className="w-4 h-4" />
           Register New Card
@@ -648,7 +648,7 @@ export default function QRCards() {
         {/* Total Cards */}
         <button
           onClick={() => setSelectedFilter(selectedFilter === 'all' ? null : 'all')}
-          className={`bg-linear-to-br from-gray-600 to-gray-700 rounded-2xl p-4 text-white shadow-soft transition-all hover:scale-105 ${
+          className={`bg-linear-to-br from-gray-600 to-gray-700 rounded-2xl p-4 text-white shadow-soft transition-all hover:scale-105 border border-white/20 ${
             selectedFilter === 'all' ? 'ring-2 ring-white ring-offset-2 ring-offset-gray-700' : ''
           }`}
         >
@@ -662,7 +662,7 @@ export default function QRCards() {
         {/* Temporary Cards */}
         <button
           onClick={() => setSelectedFilter(selectedFilter === 'temporary' ? null : 'temporary')}
-          className={`bg-linear-to-br from-orange-500 to-orange-600 rounded-2xl p-4 text-white shadow-soft transition-all hover:scale-105 ${
+          className={`bg-linear-to-br from-orange-500 to-orange-600 rounded-2xl p-4 text-white shadow-soft transition-all hover:scale-105 border border-white/20 ${
             selectedFilter === 'temporary' ? 'ring-2 ring-white ring-offset-2 ring-offset-orange-600' : ''
           }`}
         >
@@ -676,7 +676,7 @@ export default function QRCards() {
         {/* Regular Cards */}
         <button
           onClick={() => setSelectedFilter(selectedFilter === 'Regular' ? null : 'Regular')}
-          className={`bg-linear-to-br from-blue-500 to-blue-600 rounded-2xl p-4 text-white shadow-soft transition-all hover:scale-105 ${
+          className={`bg-linear-to-br from-blue-500 to-blue-600 rounded-2xl p-4 text-white shadow-soft transition-all hover:scale-105 border border-white/20 ${
             selectedFilter === 'Regular' ? 'ring-2 ring-white ring-offset-2 ring-offset-blue-600' : ''
           }`}
         >
@@ -690,7 +690,7 @@ export default function QRCards() {
         {/* Student Cards */}
         <button
           onClick={() => setSelectedFilter(selectedFilter === 'Student' ? null : 'Student')}
-          className={`bg-linear-to-br from-green-500 to-green-600 rounded-2xl p-4 text-white shadow-soft transition-all hover:scale-105 ${
+          className={`bg-linear-to-br from-green-500 to-green-600 rounded-2xl p-4 text-white shadow-soft transition-all hover:scale-105 border border-white/20 ${
             selectedFilter === 'Student' ? 'ring-2 ring-white ring-offset-2 ring-offset-green-600' : ''
           }`}
         >
@@ -704,7 +704,7 @@ export default function QRCards() {
         {/* PWD Cards */}
         <button
           onClick={() => setSelectedFilter(selectedFilter === 'PWD' ? null : 'PWD')}
-          className={`bg-linear-to-br from-purple-500 to-purple-600 rounded-2xl p-4 text-white shadow-soft transition-all hover:scale-105 ${
+          className={`bg-linear-to-br from-purple-500 to-purple-600 rounded-2xl p-4 text-white shadow-soft transition-all hover:scale-105 border border-white/20 ${
             selectedFilter === 'PWD' ? 'ring-2 ring-white ring-offset-2 ring-offset-purple-600' : ''
           }`}
         >
@@ -718,7 +718,7 @@ export default function QRCards() {
         {/* Senior Citizen Cards */}
         <button
           onClick={() => setSelectedFilter(selectedFilter === 'Senior Citizen' ? null : 'Senior Citizen')}
-          className={`bg-linear-to-br from-amber-500 to-amber-600 rounded-2xl p-4 text-white shadow-soft transition-all hover:scale-105 ${
+          className={`bg-linear-to-br from-amber-500 to-amber-600 rounded-2xl p-4 text-white shadow-soft transition-all hover:scale-105 border border-white/20 ${
             selectedFilter === 'Senior Citizen' ? 'ring-2 ring-white ring-offset-2 ring-offset-amber-600' : ''
           }`}
         >
@@ -741,7 +741,7 @@ export default function QRCards() {
 
         if (displayCards.length === 0) {
           return (
-            <div className="flex flex-col items-center justify-center h-64 text-secondary-400">
+            <div className="flex flex-col items-center justify-center h-64 text-white/60">
               <CreditCard className="w-12 h-12 mb-3 opacity-40" />
               <p className="font-medium">No cards found</p>
               <p className="text-sm mt-1">Click "Register New Card" to get started</p>
@@ -750,72 +750,72 @@ export default function QRCards() {
         }
 
         return (
-          <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-soft border border-secondary-100 overflow-hidden">
+          <div className="glass-card overflow-hidden">
             <table className="w-full">
-              <thead className="bg-secondary-50 border-b border-secondary-100">
+              <thead className="bg-white/10 border-b border-white/20">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-secondary-600 uppercase tracking-wider">Card ID</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-secondary-600 uppercase tracking-wider">Passenger Name</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-secondary-600 uppercase tracking-wider">Type</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-secondary-600 uppercase tracking-wider">Balance</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-secondary-600 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-secondary-600 uppercase tracking-wider">Issued Date</th>
-                  <th className="px-6 py-3 text-right text-xs font-semibold text-secondary-600 uppercase tracking-wider">Actions</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Card ID</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Passenger Name</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Type</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Balance</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Issued Date</th>
+                  <th className="px-6 py-3 text-right text-xs font-semibold text-white/60 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-secondary-100">
+              <tbody className="divide-y divide-white/10">
                 {displayCards.map((card) => (
-                  <tr key={card.id} className="hover:bg-secondary-50 transition-colors">
+                  <tr key={card.id} className="hover:bg-white/10 transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
-                        <span className="font-mono text-sm font-medium text-secondary-900">{card.cardId}</span>
+                        <span className="font-mono text-sm font-medium text-white">{card.cardId}</span>
                         {card.isTemporary && (
-                          <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-orange-100 text-orange-600">TEMP</span>
+                          <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-orange-500/20 text-orange-400">TEMP</span>
                         )}
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <p className="text-sm font-medium text-secondary-900">{card.passengerName}</p>
-                      <p className="text-xs text-secondary-500">{card.contactNumber}</p>
+                      <p className="text-sm font-medium text-white">{card.passengerName}</p>
+                      <p className="text-xs text-white/60">{card.contactNumber}</p>
                     </td>
                     <td className="px-6 py-4">
                       <span className={`inline-block px-2 py-1 rounded-lg text-xs font-medium ${
-                        card.passengerType === 'Regular' ? 'bg-blue-100 text-blue-700' :
-                        card.passengerType === 'Student' ? 'bg-green-100 text-green-700' :
-                        card.passengerType === 'Senior Citizen' ? 'bg-orange-100 text-orange-700' :
-                        'bg-purple-100 text-purple-700'
+                        card.passengerType === 'Regular' ? 'bg-blue-500/20 text-blue-400' :
+                        card.passengerType === 'Student' ? 'bg-green-500/20 text-green-400' :
+                        card.passengerType === 'Senior Citizen' ? 'bg-orange-500/20 text-orange-400' :
+                        'bg-purple-500/20 text-purple-400'
                       }`}>
                         {card.passengerType}
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <p className="text-sm font-medium text-emerald-600">₱{(card.balance ?? 0).toFixed(2)}</p>
+                      <p className="text-sm font-medium text-emerald-400">₱{(card.balance ?? 0).toFixed(2)}</p>
                     </td>
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        card.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
+                        card.status === 'active' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'
                       }`}>
                         <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
-                          card.status === 'active' ? 'bg-emerald-500' : 'bg-red-500'
+                          card.status === 'active' ? 'bg-emerald-400' : 'bg-red-400'
                         }`} />
                         {card.status}
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      <p className="text-sm text-secondary-600">{new Date(card.issuedAt).toLocaleDateString()}</p>
+                      <p className="text-sm text-white/60">{new Date(card.issuedAt).toLocaleDateString()}</p>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-2">
                         <button
                           onClick={() => setViewCard(card)}
-                          className="p-2 text-secondary-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+                          className="p-2 text-white/60 hover:text-primary-400 hover:bg-primary-500/20 rounded-lg transition-colors"
                           title="View Card"
                         >
                           <Eye className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => setEditCard(card)}
-                          className="p-2 text-secondary-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                          className="p-2 text-white/60 hover:text-blue-400 hover:bg-blue-500/20 rounded-lg transition-colors"
                           title="Edit Card"
                         >
                           <Edit className="w-4 h-4" />
@@ -823,7 +823,7 @@ export default function QRCards() {
                         {card.status === 'active' ? (
                           <button
                             onClick={() => disableMutation.mutate(card.cardId)}
-                            className="p-2 text-secondary-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            className="p-2 text-white/60 hover:text-red-400 hover:bg-red-500/20 rounded-lg transition-colors"
                             title="Disable Card"
                           >
                             <PowerOff className="w-4 h-4" />
@@ -831,7 +831,7 @@ export default function QRCards() {
                         ) : (
                           <button
                             onClick={() => activateMutation.mutate(card.cardId)}
-                            className="p-2 text-secondary-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                            className="p-2 text-white/60 hover:text-emerald-400 hover:bg-emerald-500/20 rounded-lg transition-colors"
                             title="Activate Card"
                           >
                             <Power className="w-4 h-4" />
@@ -839,14 +839,14 @@ export default function QRCards() {
                         )}
                         <button
                           onClick={() => setReplaceTarget(card)}
-                          className="p-2 text-secondary-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
+                          className="p-2 text-white/60 hover:text-orange-400 hover:bg-orange-500/20 rounded-lg transition-colors"
                           title="Replace Card"
                         >
                           <RefreshCw className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => setDeleteCard(card)}
-                          className="p-2 text-secondary-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          className="p-2 text-white/60 hover:text-red-400 hover:bg-red-500/20 rounded-lg transition-colors"
                           title="Delete Card"
                         >
                           <Trash2 className="w-4 h-4" />
