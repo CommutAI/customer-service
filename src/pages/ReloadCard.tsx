@@ -119,18 +119,18 @@ export default function ReloadCard() {
 
   return (
     <div>
-      <h1 className="text-xl font-bold text-secondary-900 mb-4">Reload Card</h1>
+      <h1 className="text-xl font-bold text-white mb-4">Reload Card</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-soft p-6 border border-secondary-100">
-          <h2 className="text-xl font-semibold text-secondary-900 mb-6 flex items-center">
+        <div className="glass-card p-6">
+          <h2 className="text-xl font-semibold text-white mb-6 flex items-center">
             <DollarSign className="w-6 h-6 mr-2" />
             Process Reload
           </h2>
           <form onSubmit={handleReload} className="space-y-5">
             {/* Card ID input */}
             <div className="relative">
-              <label className="block text-sm font-semibold text-secondary-700 mb-2">Card ID</label>
+              <label className="block text-sm font-semibold text-white/60 mb-2">Card ID</label>
               <input
                 type="text"
                 placeholder="Enter card ID"
@@ -141,16 +141,16 @@ export default function ReloadCard() {
                 }}
                 onFocus={() => setShowSuggestions(true)}
                 onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                className={`w-full px-4 py-3 border rounded-2xl focus:ring-2 focus:border-transparent bg-secondary-50/50 font-mono ${
-                  cardError ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-secondary-200 focus:ring-primary-500 focus:border-transparent'
+                className={`w-full px-4 py-3 border rounded-2xl focus:ring-2 focus:border-transparent bg-white/10 font-mono text-white ${
+                  cardError ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-white/20 focus:ring-primary-500 focus:border-transparent'
                 }`}
                 required
               />
               {cardError && (
-                <p className="mt-1 text-xs text-red-600 font-medium">{cardError}</p>
+                <p className="mt-1 text-xs text-red-400 font-medium">{cardError}</p>
               )}
               {showSuggestions && cardSuggestions.length > 0 && (
-                <div className="absolute z-10 w-full mt-1 bg-white border border-secondary-200 rounded-2xl shadow-lg max-h-48 overflow-y-auto">
+                <div className="absolute z-10 w-full mt-1 bg-white/10 border border-white/20 rounded-2xl shadow-lg max-h-48 overflow-y-auto">
                   {cardSuggestions.map((card) => (
                     <button
                       key={card.id}
@@ -159,11 +159,11 @@ export default function ReloadCard() {
                         setCardId(card.cardId);
                         setShowSuggestions(false);
                       }}
-                      className="w-full px-4 py-3 text-left hover:bg-secondary-50 transition-colors border-b border-secondary-100 last:border-b-0"
+                      className="w-full px-4 py-3 text-left hover:bg-white/20 transition-colors border-b border-white/10 last:border-b-0"
                     >
                       <div className="flex justify-between items-center">
-                        <span className="font-mono text-sm font-medium text-secondary-900">{card.cardId}</span>
-                        <span className="text-xs text-secondary-500">{card.passengerName}</span>
+                        <span className="font-mono text-sm font-medium text-white">{card.cardId}</span>
+                        <span className="text-xs text-white/60">{card.passengerName}</span>
                       </div>
                     </button>
                   ))}
@@ -175,17 +175,17 @@ export default function ReloadCard() {
             {cardData && (
               <div className={`p-4 rounded-2xl border ${
                 hasDiscount 
-                  ? 'bg-purple-50 border-purple-200' 
-                  : 'bg-gray-50 border-gray-200'
+                  ? 'bg-purple-500/20 border-purple-500/30' 
+                  : 'bg-white/10 border-white/20'
               }`}>
                 <div className="flex justify-between items-center">
                   <div>
-                    <p className="text-sm font-semibold text-secondary-600">Passenger Type</p>
-                    <p className="text-lg font-bold text-secondary-900">{currentPassengerType}</p>
+                    <p className="text-sm font-semibold text-white/60">Passenger Type</p>
+                    <p className="text-lg font-bold text-white">{currentPassengerType}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-semibold text-secondary-600">Current Balance</p>
-                    <p className="text-lg font-bold text-emerald-600">₱{(cardData.balance ?? 0).toFixed(2)}</p>
+                    <p className="text-sm font-semibold text-white/60">Current Balance</p>
+                    <p className="text-lg font-bold text-emerald-400">₱{(cardData.balance ?? 0).toFixed(2)}</p>
                   </div>
                 </div>
               </div>
@@ -193,17 +193,17 @@ export default function ReloadCard() {
 
             {/* Amount selection */}
             <div>
-              <label className="block text-sm font-semibold text-secondary-700 mb-2">Reload Amount</label>
+              <label className="block text-sm font-semibold text-white/60 mb-2">Reload Amount</label>
               <div className="grid grid-cols-5 gap-2 mb-3">
                 {RELOAD_AMOUNTS.map((amt) => (
                   <button
                     key={amt}
                     type="button"
                     onClick={() => handleAmountChange(amt)}
-                    className={`px-3 py-3 rounded-xl font-medium transition-all ${
+                    className={`px-3 py-3 rounded-xl font-medium transition-all border ${
                       amount === amt && !customAmount
-                        ? 'bg-primary-500 text-white shadow-soft'
-                        : 'bg-secondary-100 text-secondary-700 hover:bg-secondary-200'
+                        ? 'bg-primary-500 text-white shadow-soft border-2 border-primary-400'
+                        : 'bg-white/10 text-white/70 hover:bg-white/20 border border-white/20'
                     }`}
                   >
                     ₱{amt}
@@ -218,23 +218,23 @@ export default function ReloadCard() {
                   onChange={handleCustomAmountChange}
                   min="1"
                   step="1"
-                  className="w-full px-4 py-3 border border-secondary-200 rounded-2xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-secondary-50/50"
+                  className="w-full px-4 py-3 border border-white/20 rounded-2xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white/10 text-white"
                 />
               </div>
             </div>
 
             {/* Amount summary */}
-            <div className="p-5 bg-green-50 border border-green-200 rounded-2xl">
+            <div className="p-5 bg-green-500/20 border border-green-500/30 rounded-2xl">
               <div className="text-center">
-                <span className="text-xs font-semibold text-secondary-600 block">Reload Amount</span>
-                <span className="text-3xl font-bold text-green-600">₱{amount.toFixed(2)}</span>
+                <span className="text-xs font-semibold text-white/60 block">Reload Amount</span>
+                <span className="text-3xl font-bold text-green-400">₱{amount.toFixed(2)}</span>
               </div>
             </div>
 
             {/* Cash instruction */}
-            <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex flex-col items-center justify-center gap-2">
-              <Banknote className="w-5 h-5 text-amber-600" />
-              <p className="text-sm text-amber-700 text-center">
+            <div className="p-4 bg-amber-500/20 border border-amber-500/30 rounded-2xl flex flex-col items-center justify-center gap-2">
+              <Banknote className="w-5 h-5 text-amber-400" />
+              <p className="text-sm text-amber-200 text-center">
                 Collect ₱{amount.toFixed(2)} cash from the passenger before confirming the reload.
               </p>
             </div>
@@ -242,15 +242,15 @@ export default function ReloadCard() {
             <button
               type="submit"
               disabled={reloadMutation.isPending || !cardId}
-              className="w-full px-6 py-3 bg-green-500 hover:bg-green-600 text-white rounded-2xl transition-all duration-200 font-medium shadow-soft disabled:bg-secondary-300"
+              className="w-full px-6 py-3 bg-green-500 hover:bg-green-600 text-white rounded-2xl transition-all duration-200 font-medium shadow-soft disabled:bg-secondary-300 border border-green-400"
             >
               {reloadMutation.isPending ? 'Processing...' : 'Process Reload'}
             </button>
           </form>
         </div>
 
-        <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-soft p-6 border border-secondary-100">
-          <h2 className="text-xl font-semibold text-secondary-900 mb-6 flex items-center">
+        <div className="glass-card p-6">
+          <h2 className="text-xl font-semibold text-white mb-6 flex items-center">
             <History className="w-6 h-6 mr-2" />
             Recent Reloads
           </h2>
@@ -259,15 +259,15 @@ export default function ReloadCard() {
               ?.filter(t => t.type === 'reload')
               .slice(0, 10)
               .map((transaction) => (
-                <div key={transaction.id} className="p-4 bg-gradient-to-r from-secondary-50 to-white rounded-2xl border border-secondary-100">
+                <div key={transaction.id} className="p-4 bg-white/10 rounded-2xl border border-white/20">
                   <div className="flex justify-between items-start">
                     <div>
-                      <p className="text-sm font-medium text-secondary-900">{transaction.passengerName}</p>
-                      <p className="text-xs text-secondary-500">{formatRelativeTime(transaction.timestamp)}</p>
+                      <p className="text-sm font-medium text-white">{transaction.passengerName}</p>
+                      <p className="text-xs text-white/60">{formatRelativeTime(transaction.timestamp)}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-bold text-emerald-600">+₱{transaction.amount.toFixed(2)}</p>
-                      <p className="text-xs text-secondary-500">{transaction.method}</p>
+                      <p className="text-sm font-bold text-emerald-400">+₱{transaction.amount.toFixed(2)}</p>
+                      <p className="text-xs text-white/60">{transaction.method}</p>
                     </div>
                   </div>
                 </div>
