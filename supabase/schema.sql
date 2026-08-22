@@ -118,6 +118,24 @@ BEGIN
   ) THEN
     ALTER TABLE qr_cards ADD COLUMN purchase_price NUMERIC(10,2) NOT NULL DEFAULT 100.00;
   END IF;
+  
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'qr_cards' AND column_name = 'expires_at'
+  ) THEN
+    ALTER TABLE qr_cards ADD COLUMN expires_at TIMESTAMPTZ;
+  END IF;
+END $$;
+
+-- Set expiration dates for existing cards (1 year from creation date)
+DO $$
+BEGIN
+  UPDATE qr_cards
+  SET expires_at = created_at + INTERVAL '1 year'
+  WHERE expires_at IS NULL;
+EXCEPTION WHEN others THEN
+  -- Ignore errors if column doesn't exist yet
+  NULL;
 END $$;
 
 -- Update existing card_type values if enum was changed from old values

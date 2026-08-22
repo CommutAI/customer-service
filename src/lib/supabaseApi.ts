@@ -69,6 +69,7 @@ function rowToQRCard(row: any): QRCard {
     contactNumber: row.contact_number ?? '',
     status: statusMap[row.status] ?? 'disabled',
     issuedAt: row.created_at,
+    expiresAt: row.expires_at,
     qrCode: row.card_uid,
     isTemporary,
     balance: row.balance ?? 0,
@@ -248,6 +249,10 @@ export const supabaseApiCalls = {
     const uid = `${indicator}-${formattedNum}`;
     const { data: { session } } = await supabase.auth.getSession();
 
+    // Calculate expiration date (1 year from now)
+    const expiresAt = new Date();
+    expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+
     const { data, error } = await supabase
       .from('qr_cards')
       .insert({
@@ -262,6 +267,7 @@ export const supabaseApiCalls = {
         // Map passenger type to database card_type enum
         card_type: registration.passengerType === 'Senior Citizen' ? 'senior_citizen' : registration.passengerType.toLowerCase(),
         purchase_price: 110, // ₱100 initial balance + ₱10 card fee
+        expires_at: expiresAt.toISOString(),
       })
       .select()
       .single();
@@ -318,6 +324,11 @@ export const supabaseApiCalls = {
     if (oldErr) throw new Error(oldErr.message);
 
     const newUid = `CARD${Date.now().toString(36).toUpperCase()}`;
+    
+    // Calculate new expiration date (1 year from now)
+    const expiresAt = new Date();
+    expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+
     const { data, error } = await supabase
       .from('qr_cards')
       .insert({
@@ -329,6 +340,9 @@ export const supabaseApiCalls = {
         passenger_id: old.passenger_id,
         issued_by: old.issued_by,
         allowed_routes: old.allowed_routes ?? [`type:Regular`],
+        card_type: old.card_type,
+        purchase_price: old.purchase_price,
+        expires_at: expiresAt.toISOString(),
       })
       .select()
       .single();
@@ -451,6 +465,10 @@ export const supabaseApiCalls = {
     const uid = `${indicator}-${formattedNum}`;
     const { data: { session } } = await supabase.auth.getSession();
 
+    // Calculate expiration date (1 year from now)
+    const expiresAt = new Date();
+    expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+
     const { data, error } = await supabase
       .from('qr_cards')
       .insert({
@@ -463,6 +481,7 @@ export const supabaseApiCalls = {
         issued_by: session?.user?.id ?? null,
         // Map passenger type to database card_type enum
         card_type: passengerType === 'Senior Citizen' ? 'senior_citizen' : passengerType.toLowerCase(),
+        expires_at: expiresAt.toISOString(),
       })
       .select()
       .single();

@@ -162,6 +162,12 @@ export default function QRCardDisplay({ card, onClose }: Props) {
                 <p className="text-white/60 uppercase tracking-wide text-[10px]">Status</p>
                 <p className="font-semibold text-emerald-400 mt-0.5 capitalize">{card.status}</p>
               </div>
+              {card.expiresAt && (
+                <div className="col-span-2">
+                  <p className="text-white/60 uppercase tracking-wide text-[10px]">Expiration Date</p>
+                  <p className="font-semibold text-white mt-0.5">{new Date(card.expiresAt).toLocaleDateString()}</p>
+                </div>
+              )}
             </div>
 
             <div className="px-5 pb-5">

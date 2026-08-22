@@ -68,10 +68,13 @@ export interface Database {
           contact_number: string | null;
           balance: number;
           status: QRCardStatus;
+          card_type: 'regular' | 'student' | 'senior_citizen' | 'pwd';
+          purchase_price: number;
           allowed_routes: string[];
           passenger_id: string | null;
           issued_by: string | null;
           created_at: string;
+          expires_at: string | null;
         };
         Insert: Omit<Database['public']['Tables']['qr_cards']['Row'], 'id' | 'created_at'> & {
           id?: string;
