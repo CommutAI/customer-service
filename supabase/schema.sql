@@ -468,6 +468,127 @@ CREATE TABLE IF NOT EXISTS notifications (
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- ── 18.1. Staff Notifications ───────────────────────────────────────────────────
+-- Enhanced notifications specifically for staff users (admin and operators)
+CREATE TABLE IF NOT EXISTS staff_notifications (
+  id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  staff_id        UUID        NOT NULL REFERENCES staff_users (id) ON DELETE CASCADE,
+  title           TEXT        NOT NULL,
+  message         TEXT        NOT NULL,
+  type            TEXT        NOT NULL CHECK (type IN ('transaction', 'card_issuance', 'card_replacement', 'card_reload', 'alert', 'info')),
+  read            BOOLEAN     NOT NULL DEFAULT FALSE,
+  related_id      UUID,       -- ID of related record (transaction, card, etc.)
+  related_table   TEXT,       -- Table name of related record
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Index for efficient queries
+CREATE INDEX IF NOT EXISTS idx_staff_notifications_staff_id ON staff_notifications(staff_id);
+CREATE INDEX IF NOT EXISTS idx_staff_notifications_read ON staff_notifications(read);
+CREATE INDEX IF NOT EXISTS idx_staff_notifications_created_at ON staff_notifications(created_at DESC);
+
+-- ── 18.2. Notification Triggers ─────────────────────────────────────────────────
+-- Function to create notification for admin and conductor staff and audit logs
+CREATE OR REPLACE FUNCTION notify_staff_on_event()
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER AS $$
+DECLARE
+  admin_staff RECORD;
+  conductor_staff RECORD;
+  notification_title TEXT;
+  notification_message TEXT;
+  notification_type TEXT;
+  audit_action TEXT;
+  audit_module TEXT;
+  audit_details TEXT;
+  current_username TEXT;
+BEGIN
+  -- Get current username for audit log
+  SELECT full_name INTO current_username FROM staff_users WHERE id = auth.uid();
+
+  -- Determine notification details based on table and operation
+  IF TG_TABLE_NAME = 'transactions' THEN
+    notification_title := 'New Transaction';
+    notification_message := format('Transaction of ₱%s recorded via %s', NEW.amount, NEW.channel);
+    notification_type := 'transaction';
+    audit_action := 'CREATE';
+    audit_module := 'Transactions';
+    audit_details := format('Transaction ID: %s, Amount: ₱%s, Channel: %s, Type: %s', NEW.id, NEW.amount, NEW.channel, NEW.type);
+  ELSIF TG_TABLE_NAME = 'qr_cards' AND TG_OP = 'INSERT' THEN
+    notification_title := 'New Card Issued';
+    notification_message := format('Card %s issued for %s (%s)', NEW.card_uid, NEW.owner_name, NEW.card_type);
+    notification_type := 'card_issuance';
+    audit_action := 'CREATE';
+    audit_module := 'Card Management';
+    audit_details := format('Card UID: %s, Owner: %s, Type: %s, Balance: ₱%s', NEW.card_uid, NEW.owner_name, NEW.card_type, NEW.balance);
+  ELSIF TG_TABLE_NAME = 'qr_cards' AND TG_OP = 'UPDATE' AND OLD.status != NEW.status AND NEW.status = 'replaced' THEN
+    notification_title := 'Card Replaced';
+    notification_message := format('Card %s has been replaced', NEW.card_uid);
+    notification_type := 'card_replacement';
+    audit_action := 'UPDATE';
+    audit_module := 'Card Management';
+    audit_details := format('Card UID: %s replaced, Previous status: %s, New status: %s', NEW.card_uid, OLD.status, NEW.status);
+  ELSIF TG_TABLE_NAME = 'qr_cards' AND TG_OP = 'UPDATE' AND OLD.balance != NEW.balance THEN
+    notification_title := 'Card Reloaded';
+    notification_message := format('Card %s reloaded. New balance: ₱%s', NEW.card_uid, NEW.balance);
+    notification_type := 'card_reload';
+    audit_action := 'UPDATE';
+    audit_module := 'Card Management';
+    audit_details := format('Card UID: %s reloaded, Previous balance: ₱%s, New balance: ₱%s', NEW.card_uid, OLD.balance, NEW.balance);
+  ELSE
+    RETURN NEW;
+  END IF;
+
+  -- Insert into audit logs
+  INSERT INTO audit_logs (username, action, module, details)
+  VALUES (
+    COALESCE(current_username, 'System'),
+    audit_action,
+    audit_module,
+    audit_details
+  );
+
+  -- Get all admin staff
+  FOR admin_staff IN SELECT id FROM staff_users WHERE role = 'admin' AND is_active = true LOOP
+    INSERT INTO staff_notifications (staff_id, title, message, type, related_id, related_table)
+    VALUES (
+      admin_staff.id,
+      notification_title,
+      notification_message,
+      notification_type,
+      COALESCE(NEW.id, OLD.id),
+      TG_TABLE_NAME
+    );
+  END LOOP;
+
+  -- Get all conductor staff (operators)
+  FOR conductor_staff IN SELECT id FROM staff_users WHERE role = 'conductor' AND is_active = true LOOP
+    INSERT INTO staff_notifications (staff_id, title, message, type, related_id, related_table)
+    VALUES (
+      conductor_staff.id,
+      notification_title,
+      notification_message,
+      notification_type,
+      COALESCE(NEW.id, OLD.id),
+      TG_TABLE_NAME
+    );
+  END LOOP;
+
+  RETURN NEW;
+END;
+$$;
+
+-- Create trigger for transactions
+DROP TRIGGER IF EXISTS notify_transaction ON transactions;
+CREATE TRIGGER notify_transaction
+  AFTER INSERT ON transactions
+  FOR EACH ROW EXECUTE FUNCTION notify_staff_on_event();
+
+-- Create trigger for qr_cards (issuance and replacement)
+DROP TRIGGER IF EXISTS notify_card_change ON qr_cards;
+CREATE TRIGGER notify_card_change
+  AFTER INSERT OR UPDATE ON qr_cards
+  FOR EACH ROW EXECUTE FUNCTION notify_staff_on_event();
+
 -- ── 19. Fare Matrix ──────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS fare_matrix (
   id                      UUID        PRIMARY KEY DEFAULT gen_random_uuid(),

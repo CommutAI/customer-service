@@ -56,6 +56,17 @@ export interface Notification {
   passengerId?: string;
 }
 
+export interface StaffNotification {
+  id: string;
+  title: string;
+  message: string;
+  type: 'transaction' | 'card_issuance' | 'card_replacement' | 'card_reload' | 'alert' | 'info';
+  read: boolean;
+  relatedId?: string;
+  relatedTable?: string;
+  createdAt: string;
+}
+
 export interface DashboardStats {
   todayRegistrations: number;
   todayTopUps: number;
