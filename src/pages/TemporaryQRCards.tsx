@@ -5,10 +5,10 @@ import { QrCode, Plus, Wallet, Clock, XCircle, Trash2, DollarSign, Printer } fro
 import { useState, useRef, useEffect } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
 
-import tempRegularCard from '../assets/temp-regular.png';
-import tempStudentCard from '../assets/temp-student.png';
+import tempRegularCard from '../assets/TEMP-REG.png';
+import tempStudentCard from '../assets/TEMP-STUD.png';
 import tempSeniorCard from '../assets/temp-senior.png';
-import tempPwdCard from '../assets/temp-pwd.png';
+import tempPwdCard from '../assets/TEMP-PWD.png';
 import tempBackCard from '../assets/temp-back.png';
 
 export default function TemporaryQRCards() {
@@ -61,6 +61,7 @@ export default function TemporaryQRCards() {
 
   const activeCards = cards?.filter(c => c.status === 'active') ?? [];
   const inactiveCards = cards?.filter(c => c.status !== 'active') ?? [];
+  const totalBalance = activeCards.length * 100; // Each card has ₱100 balance
 
   return (
     <div>
@@ -88,6 +89,28 @@ export default function TemporaryQRCards() {
         </div>
       ) : (
         <div className="space-y-6">
+          {/* Summary Card */}
+          <div className="glass-card p-6 border border-white/20 rounded-2xl">
+            <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+              <Wallet className="w-5 h-5 text-green-400" />
+              Summary
+            </h3>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="p-4 bg-green-500/20 border border-green-500/30 rounded-xl">
+                <p className="text-xs text-white/60 mb-1">Active Cards</p>
+                <p className="text-2xl font-bold text-green-400">{activeCards.length}</p>
+              </div>
+              <div className="p-4 bg-blue-500/20 border border-blue-500/30 rounded-xl">
+                <p className="text-xs text-white/60 mb-1">Total Balance</p>
+                <p className="text-2xl font-bold text-blue-400">₱{totalBalance.toFixed(2)}</p>
+              </div>
+              <div className="p-4 bg-white/10 border border-white/20 rounded-xl">
+                <p className="text-xs text-white/60 mb-1">Total Cards</p>
+                <p className="text-2xl font-bold text-white">{cards?.length || 0}</p>
+              </div>
+            </div>
+          </div>
+
           {/* Active Cards */}
           {activeCards.length > 0 && (
             <div>
@@ -95,9 +118,9 @@ export default function TemporaryQRCards() {
                 <Clock className="w-4 h-4" />
                 Active Cards ({activeCards.length})
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="space-y-3">
                 {activeCards.map((card) => (
-                  <CardCard
+                  <CardListItem
                     key={card.id}
                     card={card}
                     onView={() => setSelectedCard(card)}
@@ -117,9 +140,9 @@ export default function TemporaryQRCards() {
                 <XCircle className="w-4 h-4" />
                 Inactive Cards ({inactiveCards.length})
               </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="space-y-3">
                 {inactiveCards.map((card) => (
-                  <CardCard
+                  <CardListItem
                     key={card.id}
                     card={card}
                     onView={() => setSelectedCard(card)}
@@ -170,7 +193,7 @@ export default function TemporaryQRCards() {
   );
 }
 
-function CardCard({
+function CardListItem({
   card,
   onView,
   onDeactivate,
@@ -186,59 +209,58 @@ function CardCard({
   const isActive = card.status === 'active';
 
   return (
-    <div className={`glass-card p-5 border ${
+    <div className={`glass-card p-4 border ${
       isActive ? 'border-green-500/30' : 'border-white/20'
     }`}>
-      <div className="flex items-start justify-between mb-4">
-        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-green-500/20">
-          <QrCode className="w-5 h-5 text-green-400" />
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4 flex-1">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-green-500/20">
+            <QrCode className="w-5 h-5 text-green-400" />
+          </div>
+          <div className="flex-1">
+            <p className="font-mono font-bold text-white text-sm">{card.cardId}</p>
+            <p className="text-xs text-white/60">
+              {card.passengerType} · Issued {new Date(card.issuedAt).toLocaleDateString()}
+            </p>
+          </div>
         </div>
-        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-          isActive
-            ? 'bg-green-500/20 text-green-400'
-            : 'bg-white/10 text-white/60'
-        }`}>
-          {isActive ? 'Active' : 'Inactive'}
-        </span>
-      </div>
-      <div className="mb-4">
-        <p className="text-xs text-white/40 mb-1">Card ID</p>
-        <p className="font-mono font-bold text-white text-sm">{card.cardId}</p>
-      </div>
-      <div className="mb-4">
-        <p className="text-xs text-white/40 mb-1">Balance</p>
-        <p className="font-bold text-2xl text-green-400">₱100.00</p>
-      </div>
-      <div className="mb-4">
-        <p className="text-xs text-white/40 mb-1">Issued</p>
-        <p className="text-sm text-white/70">
-          {new Date(card.issuedAt).toLocaleDateString()}
-        </p>
-      </div>
-      <div className="flex gap-2">
-        <button
-          onClick={onView}
-          className="flex-1 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-semibold transition-colors border border-white/20"
-        >
-          View
-        </button>
-        {isActive && (
-          <>
+        <div className="flex items-center gap-4">
+          <div className="text-right">
+            <p className="font-bold text-lg text-green-400">₱100.00</p>
+            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+              isActive
+                ? 'bg-green-500/20 text-green-400'
+                : 'bg-white/10 text-white/60'
+            }`}>
+              {isActive ? 'Active' : 'Inactive'}
+            </span>
+          </div>
+          <div className="flex gap-2">
             <button
-              onClick={onTopUp}
-              className="flex-1 py-2 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-xl text-xs font-semibold transition-colors border border-green-500/30"
+              onClick={onView}
+              className="px-3 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-semibold transition-colors border border-white/20"
             >
-              Top Up
+              View
             </button>
-            <button
-              onClick={onDeactivate}
-              disabled={isDeactivating}
-              className="py-2 px-3 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-xl text-xs font-semibold transition-colors disabled:opacity-50 border border-red-500/30"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-          </>
-        )}
+            {isActive && (
+              <>
+                <button
+                  onClick={onTopUp}
+                  className="px-3 py-2 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-xl text-xs font-semibold transition-colors border border-green-500/30"
+                >
+                  Top Up
+                </button>
+                <button
+                  onClick={onDeactivate}
+                  disabled={isDeactivating}
+                  className="px-3 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-xl text-xs font-semibold transition-colors disabled:opacity-50 border border-red-500/30"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -285,7 +307,7 @@ function GenerateModal({
 
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="glass-card w-full max-w-2xl shadow-soft-xl border border-white/20 overflow-hidden">
+      <div className="glass-card w-full max-w-2xl shadow-soft-xl border border-white/20 overflow-hidden p-6">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-white flex items-center">
             <Plus className="w-6 h-6 mr-2 text-green-400" />
@@ -298,10 +320,10 @@ function GenerateModal({
             ✕
           </button>
         </div>
-        
-        <div className="flex gap-8 mb-6">
+
+        <div className="flex gap-12 mb-6">
           {/* Left side - Form */}
-          <div className="flex-1 space-y-4">
+          <div className="flex-1 space-y-6">
             <div>
               <label className="block text-sm font-semibold text-white/60 mb-2">
                 Passenger Type
@@ -335,7 +357,7 @@ function GenerateModal({
           </div>
           
           {/* Right side - Card Preview */}
-          <div className="flex-1 flex flex-col items-center justify-center">
+          <div className="flex-1 flex flex-col items-center justify-center ml-12">
             <div ref={qrRef} className="absolute opacity-0 pointer-events-none">
               <QRCodeCanvas value={previewCard.cardId} size={512} level="H" includeMargin={true} />
             </div>
@@ -401,17 +423,21 @@ function useTempCardCanvas(card: QRCard, qrRef: React.RefObject<HTMLDivElement |
         // Draw QR code on the right side
         const qrCanvas = qrRef.current?.querySelector('canvas') as HTMLCanvasElement | null;
         if (qrCanvas) {
-          const qrSize = Math.round(W * 0.36);
-          const qrX = Math.round(W * 0.60);
-          const qrY = Math.round(H * 0.18);
+          const qrSize = Math.round(W * 0.36); // Reduced size
+          const qrX = Math.round(W * 0.58); // Moved left (was 0.62)
+          const qrY = Math.round(H * 0.15); // Moved up to avoid bottom border overlap
+
+          // White background for QR code (same size as QR code)
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(qrX, qrY, qrSize, qrSize);
 
           ctx.drawImage(qrCanvas, qrX, qrY, qrSize, qrSize);
         }
 
         // Draw card ID below QR code
-        const cardIdY = Math.round(H * 0.93);
-        const cardIdX = Math.round(W * 0.78);
-        const fontSize = Math.round(W * 0.050);
+        const cardIdY = Math.round(H * 0.88); // Moved up from bottom (was 0.93)
+        const cardIdX = Math.round(W * 0.78); // Moved right (was 0.74)
+        const fontSize = Math.round(W * 0.035); // Even smaller font (reduced from 0.035)
         
         // Get color based on passenger type
         const colorMap: Record<string, string> = {
