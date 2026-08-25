@@ -3,10 +3,10 @@ import { QRCodeCanvas } from 'qrcode.react';
 import { X, Printer, RotateCcw } from 'lucide-react';
 import type { QRCard } from '../types';
 
-import tempRegularCard from '../assets/temp-regular.png';
-import tempStudentCard from '../assets/temp-student.png';
+import tempRegularCard from '../assets/TEMP-REG.png';
+import tempStudentCard from '../assets/TEMP-STUD.png';
 import tempSeniorCard from '../assets/temp-senior.png';
-import tempPwdCard from '../assets/temp-pwd.png';
+import tempPwdCard from '../assets/TEMP-PWD.png';
 import tempBackCard from '../assets/temp-back.png';
 
 const TEMP_TEMPLATES: Record<string, string> = {
@@ -45,19 +45,29 @@ function useTempCardCanvas(card: QRCard, qrRef: React.RefObject<HTMLDivElement |
         // Draw QR code on the right side
         const qrCanvas = qrRef.current?.querySelector('canvas') as HTMLCanvasElement | null;
         if (qrCanvas) {
-          const qrSize = Math.round(W * 0.36);
-          const qrX = Math.round(W * 0.60);
-          const qrY = Math.round(H * 0.18);
+          const qrSize = Math.round(W * 0.36); // Increased size
+          const qrX = Math.round(W * 0.60); // Moved further right to avoid left border
+          const qrY = Math.round(H * 0.15); // Moved down to avoid top border
+
+          // White background for QR code (smaller than QR code to avoid overlap)
+          const bgPadding = Math.round(qrSize * 0.05); // 5% padding
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(
+            qrX + bgPadding,
+            qrY + bgPadding,
+            qrSize - bgPadding * 2,
+            qrSize - bgPadding * 2
+          );
 
           ctx.drawImage(qrCanvas, qrX, qrY, qrSize, qrSize);
         }
 
         // Draw card ID below QR code
-        const cardIdY = Math.round(H * 0.93);
-        const cardIdX = Math.round(W * 0.78);
-        const fontSize = Math.round(W * 0.050);
+        const cardIdY = Math.round(H * 0.88); // Match TemporaryQRCards
+        const cardIdX = Math.round(W * 0.75); // Moved left (was 0.78)
+        const fontSize = Math.round(W * 0.035); // Increased font size (was 0.028)
         
-        // Get color based on passenger type
+        // Get color based on passenger type (match TemporaryQRCards)
         const colorMap: Record<string, string> = {
           'Regular': '#1362e2',
           'Student': '#1fb451',
@@ -65,9 +75,9 @@ function useTempCardCanvas(card: QRCard, qrRef: React.RefObject<HTMLDivElement |
           'PWD': '#f70b0e',
         };
         const cardIdColor = colorMap[card.passengerType] || '#1362e2';
-        
+
         // Draw background rectangle to hide existing text
-        ctx.font = `800 ${fontSize}px 'Courier New', monospace`;
+        ctx.font = `800 ${fontSize}px 'Courier New', monospace`; // Match TemporaryQRCards
         const textWidth = ctx.measureText(card.cardId).width;
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(
@@ -85,6 +95,9 @@ function useTempCardCanvas(card: QRCard, qrRef: React.RefObject<HTMLDivElement |
           cardIdX,
           cardIdY
         );
+
+        ctx.shadowBlur = 0;
+        ctx.shadowOffsetY = 0;
       };
     }, 120);
 
@@ -141,7 +154,7 @@ export default function TemporaryCardDisplay({ card, onClose }: Props) {
         {/* Card Display */}
         <div className="px-5 pt-4 pb-3">
           <div ref={qrRef} className="absolute opacity-0 pointer-events-none">
-            <QRCodeCanvas value={card.cardId} size={512} level="H" includeMargin={false} />
+            <QRCodeCanvas value={card.cardId} size={512} level="H" includeMargin={true} />
           </div>
           
           {showBack ? (

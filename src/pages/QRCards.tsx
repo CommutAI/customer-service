@@ -12,10 +12,10 @@ import { QRCodeSVG } from 'qrcode.react';
 import QRCardDisplay from '../components/QRCardDisplay';
 import TemporaryCardDisplay from '../components/TemporaryCardDisplay';
 
-import regularImg from '../assets/regular.png';
-import studentImg  from '../assets/student.png';
-import seniorImg   from '../assets/senior_citizien.png';
-import pwdImg      from '../assets/pwd.png';
+import regularImg from '../assets/REGULAR.png';
+import studentImg  from '../assets/STUDENT.png';
+import seniorImg   from '../assets/SENIOR-CITIZIEN.png';
+import pwdImg      from '../assets/PWD.png';
 
 type PassengerType = 'Regular' | 'Student' | 'Senior Citizen' | 'PWD';
 

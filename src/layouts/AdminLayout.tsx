@@ -9,13 +9,13 @@ import {
   LogOut,
   RefreshCw,
   BarChart3,
-  Bell,
   User,
   type LucideIcon,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import logo from '../assets/logo.png';
+import NotificationBell from '../components/NotificationBell';
 
 interface NavItem {
   name: string;
@@ -94,11 +94,7 @@ const Header = () => {
   return (
     <header className="glass-card h-16 flex items-center justify-between px-6 mb-6">
       <div className="flex items-center gap-4">
-        <div className="relative">
-          <button className="relative">
-            <Bell className="text-white hover:text-orange-400 cursor-pointer transition-colors" size={20} />
-          </button>
-        </div>
+        <NotificationBell />
       </div>
       <div className="flex items-center gap-4">
         <div className="text-right">

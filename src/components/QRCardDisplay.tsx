@@ -5,10 +5,10 @@ import {
 } from 'lucide-react';
 import type { QRCard } from '../types';
 
-import regularCard from '../assets/regular.png';
-import studentCard from '../assets/student.png';
-import seniorCard  from '../assets/senior_citizien.png';
-import pwdCard     from '../assets/pwd.png';
+import regularCard from '../assets/REGULAR.png';
+import studentCard from '../assets/STUDENT.png';
+import seniorCard  from '../assets/SENIOR-CITIZIEN.png';
+import pwdCard     from '../assets/PWD.png';
 import backCard    from '../assets/back.png';
 
 const TEMPLATES: Record<QRCard['passengerType'], string> = {
@@ -58,7 +58,7 @@ function useCardCanvas(card: QRCard, qrRef: React.RefObject<HTMLDivElement | nul
         //   QR zone        : x=52%, y=8%, size=44% of width (square)
 
         // 2. Draw Card ID value after the "CARD ID:" label
-        ctx.font          = `700 ${Math.round(W * 0.035)}px 'Arial', sans-serif`;
+        ctx.font          = `700 ${Math.round(W * 0.05)}px 'Telegraf', sans-serif`; // Reduced from 0.07 to 0.05
         ctx.fillStyle     = '#ffffff';
         ctx.shadowColor   = 'rgba(0,0,0,0.5)';
         ctx.shadowBlur    = 4;
@@ -66,18 +66,23 @@ function useCardCanvas(card: QRCard, qrRef: React.RefObject<HTMLDivElement | nul
         ctx.fillText(
           card.cardId,
           Math.round(W * 0.08),
-          Math.round(H * 0.44)   // Moved card ID lower to 44%
+          Math.round(H * 0.54)   // Moved card ID down (was 0.44)
         );
 
-        // 3. Draw QR code inside the rounded box on the right panel
+        // 3. Draw QR code on the right panel (no glass style, same size as box)
+        const qrBoxX = Math.round(W * 0.52); // Moved left (was 0.56)
+        const qrBoxY = Math.round(H * 0.17);
+        const qrBoxSize = Math.round(W * 0.38);
+
+        // Draw white background (same size as QR code)
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(qrBoxX, qrBoxY, qrBoxSize, qrBoxSize);
+
+        // Draw QR code (same size as background)
         const qrCanvas = qrRef.current?.querySelector('canvas') as HTMLCanvasElement | null;
         if (qrCanvas) {
-          const qrSize = Math.round(W * 0.42);    // Adjusted size for better fit within the panel
-          const qrX    = Math.round(W * 0.50);    // Adjusted X position to center better
-          const qrY    = Math.round(H * 0.13);    // Adjusted QR code position higher
-
           ctx.shadowBlur = 0;
-          ctx.drawImage(qrCanvas, qrX, qrY, qrSize, qrSize);
+          ctx.drawImage(qrCanvas, qrBoxX, qrBoxY, qrBoxSize, qrBoxSize);
         }
 
         ctx.shadowBlur    = 0;

@@ -13,6 +13,7 @@ import type {
   Transaction,
   Notification,
   DashboardStats,
+  StaffNotification,
 } from '../types';
 
 // ── helpers ────────────────────────────────────────────────────────────────
@@ -534,6 +535,67 @@ export const supabaseApiCalls = {
   markNotificationRead: async (_id: string): Promise<void> => {
     // customer_service_logs has no read flag; this is a no-op until
     // a notifications table is added. The UI will still toggle optimistically.
+  },
+
+  // ── Staff Notifications ─────────────────────────────────────────────────
+  getStaffNotifications: async (): Promise<StaffNotification[]> => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user?.id) return [];
+
+    const { data, error } = await supabase
+      .from('staff_notifications')
+      .select('*')
+      .eq('staff_id', session.user.id)
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if (error) throw new Error(error.message);
+
+    return (data ?? []).map((row): StaffNotification => ({
+      id: row.id,
+      title: row.title,
+      message: row.message,
+      type: row.type as StaffNotification['type'],
+      read: row.read,
+      relatedId: row.related_id,
+      relatedTable: row.related_table,
+      createdAt: row.created_at,
+    }));
+  },
+
+  markStaffNotificationRead: async (id: string): Promise<void> => {
+    const { error } = await supabase
+      .from('staff_notifications')
+      .update({ read: true })
+      .eq('id', id);
+
+    if (error) throw new Error(error.message);
+  },
+
+  markAllStaffNotificationsRead: async (): Promise<void> => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user?.id) return;
+
+    const { error } = await supabase
+      .from('staff_notifications')
+      .update({ read: true })
+      .eq('staff_id', session.user.id);
+
+    if (error) throw new Error(error.message);
+  },
+
+  getUnreadNotificationCount: async (): Promise<number> => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user?.id) return 0;
+
+    const { count, error } = await supabase
+      .from('staff_notifications')
+      .select('*', { count: 'exact', head: true })
+      .eq('staff_id', session.user.id)
+      .eq('read', false);
+
+    if (error) throw new Error(error.message);
+    return count || 0;
   },
 
   // ── Customer Lookup ───────────────────────────────────────────────────
