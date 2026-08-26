@@ -15,7 +15,6 @@ import {
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import logo from '../assets/logo.png';
-import NotificationBell from '../components/NotificationBell';
 
 interface NavItem {
   name: string;
@@ -92,10 +91,7 @@ const Header = () => {
   };
 
   return (
-    <header className="glass-card h-16 flex items-center justify-between px-6 mb-6">
-      <div className="flex items-center gap-4">
-        <NotificationBell />
-      </div>
+    <header className="glass-card h-16 flex items-center justify-end px-6 mb-6">
       <div className="flex items-center gap-4">
         <div className="text-right">
           <p className="text-white font-medium">{staffProfile?.full_name ?? 'Staff'}</p>
