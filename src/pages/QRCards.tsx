@@ -11,6 +11,7 @@ import { useNavigate } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import QRCardDisplay from '../components/QRCardDisplay';
 import TemporaryCardDisplay from '../components/TemporaryCardDisplay';
+import toast from 'react-hot-toast';
 
 import regularImg from '../assets/REGULAR.png';
 import studentImg  from '../assets/STUDENT.png';
@@ -54,9 +55,11 @@ function RegisterCardModal({
   const issueMutation = useMutation({
     mutationFn: apiCalls.issueQRCard,
     onSuccess: (card) => {
+      toast.success(`QR Card issued successfully! Card ID: ${card.cardId}`);
       onSuccess(card);
     },
     onError: (err: Error) => {
+      toast.error(`Failed to issue card: ${err.message}`);
       setError(err.message);
     },
   });
@@ -358,10 +361,12 @@ function EditCardModal({
     mutationFn: (updates: { owner_name: string; contact_number: string }) => 
       apiCalls.updateQRCard(card.cardId, updates),
     onSuccess: () => {
+      toast.success('Card updated successfully!');
       onSuccess();
       onClose();
     },
     onError: (err: Error) => {
+      toast.error(`Failed to update card: ${err.message}`);
       setError(err.message);
     },
   });
@@ -590,27 +595,47 @@ export default function QRCards() {
 
   const activateMutation = useMutation({
     mutationFn: apiCalls.activateQR,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['qrCards'] }),
+    onSuccess: () => {
+      toast.success('Card activated successfully!');
+      queryClient.invalidateQueries({ queryKey: ['qrCards'] });
+    },
+    onError: (err: Error) => {
+      toast.error(`Failed to activate card: ${err.message}`);
+    },
   });
 
   const disableMutation = useMutation({
     mutationFn: apiCalls.disableCard,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['qrCards'] }),
+    onSuccess: () => {
+      toast.success('Card disabled successfully!');
+      queryClient.invalidateQueries({ queryKey: ['qrCards'] });
+    },
+    onError: (err: Error) => {
+      toast.error(`Failed to disable card: ${err.message}`);
+    },
   });
 
   const replaceMutation = useMutation({
     mutationFn: apiCalls.replaceCard,
     onSuccess: () => {
+      toast.success('Card replaced successfully!');
       queryClient.invalidateQueries({ queryKey: ['qrCards'] });
       setReplaceTarget(null);
+    },
+    onError: (err: Error) => {
+      toast.error(`Failed to replace card: ${err.message}`);
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: apiCalls.deleteQRCard,
     onSuccess: () => {
+      toast.success('Card deleted successfully!');
       queryClient.invalidateQueries({ queryKey: ['qrCards'] });
       setDeleteCard(null);
+    },
+    onError: (err: Error) => {
+      toast.error(`Failed to delete card: ${err.message}`);
     },
   });
 

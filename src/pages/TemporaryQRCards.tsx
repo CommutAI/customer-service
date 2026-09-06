@@ -4,6 +4,7 @@ import type { QRCard } from '../types';
 import { QrCode, Plus, Wallet, Clock, XCircle, Trash2, DollarSign, Printer } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
+import toast from 'react-hot-toast';
 
 import tempRegularCard from '../assets/TEMP-REG.png';
 import tempStudentCard from '../assets/TEMP-STUD.png';
@@ -27,30 +28,42 @@ export default function TemporaryQRCards() {
     mutationFn: (passengerType: 'Regular' | 'Student' | 'Senior Citizen' | 'PWD') => 
       apiCalls.createTemporaryQRCard(passengerType),
     onSuccess: () => {
+      toast.success('Temporary QR Card generated successfully!');
       queryClient.invalidateQueries({ queryKey: ['temporaryQRCards'] });
       queryClient.invalidateQueries({ queryKey: ['qrCards'] });
       setShowGenerateModal(false);
+    },
+    onError: (err: Error) => {
+      toast.error(`Failed to generate temporary card: ${err.message}`);
     },
   });
 
   const deactivateMutation = useMutation({
     mutationFn: apiCalls.deactivateTemporaryQRCard,
     onSuccess: () => {
+      toast.success('Temporary card deactivated successfully!');
       queryClient.invalidateQueries({ queryKey: ['temporaryQRCards'] });
       queryClient.invalidateQueries({ queryKey: ['qrCards'] });
       setSelectedCard(null);
+    },
+    onError: (err: Error) => {
+      toast.error(`Failed to deactivate card: ${err.message}`);
     },
   });
 
   const topUpMutation = useMutation({
     mutationFn: (cardId: string) => apiCalls.topUp(cardId, parseFloat(topUpAmount), 'cash'),
     onSuccess: () => {
+      toast.success(`Card topped up successfully! Amount: ₱${parseFloat(topUpAmount).toFixed(2)}`);
       queryClient.invalidateQueries({ queryKey: ['temporaryQRCards'] });
       queryClient.invalidateQueries({ queryKey: ['qrCards'] });
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       setShowTopUpModal(false);
       setTopUpAmount('');
       setSelectedCard(null);
+    },
+    onError: (err: Error) => {
+      toast.error(`Failed to top up card: ${err.message}`);
     },
   });
 
