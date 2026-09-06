@@ -10,6 +10,7 @@ import {
   RefreshCw,
   BarChart3,
   User,
+  Users,
   type LucideIcon,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -27,6 +28,7 @@ const navigation: NavItem[] = [
   { name: 'QR Cards', href: '/qr-cards', icon: CreditCard },
   { name: 'Temporary QR Cards', href: '/temporary-qr-cards', icon: Ticket },
   { name: 'Reload Card', href: '/reload-card', icon: RefreshCw },
+  { name: 'Passengers', href: '/passengers', icon: Users },
   { name: 'Transactions', href: '/transactions', icon: History },
   { name: 'Reports', href: '/reports', icon: BarChart3 },
 ];

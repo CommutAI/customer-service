@@ -4,6 +4,7 @@ import type { Transaction } from '../types';
 import { DollarSign, Receipt, History, Banknote } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import toast from 'react-hot-toast';
 
 // Helper function to format relative time
 function formatRelativeTime(timestamp: string): string {
@@ -88,12 +89,16 @@ export default function ReloadCard() {
   const reloadMutation = useMutation({
     mutationFn: () => apiCalls.topUp(cardId, amount, 'cash'),
     onSuccess: (data) => {
+      toast.success(`Card reloaded successfully! Amount: ₱${amount.toFixed(2)}`);
       queryClient.invalidateQueries({ queryKey: ['qrCards'] });
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       setShowReceipt(data);
       setCardId('');
       setAmount(100);
       setCustomAmount('');
+    },
+    onError: (err: Error) => {
+      toast.error(`Failed to reload card: ${err.message}`);
     },
   });
 
@@ -150,7 +155,7 @@ export default function ReloadCard() {
                 <p className="mt-1 text-xs text-red-400 font-medium">{cardError}</p>
               )}
               {showSuggestions && cardSuggestions.length > 0 && (
-                <div className="absolute z-10 w-full mt-1 bg-white/10 border border-white/20 rounded-2xl shadow-lg max-h-48 overflow-y-auto">
+                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-2xl shadow-lg max-h-48 overflow-y-auto">
                   {cardSuggestions.map((card) => (
                     <button
                       key={card.id}
@@ -159,11 +164,11 @@ export default function ReloadCard() {
                         setCardId(card.cardId);
                         setShowSuggestions(false);
                       }}
-                      className="w-full px-4 py-3 text-left hover:bg-white/20 transition-colors border-b border-white/10 last:border-b-0"
+                      className="w-full px-4 py-3 text-left hover:bg-gray-100 transition-colors border-b border-gray-100 last:border-b-0"
                     >
                       <div className="flex justify-between items-center">
-                        <span className="font-mono text-sm font-medium text-white">{card.cardId}</span>
-                        <span className="text-xs text-white/60">{card.passengerName}</span>
+                        <span className="font-mono text-sm font-medium text-gray-900">{card.cardId}</span>
+                        <span className="text-xs text-gray-600">{card.passengerName}</span>
                       </div>
                     </button>
                   ))}

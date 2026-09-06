@@ -3,6 +3,7 @@ import { apiCalls } from '../lib/api';
 import type { Passenger, QRCard } from '../types';
 import { useState } from 'react';
 import { Search, RefreshCw, CreditCard, UserPlus } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 export default function Passengers() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -24,9 +25,13 @@ export default function Passengers() {
   const replaceMutation = useMutation({
     mutationFn: apiCalls.replaceCard,
     onSuccess: () => {
+      toast.success('Card replaced successfully!');
       queryClient.invalidateQueries({ queryKey: ['qrCards'] });
       queryClient.invalidateQueries({ queryKey: ['passengers'] });
       setReplaceCard(null);
+    },
+    onError: (err: Error) => {
+      toast.error(`Failed to replace card: ${err.message}`);
     },
   });
 
@@ -37,9 +42,13 @@ export default function Passengers() {
       passengerType: 'Regular' | 'Student' | 'Senior Citizen' | 'PWD';
     }) => apiCalls.issueQRCard(registration),
     onSuccess: () => {
+      toast.success('QR Card issued successfully!');
       queryClient.invalidateQueries({ queryKey: ['qrCards'] });
       queryClient.invalidateQueries({ queryKey: ['passengers'] });
       setIssueNewCard(null);
+    },
+    onError: (err: Error) => {
+      toast.error(`Failed to issue card: ${err.message}`);
     },
   });
 
