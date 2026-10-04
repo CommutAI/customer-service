@@ -2,6 +2,8 @@
 
 A comprehensive React + TypeScript + Vite application for managing QR cards, transactions, and customer service operations for a public transportation system.
 
+**This system is designed exclusively for Customer Service Desk staff.**
+
 ## 🚀 Features
 
 ### Core Functionality
@@ -27,7 +29,7 @@ A comprehensive React + TypeScript + Vite application for managing QR cards, tra
 - Card template preview during registration
 
 #### **Temporary QR Cards**
-- Generate temporary cards with ₱100 initial balance
+- Generate temporary cards with configurable initial balance
 - Same passenger type support as regular cards
 - Card top-up functionality
 - Deactivate temporary cards
@@ -70,25 +72,37 @@ A comprehensive React + TypeScript + Vite application for managing QR cards, tra
 - Issue new cards for existing passengers
 - Balance and status tracking
 
+#### **Card Reservations**
+- Create card pickup reservations
+- Track reservation status (pending, approved, rejected, completed)
+- Search and filter reservations
+- Manage pickup terminal assignments
+
 ### Technical Features
 
 #### **Authentication & Authorization**
 - Secure staff authentication via Supabase Auth
-- Role-based access control (admin, conductor, cs_desk)
+- Customer Service Desk role-only access
 - Staff profile management
-- Sign-out functionality
+- Sign-out functionality (in sidebar)
 
 #### **Database Integration**
 - Supabase PostgreSQL backend
 - Comprehensive schema with:
   - Staff users and roles
-  - Buses and routes
   - QR cards with multiple types
   - Temporary cards
   - Transactions
-  - Trips and routes
-  - Passenger records
+  - Card reservations
+  - System settings (configurable pricing)
   - Audit logs
+
+#### **Configurable Settings**
+- Database-driven pricing system
+- Configurable card initial balance
+- Configurable card issuance fee
+- Configurable card validity period
+- Settings managed via database, no code changes needed
 
 #### **UI/UX**
 - Modern glassmorphism design
@@ -174,18 +188,28 @@ The system uses a comprehensive PostgreSQL schema with the following main tables
 
 ### First Time Setup
 
-1. **Create Staff Account**
+1. **Create Customer Service Staff Account**
    - Sign up through the authentication system
-   - Assign appropriate role (admin, conductor, cs_desk)
+   - Assign `cs_desk` role in the database
+   - Staff can only access the system with Customer Service role
 
-2. **Issue First QR Card**
+2. **Configure System Settings**
+   - Settings are stored in the `system_settings` table
+   - Default values are seeded automatically:
+     - `card_initial_balance`: 100
+     - `card_fee`: 10
+     - `temporary_card_balance`: 100
+     - `card_validity_years`: 1
+   - Admins can update these via database or Supabase dashboard
+
+3. **Issue First QR Card**
    - Navigate to QR Cards page
    - Click "Issue New Card"
    - Fill in passenger information
    - Select passenger type
    - Confirm and generate card
 
-3. **Process Card Reload**
+4. **Process Card Reload**
    - Navigate to Reload Card page
    - Enter card ID
    - Select reload amount
