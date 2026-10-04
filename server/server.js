@@ -2,11 +2,31 @@ import express from 'express';
 import cors from 'cors';
 import { SerialPort } from 'serialport';
 import dotenv from 'dotenv';
+import rateLimit from 'express-rate-limit';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// Rate limiting to prevent abuse
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  message: 'Too many requests from this IP, please try again later.',
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Apply rate limiting to all routes
+app.use(limiter);
+
+// Stricter rate limiting for SMS endpoint
+const smsLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20, // Limit each IP to 20 SMS requests per 15 minutes
+  message: 'Too many SMS requests, please try again later.',
+});
 
 app.use(cors());
 app.use(express.json());
@@ -99,8 +119,8 @@ function sendSMS(phoneNumber, message) {
   });
 }
 
-// API endpoint to send SMS
-app.post('/api/send-sms', async (req, res) => {
+// API endpoint to send SMS (with stricter rate limiting)
+app.post('/api/send-sms', smsLimiter, async (req, res) => {
   try {
     const { phoneNumber, message } = req.body;
 
