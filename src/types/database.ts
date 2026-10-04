@@ -9,6 +9,7 @@ export type TicketStatus = 'issued' | 'validated' | 'expired';
 export type TransactionType = 'fare_validation' | 'card_issuance';
 export type IrregularityType = 'double_scan' | 'count_mismatch' | 'fare_evasion' | 'other';
 export type CsActionType = 'complaint' | 'inquiry' | 'refund' | 'lost_card' | 'other';
+export type CardType = 'regular' | 'student' | 'senior_citizen' | 'pwd';
 
 export interface Database {
   public: {
@@ -68,7 +69,7 @@ export interface Database {
           contact_number: string | null;
           balance: number;
           status: QRCardStatus;
-          card_type: 'regular' | 'student' | 'senior_citizen' | 'pwd';
+          card_type: CardType;
           purchase_price: number;
           allowed_routes: string[];
           passenger_id: string | null;
@@ -215,6 +216,41 @@ export interface Database {
         };
         Update: Partial<Database['public']['Tables']['customer_service_logs']['Insert']>;
       };
+      card_reservations: {
+        Row: {
+          id: number;
+          reservation_id: string;
+          name: string;
+          contact: string;
+          card_type: CardType;
+          pickup_terminal: string;
+          status: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['card_reservations']['Row'], 'id' | 'created_at' | 'updated_at'> & {
+          id?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database['public']['Tables']['card_reservations']['Insert']>;
+      };
+      system_settings: {
+        Row: {
+          id: string;
+          key: string;
+          value: string;
+          description: string | null;
+          category: string;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        Insert: Omit<Database['public']['Tables']['system_settings']['Row'], 'id' | 'updated_at'> & {
+          id?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database['public']['Tables']['system_settings']['Insert']>;
+      };
     };
     Functions: {
       conductor_active_trip_id: {
@@ -235,6 +271,7 @@ export interface Database {
       transaction_type: TransactionType;
       irregularity_type: IrregularityType;
       cs_action_type: CsActionType;
+      card_type: CardType;
     };
   };
 }

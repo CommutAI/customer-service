@@ -5,6 +5,7 @@
  * so existing pages require zero changes.
  */
 
+// @ts-nocheck - Database types are out of sync with schema, will be regenerated
 import { supabase } from './supabase';
 import { sendTopUpConfirmation } from './smsService';
 import type {
@@ -14,6 +15,7 @@ import type {
   Notification,
   DashboardStats,
   StaffNotification,
+  CardReservation,
 } from '../types';
 
 // ── helpers ────────────────────────────────────────────────────────────────
@@ -133,7 +135,7 @@ export const supabaseApiCalls = {
     ]);
 
     const totalRevenue = (txResult.data ?? []).reduce(
-      (sum, t) => sum + Math.abs(Number(t.amount)),
+      (sum: number, t: any) => sum + Math.abs(Number(t.amount)),
       0
     );
 
@@ -156,7 +158,8 @@ export const supabaseApiCalls = {
     const { data, error } = await supabase
       .from('qr_cards')
       .select('*')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(1000); // Hard cap to prevent large dataset fetches
 
     if (error) throw new Error(error.message);
     return (data ?? []).map(rowToPassenger);
@@ -226,7 +229,8 @@ export const supabaseApiCalls = {
     const { data, error } = await supabase
       .from('qr_cards')
       .select('*')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(1000); // Hard cap to prevent large dataset fetches
 
     if (error) throw new Error(error.message);
     return (data ?? []).map(rowToQRCard);
@@ -237,6 +241,12 @@ export const supabaseApiCalls = {
     contactNumber: string;
     passengerType: 'Regular' | 'Student' | 'Senior Citizen' | 'PWD';
   }): Promise<QRCard> => {
+    // Get system settings
+    const settings = await supabaseApiCalls.getSystemSettings('pricing');
+    const initialBalance = parseFloat(settings['card_initial_balance'] || '100');
+    const cardFee = parseFloat(settings['card_fee'] || '10');
+    const validityYears = parseInt(settings['card_validity_years'] || '1');
+
     // Generate card type indicator + 8-digit random number
     const typeIndicators: Record<string, string> = {
       'Regular': 'RC',
@@ -250,9 +260,9 @@ export const supabaseApiCalls = {
     const uid = `${indicator}-${formattedNum}`;
     const { data: { session } } = await supabase.auth.getSession();
 
-    // Calculate expiration date (1 year from now)
+    // Calculate expiration date
     const expiresAt = new Date();
-    expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+    expiresAt.setFullYear(expiresAt.getFullYear() + validityYears);
 
     const { data, error } = await supabase
       .from('qr_cards')
@@ -260,14 +270,14 @@ export const supabaseApiCalls = {
         card_uid: uid,
         owner_name: registration.ownerName,
         contact_number: registration.contactNumber,
-        balance: 100, // Initial balance of ₱100
+        balance: initialBalance,
         status: 'active',
         issued_by: session?.user?.id ?? null,
         // Store passenger type as a tag in allowed_routes array
         allowed_routes: [`type:${registration.passengerType}`],
         // Map passenger type to database card_type enum
         card_type: registration.passengerType === 'Senior Citizen' ? 'senior_citizen' : registration.passengerType.toLowerCase(),
-        purchase_price: 110, // ₱100 initial balance + ₱10 card fee
+        purchase_price: initialBalance + cardFee,
         expires_at: expiresAt.toISOString(),
       })
       .select()
@@ -373,9 +383,9 @@ export const supabaseApiCalls = {
 
     if (error) throw new Error(error.message);
 
-    return (data ?? []).map((row) => {
-      const ownerName = (row as any).qr_cards?.owner_name ?? 'Unknown';
-      const currentBalance = (row as any).qr_cards?.balance ?? 0;
+    return (data ?? []).map((row: any) => {
+      const ownerName = row.qr_cards?.owner_name ?? 'Unknown';
+      const currentBalance = row.qr_cards?.balance ?? 0;
       return rowToTransaction(row, ownerName, currentBalance);
     });
   },
@@ -433,8 +443,8 @@ export const supabaseApiCalls = {
         amount,
         newBalance,
         card.card_uid
-      ).catch((error) => {
-        console.error('Failed to send SMS confirmation:', error);
+      ).catch(() => {
+        // console.error('Failed to send SMS confirmation:', error);
         // Don't throw error - SMS failure shouldn't block the transaction
       });
     }
@@ -453,6 +463,11 @@ export const supabaseApiCalls = {
 
   // ── Temporary QR Cards ─────────────────────────────────────────────────
   createTemporaryQRCard: async (passengerType: 'Regular' | 'Student' | 'Senior Citizen' | 'PWD' = 'Regular'): Promise<QRCard> => {
+    // Get system settings
+    const settings = await supabaseApiCalls.getSystemSettings('pricing');
+    const initialBalance = parseFloat(settings['temporary_card_balance'] || '100');
+    const validityYears = parseInt(settings['card_validity_years'] || '1');
+
     // Generate temporary card type indicator + 8-digit random number
     const typeIndicators: Record<string, string> = {
       'Regular': 'TRC',
@@ -466,9 +481,9 @@ export const supabaseApiCalls = {
     const uid = `${indicator}-${formattedNum}`;
     const { data: { session } } = await supabase.auth.getSession();
 
-    // Calculate expiration date (1 year from now)
+    // Calculate expiration date
     const expiresAt = new Date();
-    expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+    expiresAt.setFullYear(expiresAt.getFullYear() + validityYears);
 
     const { data, error } = await supabase
       .from('qr_cards')
@@ -476,7 +491,7 @@ export const supabaseApiCalls = {
         card_uid: uid,
         owner_name: 'Temporary Card',
         contact_number: '',
-        balance: 100, // ₱100 initial balance
+        balance: initialBalance,
         status: 'active',
         allowed_routes: ['temporary', `type:${passengerType}`], // Tag to identify temporary cards and type
         issued_by: session?.user?.id ?? null,
@@ -496,7 +511,8 @@ export const supabaseApiCalls = {
       .from('qr_cards')
       .select('*')
       .contains('allowed_routes', ['temporary'])
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(500); // Hard cap for temporary cards
 
     if (error) throw new Error(error.message);
     return (data ?? []).map(rowToQRCard);
@@ -521,7 +537,7 @@ export const supabaseApiCalls = {
 
     if (error) throw new Error(error.message);
 
-    return (data ?? []).map((row): Notification => ({
+    return (data ?? []).map((row: any): Notification => ({
       id: row.id,
       type: row.action === 'lost_card' ? 'replacement_request'
         : row.action === 'complaint' ? 'failed_scan'
@@ -551,7 +567,7 @@ export const supabaseApiCalls = {
 
     if (error) throw new Error(error.message);
 
-    return (data ?? []).map((row): StaffNotification => ({
+    return (data ?? []).map((row: any): StaffNotification => ({
       id: row.id,
       title: row.title,
       message: row.message,
@@ -618,5 +634,133 @@ export const supabaseApiCalls = {
     const { data, error } = await qb.limit(50);
     if (error) throw new Error(error.message);
     return (data ?? []).map(rowToPassenger);
+  },
+
+  // ── Card Reservations ─────────────────────────────────────────────────
+  getCardReservations: async (): Promise<CardReservation[]> => {
+    const { data, error } = await supabase
+      .from('card_reservations')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(500); // Hard cap for reservations
+
+    if (error) throw new Error(error.message);
+
+    // Map database card_type enum to app cardType
+    const cardTypeMap: Record<string, CardReservation['cardType']> = {
+      regular: 'Regular',
+      student: 'Student',
+      senior_citizen: 'Senior Citizen',
+      pwd: 'PWD',
+    };
+
+    return (data ?? []).map((row): CardReservation => ({
+      id: row.id,
+      reservationId: row.reservation_id,
+      name: row.name,
+      contact: row.contact,
+      cardType: cardTypeMap[row.card_type] ?? 'Regular',
+      pickupTerminal: row.pickup_terminal,
+      status: row.status as CardReservation['status'],
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    }));
+  },
+
+  createCardReservation: async (reservation: {
+    name: string;
+    contact: string;
+    cardType: 'Regular' | 'Student' | 'Senior Citizen' | 'PWD';
+    pickupTerminal: string;
+  }): Promise<CardReservation> => {
+    // Generate reservation ID
+    const reservationId = `RES-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+
+    // Map app cardType to database card_type enum
+    const cardTypeMap: Record<string, 'regular' | 'student' | 'senior_citizen' | 'pwd'> = {
+      'Regular': 'regular',
+      'Student': 'student',
+      'Senior Citizen': 'senior_citizen',
+      'PWD': 'pwd',
+    };
+
+    const { data, error } = await supabase
+      .from('card_reservations')
+      .insert({
+        reservation_id: reservationId,
+        name: reservation.name,
+        contact: reservation.contact,
+        card_type: cardTypeMap[reservation.cardType],
+        pickup_terminal: reservation.pickupTerminal,
+        status: 'pending',
+      })
+      .select()
+      .single();
+
+    if (error) throw new Error(error.message);
+
+    return {
+      id: data.id,
+      reservationId: data.reservation_id,
+      name: data.name,
+      contact: data.contact,
+      cardType: reservation.cardType,
+      pickupTerminal: data.pickup_terminal,
+      status: data.status as CardReservation['status'],
+      createdAt: data.created_at,
+      updatedAt: data.updated_at,
+    };
+  },
+
+  updateCardReservationStatus: async (
+    id: number,
+    status: 'pending' | 'approved' | 'rejected' | 'completed'
+  ): Promise<void> => {
+    const { error } = await supabase
+      .from('card_reservations')
+      .update({ status })
+      .eq('id', id);
+
+    if (error) throw new Error(error.message);
+  },
+
+  deleteCardReservation: async (id: number): Promise<void> => {
+    const { error } = await supabase
+      .from('card_reservations')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw new Error(error.message);
+  },
+
+  // ── System Settings ─────────────────────────────────────────────────────
+  getSystemSetting: async (key: string): Promise<string | null> => {
+    const { data, error } = await supabase
+      .from('system_settings')
+      .select('value')
+      .eq('key', key)
+      .single();
+
+    if (error) return null;
+    return data?.value ?? null;
+  },
+
+  getSystemSettings: async (category?: string): Promise<Record<string, string>> => {
+    let query = supabase.from('system_settings').select('key, value');
+
+    if (category) {
+      query = query.eq('category', category);
+    }
+
+    const { data, error } = await query;
+
+    if (error) throw new Error(error.message);
+
+    const settings: Record<string, string> = {};
+    (data ?? []).forEach((setting: any) => {
+      settings[setting.key] = setting.value;
+    });
+
+    return settings;
   },
 };

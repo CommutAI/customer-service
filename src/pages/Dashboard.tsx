@@ -1,8 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { apiCalls } from '../lib/api';
-import { Users, DollarSign, CreditCard, TrendingUp, RefreshCw, Ticket, type LucideIcon } from 'lucide-react';
+import { Users, DollarSign, CreditCard, TrendingUp, RefreshCw, Ticket, Calendar, type LucideIcon } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
+import { useMemo } from 'react';
 
 const KPICard = ({ title, value, change, icon: Icon, color }: { title: string; value: string | number; change: string; icon: LucideIcon; color: string }) => (
   <div className="glass-card p-6 hover:scale-105 transition-transform duration-300">
@@ -10,9 +11,11 @@ const KPICard = ({ title, value, change, icon: Icon, color }: { title: string; v
       <div className={`w-12 h-12 rounded-xl ${color} flex items-center justify-center`}>
         <Icon className="w-6 h-6 text-white" />
       </div>
-      <span className={`text-sm ${change.startsWith('+') ? 'text-green-400' : 'text-red-400'}`}>
-        {change}
-      </span>
+      {change && (
+        <span className={`text-sm ${change.startsWith('+') ? 'text-green-400' : 'text-red-400'}`}>
+          {change}
+        </span>
+      )}
     </div>
     <h3 className="text-white/60 text-sm mb-1">{title}</h3>
     <p className="text-white text-3xl font-bold">{value}</p>
@@ -52,6 +55,11 @@ export default function Dashboard() {
     queryFn: apiCalls.getQRCards,
   });
 
+  const { data: transactions } = useQuery({
+    queryKey: ['transactions'],
+    queryFn: apiCalls.getTransactions,
+  });
+
   // Calculate card type distribution
   const cardTypeData = [
     { name: 'Regular', value: cards?.filter(c => c.passengerType === 'Regular').length || 0, color: '#3b82f6' },
@@ -60,16 +68,40 @@ export default function Dashboard() {
     { name: 'PWD', value: cards?.filter(c => c.passengerType === 'PWD').length || 0, color: '#8b5cf6' },
   ];
 
-  // Mock weekly data (replace with real data from API)
-  const weeklyData = [
-    { day: 'Mon', transactions: 12, revenue: 450 },
-    { day: 'Tue', transactions: 19, revenue: 720 },
-    { day: 'Wed', transactions: 15, revenue: 580 },
-    { day: 'Thu', transactions: 22, revenue: 850 },
-    { day: 'Fri', transactions: 28, revenue: 1100 },
-    { day: 'Sat', transactions: 35, revenue: 1400 },
-    { day: 'Sun', transactions: 18, revenue: 690 },
-  ];
+  // Calculate weekly data from actual transactions
+  const weeklyData = useMemo(() => {
+    if (!transactions) return [];
+
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+    const groupedData: Record<string, { transactions: number; revenue: number }> = {};
+
+    // Initialize all days with 0
+    days.forEach(day => {
+      groupedData[day] = { transactions: 0, revenue: 0 };
+    });
+
+    // Group transactions by day of week
+    transactions.forEach(t => {
+      const date = new Date(t.timestamp);
+      if (date >= oneWeekAgo) {
+        const dayName = days[date.getDay()];
+        if (groupedData[dayName]) {
+          groupedData[dayName].transactions += 1;
+          groupedData[dayName].revenue += Math.abs(t.amount);
+        }
+      }
+    });
+
+    // Return in correct order (Mon-Sun)
+    return ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => ({
+      day,
+      transactions: groupedData[day]?.transactions || 0,
+      revenue: groupedData[day]?.revenue || 0,
+    }));
+  }, [transactions]);
 
   if (isLoading) {
     return (
@@ -83,10 +115,10 @@ export default function Dashboard() {
   }
 
   const kpis = [
-    { title: "Today's Registrations", value: stats?.todayRegistrations || 0, change: '+12%', icon: Users, color: 'bg-blue-500' },
-    { title: "Today's Top Ups", value: stats?.todayTopUps || 0, change: '+8%', icon: DollarSign, color: 'bg-green-500' },
-    { title: "Today's Transactions", value: stats?.todayTransactions || 0, change: '+15%', icon: CreditCard, color: 'bg-purple-500' },
-    { title: "Total Revenue", value: `₱${stats?.totalRevenue?.toFixed(2) || '0.00'}`, change: '+12%', icon: TrendingUp, color: 'bg-orange-500' },
+    { title: "Today's Registrations", value: stats?.todayRegistrations || 0, change: '', icon: Users, color: 'bg-blue-500' },
+    { title: "Today's Top Ups", value: stats?.todayTopUps || 0, change: '', icon: DollarSign, color: 'bg-green-500' },
+    { title: "Today's Transactions", value: stats?.todayTransactions || 0, change: '', icon: CreditCard, color: 'bg-purple-500' },
+    { title: "Today's Revenue", value: `₱${stats?.totalRevenue?.toFixed(2) || '0.00'}`, change: '', icon: TrendingUp, color: 'bg-orange-500' },
   ];
 
   return (
@@ -185,37 +217,45 @@ export default function Dashboard() {
 
         <div className="lg:col-span-2 glass-card p-6">
           <h2 className="text-white text-xl font-bold mb-6">Quick Actions</h2>
-          <div className="grid grid-cols-2 gap-4">
-            <ShortcutCard 
-              title="Reload Card" 
-              value="Go" 
-              icon={RefreshCw} 
-              color="bg-emerald-500" 
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <ShortcutCard
+              title="Reload Card"
+              value="Go"
+              icon={RefreshCw}
+              color="bg-emerald-500"
               link="/reload-card"
               onClick={navigate}
             />
-            <ShortcutCard 
-              title="Issue QR Card" 
-              value="Go" 
-              icon={CreditCard} 
-              color="bg-purple-500" 
+            <ShortcutCard
+              title="Issue QR Card"
+              value="Go"
+              icon={CreditCard}
+              color="bg-purple-500"
               link="/qr-cards"
               onClick={navigate}
             />
-            <ShortcutCard 
-              title="Temporary Card" 
-              value="Go" 
-              icon={Ticket} 
-              color="bg-blue-500" 
+            <ShortcutCard
+              title="Temporary Card"
+              value="Go"
+              icon={Ticket}
+              color="bg-blue-500"
               link="/temporary-qr-cards"
               onClick={navigate}
             />
-            <ShortcutCard 
-              title="Transactions" 
-              value="Go" 
-              icon={TrendingUp} 
-              color="bg-orange-500" 
+            <ShortcutCard
+              title="Transactions"
+              value="Go"
+              icon={TrendingUp}
+              color="bg-orange-500"
               link="/transactions"
+              onClick={navigate}
+            />
+            <ShortcutCard
+              title="Card Reservations"
+              value="Go"
+              icon={Calendar}
+              color="bg-pink-500"
+              link="/card-reservations"
               onClick={navigate}
             />
           </div>

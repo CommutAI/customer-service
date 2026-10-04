@@ -41,7 +41,7 @@ export async function sendSMS(phoneNumber: string, message: string): Promise<SMS
       message: data.message,
     };
   } catch (error) {
-    console.error('SMS service error:', error);
+    // console.error('SMS service error:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',

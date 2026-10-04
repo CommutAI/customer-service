@@ -450,14 +450,15 @@ CREATE TABLE IF NOT EXISTS customer_service_logs (
 );
 
 -- ── 17. GCash Transactions ──────────────────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS gcash_transactions (
-  id                BIGSERIAL PRIMARY KEY,
-  phone_number      TEXT        NOT NULL,
-  amount            NUMERIC     NOT NULL,
-  status            TEXT        NOT NULL CHECK (status IN ('completed', 'failed', 'pending')),
-  stripe_payment_id TEXT,
-  created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
+-- DISABLED: No GCash/Stripe payment integration needed
+-- CREATE TABLE IF NOT EXISTS gcash_transactions (
+--   id                BIGSERIAL PRIMARY KEY,
+--   phone_number      TEXT        NOT NULL,
+--   amount            NUMERIC     NOT NULL,
+--   status            TEXT        NOT NULL CHECK (status IN ('completed', 'failed', 'pending')),
+--   stripe_payment_id TEXT,
+--   created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
+-- );
 
 -- ── 18. Notifications ──────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS notifications (
@@ -661,6 +662,53 @@ RETURNS TEXT LANGUAGE sql STABLE SECURITY DEFINER AS $$
   SELECT role::TEXT FROM staff_users WHERE id = auth.uid();
 $$;
 
+-- ── 23.1. Card Reservations ─────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS card_reservations (
+  id               BIGSERIAL PRIMARY KEY,
+  reservation_id   TEXT        UNIQUE NOT NULL,
+  name             TEXT        NOT NULL,
+  contact          TEXT        NOT NULL,
+  card_type        card_type   NOT NULL,
+  pickup_terminal  TEXT        NOT NULL,
+  status           TEXT        NOT NULL DEFAULT 'pending',
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Trigger to automatically update updated_at
+CREATE OR REPLACE FUNCTION update_card_reservations_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS update_card_reservations_updated_at_trigger ON card_reservations;
+CREATE TRIGGER update_card_reservations_updated_at_trigger
+  BEFORE UPDATE ON card_reservations
+  FOR EACH ROW
+  EXECUTE FUNCTION update_card_reservations_updated_at();
+
+-- ── 23.2. System Settings ─────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS system_settings (
+  id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  key         TEXT        UNIQUE NOT NULL,
+  value       TEXT        NOT NULL,
+  description TEXT,
+  category    TEXT        NOT NULL DEFAULT 'general',
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_by  UUID        REFERENCES staff_users (id)
+);
+
+-- Insert default settings
+INSERT INTO system_settings (key, value, description, category) VALUES
+  ('card_initial_balance', '100', 'Initial balance for new QR cards', 'pricing'),
+  ('card_fee', '10', 'Card issuance fee', 'pricing'),
+  ('temporary_card_balance', '100', 'Balance for temporary QR cards', 'pricing'),
+  ('card_validity_years', '1', 'Number of years cards are valid', 'general')
+ON CONFLICT (key) DO NOTHING;
+
 -- ── 24. Row-Level Security ────────────────────────────────────────────────────
 ALTER TABLE staff_users           ENABLE ROW LEVEL SECURITY;
 ALTER TABLE buses                 ENABLE ROW LEVEL SECURITY;
@@ -685,6 +733,8 @@ ALTER TABLE fare_matrix            ENABLE ROW LEVEL SECURITY;
 ALTER TABLE baggage_fee_matrix     ENABLE ROW LEVEL SECURITY;
 ALTER TABLE bus_schedules          ENABLE ROW LEVEL SECURITY;
 ALTER TABLE trip_schedules         ENABLE ROW LEVEL SECURITY;
+ALTER TABLE card_reservations     ENABLE ROW LEVEL SECURITY;
+ALTER TABLE system_settings       ENABLE ROW LEVEL SECURITY;
 
 -- Staff can view their own profile (admins see all)
 DO $$ BEGIN
@@ -723,7 +773,7 @@ DO $$ BEGIN
   END IF;
 END $$;
 
--- QR cards: read by any authenticated staff
+-- QR cards: read by any authenticated staff (for customer service and admin operations)
 DO $$ BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_policies
@@ -742,7 +792,7 @@ DO $$ BEGIN
   ) THEN
     CREATE POLICY "qr_cards_delete_authenticated"
       ON qr_cards FOR DELETE
-      USING (auth.role() = 'authenticated');
+      USING (current_user_role() IN ('admin', 'cs_desk'));
   END IF;
 END $$;
 
@@ -753,7 +803,7 @@ DO $$ BEGIN
   ) THEN
     CREATE POLICY "qr_cards_insert_authenticated"
       ON qr_cards FOR INSERT
-      WITH CHECK (auth.role() = 'authenticated');
+      WITH CHECK (current_user_role() IN ('admin', 'cs_desk'));
   END IF;
 END $$;
 
@@ -764,7 +814,8 @@ DO $$ BEGIN
   ) THEN
     CREATE POLICY "qr_cards_update_authenticated"
       ON qr_cards FOR UPDATE
-      USING (auth.role() = 'authenticated');
+      USING (current_user_role() IN ('admin', 'cs_desk'))
+      WITH CHECK (current_user_role() IN ('admin', 'cs_desk'));
   END IF;
 END $$;
 
@@ -801,6 +852,28 @@ DO $$ BEGIN
     CREATE POLICY "transactions_select_authenticated"
       ON transactions FOR SELECT
       USING (auth.role() = 'authenticated');
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'transactions' AND policyname = 'transactions_update_authenticated'
+  ) THEN
+    CREATE POLICY "transactions_update_authenticated"
+      ON transactions FOR UPDATE
+      USING (current_user_role() = 'admin');
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'transactions' AND policyname = 'transactions_delete_authenticated'
+  ) THEN
+    CREATE POLICY "transactions_delete_authenticated"
+      ON transactions FOR DELETE
+      USING (current_user_role() = 'admin');
   END IF;
 END $$;
 
@@ -934,18 +1007,18 @@ DO $$ BEGIN
   END IF;
 END $$;
 
--- GCash transactions
-DO $$ BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies
-    WHERE schemaname = 'public' AND tablename = 'gcash_transactions' AND policyname = 'gcash_transactions_rw_authenticated'
-  ) THEN
-    CREATE POLICY "gcash_transactions_rw_authenticated"
-      ON gcash_transactions FOR ALL
-      USING (auth.role() = 'authenticated')
-      WITH CHECK (auth.role() = 'authenticated');
-  END IF;
-END $$;
+-- GCash transactions (DISABLED - no payment integration)
+-- DO $$ BEGIN
+--   IF NOT EXISTS (
+--     SELECT 1 FROM pg_policies
+--     WHERE schemaname = 'public' AND tablename = 'gcash_transactions' AND policyname = 'gcash_transactions_rw_authenticated'
+--   ) THEN
+--     CREATE POLICY "gcash_transactions_rw_authenticated"
+--       ON gcash_transactions FOR ALL
+--       USING (auth.role() = 'authenticated')
+--       WITH CHECK (auth.role() = 'authenticated');
+--   END IF;
+-- END $$;
 
 -- Notifications
 DO $$ BEGIN
@@ -1022,6 +1095,88 @@ DO $$ BEGIN
       ON trip_schedules FOR ALL
       USING (auth.role() = 'authenticated')
       WITH CHECK (auth.role() = 'authenticated');
+  END IF;
+END $$;
+
+-- Card reservations
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'card_reservations' AND policyname = 'card_reservations_rw_authenticated'
+  ) THEN
+    CREATE POLICY "card_reservations_rw_authenticated"
+      ON card_reservations FOR ALL
+      USING (auth.role() = 'authenticated')
+      WITH CHECK (auth.role() = 'authenticated');
+  END IF;
+END $$;
+
+-- System settings (read-only for authenticated, admin can update)
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'system_settings' AND policyname = 'system_settings_select_authenticated'
+  ) THEN
+    CREATE POLICY "system_settings_select_authenticated"
+      ON system_settings FOR SELECT
+      USING (auth.role() = 'authenticated');
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'system_settings' AND policyname = 'system_settings_update_admin'
+  ) THEN
+    CREATE POLICY "system_settings_update_admin"
+      ON system_settings FOR UPDATE
+      USING (current_user_role() = 'admin');
+  END IF;
+END $$;
+
+-- Staff notifications (users can only read their own notifications)
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'staff_notifications' AND policyname = 'staff_notifications_select_own'
+  ) THEN
+    CREATE POLICY "staff_notifications_select_own"
+      ON staff_notifications FOR SELECT
+      USING (staff_id = auth.uid() OR current_user_role() = 'admin');
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'staff_notifications' AND policyname = 'staff_notifications_insert_own'
+  ) THEN
+    CREATE POLICY "staff_notifications_insert_own"
+      ON staff_notifications FOR INSERT
+      WITH CHECK (staff_id = auth.uid() OR current_user_role() = 'admin');
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'staff_notifications' AND policyname = 'staff_notifications_update_own'
+  ) THEN
+    CREATE POLICY "staff_notifications_update_own"
+      ON staff_notifications FOR UPDATE
+      USING (staff_id = auth.uid() OR current_user_role() = 'admin')
+      WITH CHECK (staff_id = auth.uid() OR current_user_role() = 'admin');
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'staff_notifications' AND policyname = 'staff_notifications_delete_own'
+  ) THEN
+    CREATE POLICY "staff_notifications_delete_own"
+      ON staff_notifications FOR DELETE
+      USING (staff_id = auth.uid() OR current_user_role() = 'admin');
   END IF;
 END $$;
 
@@ -1173,6 +1328,12 @@ CREATE INDEX IF NOT EXISTS idx_bus_schedules_day_trip
 
 CREATE INDEX IF NOT EXISTS idx_trip_schedules_trip_number
   ON trip_schedules(trip_number);
+
+CREATE INDEX IF NOT EXISTS idx_card_reservations_reservation_id
+  ON card_reservations(reservation_id);
+
+CREATE INDEX IF NOT EXISTS idx_card_reservations_status
+  ON card_reservations(status);
 
 -- ── 26. Realtime Publications ─────────────────────────────────────────────────
 DO $$ BEGIN

@@ -73,3 +73,15 @@ export interface DashboardStats {
   todayTransactions: number;
   totalRevenue: number;
 }
+
+export interface CardReservation {
+  id: number;
+  reservationId: string;
+  name: string;
+  contact: string;
+  cardType: 'Regular' | 'Student' | 'Senior Citizen' | 'PWD';
+  pickupTerminal: string;
+  status: 'pending' | 'approved' | 'rejected' | 'completed';
+  createdAt: string;
+  updatedAt: string;
+}
