@@ -235,21 +235,24 @@ export interface Database {
         };
         Update: Partial<Database['public']['Tables']['card_reservations']['Insert']>;
       };
-      system_settings: {
+      system_config: {
         Row: {
           id: string;
           key: string;
-          value: string;
+          value: any;
           description: string | null;
           category: string;
-          updated_at: string;
+          is_public: boolean;
           updated_by: string | null;
+          updated_at: string;
+          created_at: string;
         };
-        Insert: Omit<Database['public']['Tables']['system_settings']['Row'], 'id' | 'updated_at'> & {
+        Insert: Omit<Database['public']['Tables']['system_config']['Row'], 'id' | 'updated_at' | 'created_at'> & {
           id?: string;
           updated_at?: string;
+          created_at?: string;
         };
-        Update: Partial<Database['public']['Tables']['system_settings']['Insert']>;
+        Update: Partial<Database['public']['Tables']['system_config']['Insert']>;
       };
     };
     Functions: {

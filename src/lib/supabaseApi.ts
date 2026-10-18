@@ -736,17 +736,21 @@ export const supabaseApiCalls = {
   // ── System Settings ─────────────────────────────────────────────────────
   getSystemSetting: async (key: string): Promise<string | null> => {
     const { data, error } = await supabase
-      .from('system_settings')
+      .from('system_config')
       .select('value')
       .eq('key', key)
       .single();
 
     if (error) return null;
-    return data?.value ?? null;
+    // Handle JSONB value - if it's a string, return it directly
+    const value = data?.value;
+    if (typeof value === 'string') return value;
+    if (typeof value === 'object') return JSON.stringify(value);
+    return String(value);
   },
 
   getSystemSettings: async (category?: string): Promise<Record<string, string>> => {
-    let query = supabase.from('system_settings').select('key, value');
+    let query = supabase.from('system_config').select('key, value');
 
     if (category) {
       query = query.eq('category', category);
@@ -758,7 +762,15 @@ export const supabaseApiCalls = {
 
     const settings: Record<string, string> = {};
     (data ?? []).forEach((setting: any) => {
-      settings[setting.key] = setting.value;
+      // Handle JSONB value - if it's a string, use it directly
+      const value = setting.value;
+      if (typeof value === 'string') {
+        settings[setting.key] = value;
+      } else if (typeof value === 'object') {
+        settings[setting.key] = JSON.stringify(value);
+      } else {
+        settings[setting.key] = String(value);
+      }
     });
 
     return settings;

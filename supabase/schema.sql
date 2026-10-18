@@ -259,25 +259,27 @@ CREATE TABLE IF NOT EXISTS baggage_fee_matrix (
   created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- ── 12. System Settings ─────────────────────────────────────────────────────
-CREATE TABLE IF NOT EXISTS system_settings (
+-- ── 12. System Config ─────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS system_config (
   id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   key         TEXT        UNIQUE NOT NULL,
-  value       TEXT        NOT NULL,
+  value       JSONB       NOT NULL,
   description TEXT,
   category    TEXT        NOT NULL DEFAULT 'general',
+  is_public   BOOLEAN     NOT NULL DEFAULT FALSE,
+  updated_by  UUID        REFERENCES staff_users (id),
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_by  UUID        REFERENCES staff_users (id)
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- Insert default settings
-INSERT INTO system_settings (key, value, description, category) VALUES
-  ('card_initial_balance', '100', 'Initial balance for new QR cards', 'pricing'),
-  ('card_fee', '10', 'Card issuance fee', 'pricing'),
-  ('temporary_card_balance', '100', 'Balance for temporary QR cards', 'pricing'),
-  ('card_validity_years', '1', 'Number of years cards are valid', 'general'),
-  ('refund_processing_days', '7', 'Days to process refund requests', 'operations'),
-  ('cs_ticket_sla_hours', '24', 'SLA for resolving CS tickets (hours)', 'operations')
+INSERT INTO system_config (key, value, description, category) VALUES
+  ('card_initial_balance', '"100"', 'Initial balance for new QR cards', 'pricing'),
+  ('card_fee', '"10"', 'Card issuance fee', 'pricing'),
+  ('temporary_card_balance', '"100"', 'Balance for temporary QR cards', 'pricing'),
+  ('card_validity_years', '"1"', 'Number of years cards are valid', 'general'),
+  ('refund_processing_days', '"7"', 'Days to process refund requests', 'operations'),
+  ('cs_ticket_sla_hours', '"24"', 'SLA for resolving CS tickets (hours)', 'operations')
 ON CONFLICT (key) DO NOTHING;
 
 -- ── 13. Staff Notifications ─────────────────────────────────────────────────
@@ -506,7 +508,7 @@ ALTER TABLE card_reservations     ENABLE ROW LEVEL SECURITY;
 ALTER TABLE refund_requests       ENABLE ROW LEVEL SECURITY;
 ALTER TABLE fare_matrix            ENABLE ROW LEVEL SECURITY;
 ALTER TABLE baggage_fee_matrix     ENABLE ROW LEVEL SECURITY;
-ALTER TABLE system_settings       ENABLE ROW LEVEL SECURITY;
+ALTER TABLE system_config           ENABLE ROW LEVEL SECURITY;
 ALTER TABLE staff_notifications   ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_logs            ENABLE ROW LEVEL SECURITY;
 ALTER TABLE buses                 ENABLE ROW LEVEL SECURITY;
@@ -553,7 +555,7 @@ DO $$ BEGIN
   ) THEN
     CREATE POLICY "qr_cards_insert_authenticated"
       ON qr_cards FOR INSERT
-      WITH CHECK (current_user_role() IN ('admin', 'manager', 'cs_desk'));
+      WITH CHECK (auth.role() = 'authenticated');
   END IF;
 END $$;
 
@@ -564,8 +566,8 @@ DO $$ BEGIN
   ) THEN
     CREATE POLICY "qr_cards_update_authenticated"
       ON qr_cards FOR UPDATE
-      USING (current_user_role() IN ('admin', 'manager', 'cs_desk'))
-      WITH CHECK (current_user_role() IN ('admin', 'manager', 'cs_desk'));
+      USING (auth.role() = 'authenticated')
+      WITH CHECK (auth.role() = 'authenticated');
   END IF;
 END $$;
 
@@ -740,14 +742,14 @@ DO $$ BEGIN
   END IF;
 END $$;
 
--- System settings (read-only for authenticated, admin/manager can update)
+-- System config (read-only for authenticated, admin/manager can update)
 DO $$ BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_policies
-    WHERE schemaname = 'public' AND tablename = 'system_settings' AND policyname = 'system_settings_select_authenticated'
+    WHERE schemaname = 'public' AND tablename = 'system_config' AND policyname = 'system_config_select_authenticated'
   ) THEN
-    CREATE POLICY "system_settings_select_authenticated"
-      ON system_settings FOR SELECT
+    CREATE POLICY "system_config_select_authenticated"
+      ON system_config FOR SELECT
       USING (auth.role() = 'authenticated');
   END IF;
 END $$;
@@ -755,10 +757,10 @@ END $$;
 DO $$ BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM pg_policies
-    WHERE schemaname = 'public' AND tablename = 'system_settings' AND policyname = 'system_settings_update_admin'
+    WHERE schemaname = 'public' AND tablename = 'system_config' AND policyname = 'system_config_update_admin'
   ) THEN
-    CREATE POLICY "system_settings_update_admin"
-      ON system_settings FOR UPDATE
+    CREATE POLICY "system_config_update_admin"
+      ON system_config FOR UPDATE
       USING (current_user_role() IN ('admin', 'manager'));
   END IF;
 END $$;
