@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiCalls } from '../lib/api';
 import type { CardReservation } from '../types';
-import { Search, Plus, User, Phone, MapPin, CheckCircle, XCircle, Clock, Trash2, Calendar, Printer, Check, Square } from 'lucide-react';
+import { Search, Plus, User, Phone, MapPin, CheckCircle, XCircle, Clock, Trash2, Calendar, Printer, Check, Square, RotateCcw } from 'lucide-react';
 import { useState, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { QRCodeSVG } from 'qrcode.react';
@@ -17,9 +17,9 @@ const TYPE_OPTIONS: { value: PassengerType; label: string }[] = [
 
 const STATUS_OPTIONS = [
   { value: 'pending', label: 'Pending', color: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' },
-  { value: 'approved', label: 'Approved', color: 'bg-green-500/20 text-green-400 border-green-500/30' },
-  { value: 'rejected', label: 'Rejected', color: 'bg-red-500/20 text-red-400 border-red-500/30' },
-  { value: 'completed', label: 'Completed', color: 'bg-blue-500/20 text-blue-400 border-blue-500/30' },
+  { value: 'claimed', label: 'Claimed', color: 'bg-green-500/20 text-green-400 border-green-500/30' },
+  { value: 'expired', label: 'Expired', color: 'bg-red-500/20 text-red-400 border-red-500/30' },
+  { value: 'cancelled', label: 'Cancelled', color: 'bg-gray-500/20 text-gray-400 border-gray-500/30' },
 ];
 
 function QRCardPrint({ reservations, onClose }: { reservations: CardReservation[]; onClose: () => void }) {
@@ -399,11 +399,134 @@ function CreateReservationModal({
   );
 }
 
+function StatusConfirmModal({
+  reservation,
+  newStatus,
+  cardId,
+  onCardIdChange,
+  onClose,
+  onConfirm,
+}: {
+  reservation: CardReservation;
+  newStatus: CardReservation['status'];
+  cardId: string;
+  onCardIdChange: (value: string) => void;
+  onClose: () => void;
+  onConfirm: () => void;
+}) {
+  const generateCardId = (cardType: string) => {
+    const typeIndicators: Record<string, string> = {
+      'Regular': 'RC',
+      'Student': 'SC',
+      'Senior Citizen': 'SCC',
+      'PWD': 'PC'
+    };
+    const indicator = typeIndicators[cardType] || 'RC';
+    const randomNum = Math.floor(10000000 + Math.random() * 90000000).toString();
+    const formattedNum = `${randomNum.slice(0, 3)}-${randomNum.slice(3, 5)}-${randomNum.slice(5)}`;
+    return `${indicator}-${formattedNum}`;
+  };
+
+  const handleRegenerate = () => {
+    onCardIdChange(generateCardId(reservation.cardType));
+  };
+
+  const isClaim = newStatus === 'claimed';
+  const isCancellation = newStatus === 'cancelled';
+
+  return (
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="glass-card w-full max-w-md border border-white/20 overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-white/20">
+          <h2 className="text-base font-bold text-white">
+            {isClaim ? 'Claim Reservation' : isCancellation ? 'Cancel Reservation' : 'Confirm Status Change'}
+          </h2>
+          <button onClick={onClose} className="p-2 rounded-xl hover:bg-white/10 text-white/60 border border-white/20">
+            <XCircle className="w-4 h-4" />
+          </button>
+        </div>
+        <div className="px-6 py-5 space-y-4">
+          <div className="p-4 bg-white/10 rounded-2xl border border-white/20">
+            <p className="text-xs text-white/60 mb-1">Reservation ID</p>
+            <p className="font-mono font-bold text-white text-sm">{reservation.reservationId}</p>
+          </div>
+          <div className="p-4 bg-white/10 rounded-2xl border border-white/20">
+            <p className="text-xs text-white/60 mb-1">Name</p>
+            <p className="font-semibold text-white">{reservation.name}</p>
+          </div>
+          <div className="p-4 bg-white/10 rounded-2xl border border-white/20">
+            <p className="text-xs text-white/60 mb-1">Card Type</p>
+            <p className="font-semibold text-white">{reservation.cardType}</p>
+          </div>
+
+          {isClaim && (
+            <div>
+              <label className="block text-sm font-semibold text-white/60 mb-1.5">
+                Generated Card ID
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  required
+                  value={cardId}
+                  onChange={e => onCardIdChange(e.target.value)}
+                  className="flex-1 px-4 py-3 border border-white/20 rounded-2xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white/10 text-sm text-white font-mono"
+                />
+                <button
+                  type="button"
+                  onClick={handleRegenerate}
+                  className="px-3 py-3 bg-primary-500/20 hover:bg-primary-500/30 text-primary-400 rounded-2xl border border-primary-500/30 transition-colors"
+                  title="Regenerate Card ID"
+                >
+                  🔄
+                </button>
+              </div>
+              <p className="text-xs text-white/40 mt-1">Auto-generated based on {reservation.cardType} type</p>
+            </div>
+          )}
+
+          {isCancellation && (
+            <div className="p-4 bg-red-500/20 border border-red-500/30 rounded-2xl">
+              <p className="text-sm text-red-300">
+                Are you sure you want to cancel this reservation? This action cannot be undone.
+              </p>
+            </div>
+          )}
+
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 py-2.5 border border-white/20 rounded-2xl text-sm font-medium text-white/60 hover:bg-white/10 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={onConfirm}
+              className={`flex-1 py-2.5 rounded-2xl text-sm font-semibold transition-colors shadow-soft border ${
+                isClaim
+                  ? 'bg-green-500 hover:bg-green-600 text-white border-green-400'
+                  : isCancellation
+                  ? 'bg-red-500 hover:bg-red-600 text-white border-red-400'
+                  : 'bg-primary-500 hover:bg-primary-600 text-white border-primary-400'
+              }`}
+            >
+              {isClaim ? 'Claim & Assign' : isCancellation ? 'Cancel' : 'Confirm'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function CardReservations() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedReservations, setSelectedReservations] = useState<Set<number>>(new Set());
   const [showPrintModal, setShowPrintModal] = useState(false);
+  const [statusConfirm, setStatusConfirm] = useState<{ reservation: CardReservation; newStatus: CardReservation['status'] } | null>(null);
+  const [cardId, setCardId] = useState('');
   const queryClient = useQueryClient();
 
   const { data: reservations, isLoading } = useQuery({
@@ -423,14 +546,55 @@ export default function CardReservations() {
   });
 
   const updateStatusMutation = useMutation({
-    mutationFn: ({ id, status }: { id: number; status: CardReservation['status'] }) =>
-      apiCalls.updateCardReservationStatus(id, status),
+    mutationFn: ({ id, status }: { id: number; status: CardReservation['status'] }) => {
+      console.log('Calling updateCardReservationStatus with:', { id, status });
+      return apiCalls.updateCardReservationStatus(id, status);
+    },
+    onMutate: async ({ id, status }) => {
+      console.log('onMutate called for status update:', { id, status });
+      await queryClient.cancelQueries({ queryKey: ['cardReservations'] });
+      const previousData = queryClient.getQueryData<CardReservation[]>(['cardReservations']);
+      queryClient.setQueryData<CardReservation[]>(['cardReservations'], (old) =>
+        old?.map((r) => (r.id === id ? { ...r, status } : r))
+      );
+      return { previousData };
+    },
     onSuccess: () => {
+      console.log('Status update successful');
       toast.success('Reservation status updated');
       queryClient.invalidateQueries({ queryKey: ['cardReservations'] });
+      setStatusConfirm(null);
     },
-    onError: (err: Error) => {
+    onError: (err: Error, variables, context) => {
+      console.error('Status update error:', err);
       toast.error(`Failed to update status: ${err.message}`);
+      if (context?.previousData) {
+        queryClient.setQueryData(['cardReservations'], context.previousData);
+      }
+    },
+  });
+
+  const approveMutation = useMutation({
+    mutationFn: ({ id, cardId }: { id: number; cardId: string }) =>
+      apiCalls.approveCardReservation(id, cardId),
+    onMutate: async ({ id }) => {
+      await queryClient.cancelQueries({ queryKey: ['cardReservations'] });
+      const previousData = queryClient.getQueryData<CardReservation[]>(['cardReservations']);
+      queryClient.setQueryData<CardReservation[]>(['cardReservations'], (old) =>
+        old?.map((r) => (r.id === id ? { ...r, status: 'claimed' as const } : r))
+      );
+      return { previousData };
+    },
+    onSuccess: () => {
+      toast.success('Reservation claimed and card assigned');
+      queryClient.invalidateQueries({ queryKey: ['cardReservations'] });
+      setStatusConfirm(null);
+    },
+    onError: (err: Error, variables, context) => {
+      toast.error(`Failed to claim reservation: ${err.message}`);
+      if (context?.previousData) {
+        queryClient.setQueryData(['cardReservations'], context.previousData);
+      }
     },
   });
 
@@ -459,6 +623,35 @@ export default function CardReservations() {
     setSelectedReservations(newSelected);
   };
 
+  const handleStatusChange = (reservation: CardReservation, newStatus: CardReservation['status']) => {
+    // Don't do anything if status hasn't changed
+    if (newStatus === reservation.status) return;
+
+    if (newStatus === 'claimed') {
+      // Generate card ID and show approval modal
+      const generateCardId = (cardType: string) => {
+        const typeIndicators: Record<string, string> = {
+          'Regular': 'RC',
+          'Student': 'SC',
+          'Senior Citizen': 'SCC',
+          'PWD': 'PC'
+        };
+        const indicator = typeIndicators[cardType] || 'RC';
+        const randomNum = Math.floor(10000000 + Math.random() * 90000000).toString();
+        const formattedNum = `${randomNum.slice(0, 3)}-${randomNum.slice(3, 5)}-${randomNum.slice(5)}`;
+        return `${indicator}-${formattedNum}`;
+      };
+      setCardId(generateCardId(reservation.cardType));
+      setStatusConfirm({ reservation, newStatus });
+    } else if (newStatus === 'cancelled') {
+      // Show cancellation confirmation
+      setStatusConfirm({ reservation, newStatus });
+    } else {
+      // Direct update for other statuses
+      updateStatusMutation.mutate({ id: reservation.id, status: newStatus });
+    }
+  };
+
   const isAllSelected = filteredReservations.length > 0 &&
     filteredReservations.filter(r => r.cardId).length === selectedReservations.size &&
     filteredReservations.filter(r => r.cardId).every(r => selectedReservations.has(r.id));
@@ -469,12 +662,12 @@ export default function CardReservations() {
     switch (status) {
       case 'pending':
         return <Clock className="w-5 h-5" />;
-      case 'approved':
+      case 'claimed':
         return <CheckCircle className="w-5 h-5" />;
-      case 'rejected':
+      case 'cancelled':
         return <XCircle className="w-5 h-5" />;
-      case 'completed':
-        return <CheckCircle className="w-5 h-5" />;
+      case 'expired':
+        return <Clock className="w-5 h-5" />;
       default:
         return <Clock className="w-5 h-5" />;
     }
@@ -609,25 +802,28 @@ export default function CardReservations() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center gap-2">
-                      <select
-                        value={reservation.status}
-                        onChange={(e) => updateStatusMutation.mutate({
-                          id: reservation.id,
-                          status: e.target.value as CardReservation['status']
-                        })}
-                        disabled={updateStatusMutation.isPending}
-                        className="px-2 py-1 text-xs border border-white/20 rounded-lg bg-white/10 text-white focus:ring-2 focus:ring-primary-500"
-                      >
-                        {STATUS_OPTIONS.map(opt => (
-                          <option key={opt.value} value={opt.value} className="bg-gray-800">
-                            {opt.label}
-                          </option>
-                        ))}
-                      </select>
+                      {reservation.status === 'pending' ? (
+                        <select
+                          value={reservation.status}
+                          onChange={(e) => handleStatusChange(reservation, e.target.value as CardReservation['status'])}
+                          disabled={updateStatusMutation.isPending || approveMutation.isPending}
+                          className="px-2 py-1 text-xs border border-white/20 rounded-lg bg-white/10 text-white focus:ring-2 focus:ring-primary-500"
+                        >
+                          {STATUS_OPTIONS.map(opt => (
+                            <option key={opt.value} value={opt.value} className="bg-gray-800">
+                              {opt.label}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <span className={`px-2 py-1 text-xs rounded-lg border ${STATUS_OPTIONS.find(s => s.value === reservation.status)?.color}`}>
+                          {STATUS_OPTIONS.find(s => s.value === reservation.status)?.label}
+                        </span>
+                      )}
                       <button
                         onClick={() => deleteMutation.mutate(reservation.id)}
-                        disabled={deleteMutation.isPending}
-                        className="p-1.5 rounded-lg hover:bg-red-500/20 text-red-400 transition-colors"
+                        disabled={deleteMutation.isPending || reservation.status !== 'pending'}
+                        className="p-1.5 rounded-lg hover:bg-red-500/20 text-red-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         title="Delete"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -661,6 +857,23 @@ export default function CardReservations() {
           onClose={() => {
             setShowPrintModal(false);
             setSelectedReservations(new Set());
+          }}
+        />
+      )}
+
+      {statusConfirm && (
+        <StatusConfirmModal
+          reservation={statusConfirm.reservation}
+          newStatus={statusConfirm.newStatus}
+          cardId={cardId}
+          onCardIdChange={setCardId}
+          onClose={() => setStatusConfirm(null)}
+          onConfirm={() => {
+            if (statusConfirm.newStatus === 'claimed') {
+              approveMutation.mutate({ id: statusConfirm.reservation.id, cardId });
+            } else {
+              updateStatusMutation.mutate({ id: statusConfirm.reservation.id, status: statusConfirm.newStatus });
+            }
           }}
         />
       )}

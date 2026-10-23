@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiCalls } from '../lib/api';
 import type { QRCard } from '../types';
-import { QrCode, Plus, Wallet, Clock, XCircle, Trash2, DollarSign, Printer } from 'lucide-react';
+import { QrCode, Plus, Clock, XCircle, Trash2, DollarSign, Printer, Download } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
 import toast from 'react-hot-toast';
@@ -74,14 +74,13 @@ export default function TemporaryQRCards() {
 
   const activeCards = cards?.filter(c => c.status === 'active') ?? [];
   const inactiveCards = cards?.filter(c => c.status !== 'active') ?? [];
-  const totalBalance = activeCards.length * 100; // Each card has ₱100 balance
 
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-xl font-bold text-white">Temporary QR Cards</h1>
-          <p className="text-sm text-white">Manage temporary cards with ₱100 balance</p>
+          <p className="text-sm text-white">Manage temporary cards</p>
         </div>
         <button
           onClick={() => setShowGenerateModal(true)}
@@ -104,18 +103,11 @@ export default function TemporaryQRCards() {
         <div className="space-y-6">
           {/* Summary Card */}
           <div className="glass-card p-6 border border-white/20 rounded-2xl">
-            <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-              <Wallet className="w-5 h-5 text-green-400" />
-              Summary
-            </h3>
-            <div className="grid grid-cols-3 gap-4">
+            <h3 className="text-lg font-bold text-white mb-4">Summary</h3>
+            <div className="grid grid-cols-2 gap-4">
               <div className="p-4 bg-green-500/20 border border-green-500/30 rounded-xl">
                 <p className="text-xs text-white/60 mb-1">Active Cards</p>
                 <p className="text-2xl font-bold text-green-400">{activeCards.length}</p>
-              </div>
-              <div className="p-4 bg-blue-500/20 border border-blue-500/30 rounded-xl">
-                <p className="text-xs text-white/60 mb-1">Total Balance</p>
-                <p className="text-2xl font-bold text-blue-400">₱{totalBalance.toFixed(2)}</p>
               </div>
               <div className="p-4 bg-white/10 border border-white/20 rounded-xl">
                 <p className="text-xs text-white/60 mb-1">Total Cards</p>
@@ -221,6 +213,11 @@ function CardListItem({
 }) {
   const isActive = card.status === 'active';
 
+  const handleDownload = () => {
+    // Navigate to view modal which has download functionality
+    onView();
+  };
+
   return (
     <div className={`glass-card p-4 border ${
       isActive ? 'border-green-500/30' : 'border-white/20'
@@ -239,7 +236,6 @@ function CardListItem({
         </div>
         <div className="flex items-center gap-4">
           <div className="text-right">
-            <p className="font-bold text-lg text-green-400">₱100.00</p>
             <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
               isActive
                 ? 'bg-green-500/20 text-green-400'
@@ -254,6 +250,13 @@ function CardListItem({
               className="px-3 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-semibold transition-colors border border-white/20"
             >
               View
+            </button>
+            <button
+              onClick={handleDownload}
+              className="px-3 py-2 bg-primary-500/20 hover:bg-primary-500/30 text-primary-400 rounded-xl text-xs font-semibold transition-colors border border-primary-500/30"
+              title="Download Card"
+            >
+              <Download className="w-4 h-4" />
             </button>
             {isActive && (
               <>
@@ -352,17 +355,7 @@ function GenerateModal({
                 <option value="PWD" style={{ backgroundColor: '#1f2937', color: 'white' }}>PWD</option>
               </select>
             </div>
-            
-            <div className="p-4 bg-green-500/20 border border-green-500/30 rounded-2xl">
-              <div className="flex items-center gap-3">
-                <Wallet className="w-5 h-5 text-green-400" />
-                <div>
-                  <p className="text-sm font-semibold text-white">Initial Balance</p>
-                  <p className="text-2xl font-bold text-green-400">₱100.00</p>
-                </div>
-              </div>
-            </div>
-            
+
             <p className="text-sm text-white/60">
               This card can be used multiple times until the balance is insufficient.
               The passenger will hold the card until the end of their trip.
@@ -544,19 +537,13 @@ function CardDetailModal({ card, onClose }: { card: QRCard; onClose: () => void 
               <p className="text-xs text-white/60 mb-1">Card ID</p>
               <p className="font-mono font-bold text-base text-white break-all">{card.cardId}</p>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="p-4 bg-white/10 border border-white/20 rounded-2xl">
-                <p className="text-xs text-white/60 mb-1">Balance</p>
-                <p className="font-bold text-xl text-green-400">₱100.00</p>
-              </div>
-              <div className="p-4 bg-white/10 border border-white/20 rounded-2xl">
-                <p className="text-xs text-white/60 mb-1">Status</p>
-                <p className={`font-bold text-xl capitalize ${
-                  card.status === 'active' ? 'text-green-400' : 'text-white/60'
-                }`}>
-                  {card.status}
-                </p>
-              </div>
+            <div className="p-4 bg-white/10 border border-white/20 rounded-2xl">
+              <p className="text-xs text-white/60 mb-1">Status</p>
+              <p className={`font-bold text-xl capitalize ${
+                card.status === 'active' ? 'text-green-400' : 'text-white/60'
+              }`}>
+                {card.status}
+              </p>
             </div>
             <div className="p-4 bg-white/10 border border-white/20 rounded-2xl">
               <p className="text-xs text-white/60 mb-1">Issued Date</p>
@@ -567,7 +554,6 @@ function CardDetailModal({ card, onClose }: { card: QRCard; onClose: () => void 
             <div className="p-4 bg-blue-500/20 border border-blue-500/30 rounded-2xl">
               <p className="text-xs text-blue-300 mb-2 font-semibold">How it works:</p>
               <ul className="text-xs text-blue-200 space-y-1">
-                <li>• Card has ₱100 initial balance</li>
                 <li>• Can be used for multiple trips</li>
                 <li>• Passenger holds card until trip end</li>
                 <li>• Conductor scans and displays fare</li>

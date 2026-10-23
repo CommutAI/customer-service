@@ -227,6 +227,9 @@ export interface Database {
           status: string;
           created_at: string;
           updated_at: string;
+          expires_at: string | null;
+          claimed_at: string | null;
+          card_id: string | null;
         };
         Insert: Omit<Database['public']['Tables']['card_reservations']['Row'], 'id' | 'created_at' | 'updated_at'> & {
           id?: number;

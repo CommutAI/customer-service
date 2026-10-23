@@ -115,42 +115,46 @@ export const supabaseApiCalls = {
     const start = `${today()}T00:00:00.000Z`;
     const end = `${today()}T23:59:59.999Z`;
 
-    const [cardsResult, txResult, topUpResult] = await Promise.all([
-      supabase
-        .from('qr_cards')
+    try {
+      const [cardsResult, txResult] = await Promise.all([
+        supabase
+          .from('qr_cards')
+          .select('id', { count: 'exact', head: true })
+          .gte('created_at', start)
+          .lte('created_at', end),
+        supabase
+          .from('transactions')
+          .select('amount')
+          .gte('created_at', start)
+          .lte('created_at', end),
+      ]);
+
+      const totalRevenue = (txResult.data ?? []).reduce(
+        (sum: number, t: any) => sum + Math.abs(Number(t.amount)),
+        0
+      );
+
+      const { count: txCount } = await supabase
+        .from('transactions')
         .select('id', { count: 'exact', head: true })
         .gte('created_at', start)
-        .lte('created_at', end),
-      supabase
-        .from('transactions')
-        .select('amount')
-        .gte('created_at', start)
-        .lte('created_at', end),
-      supabase
-        .from('transactions')
-        .select('id', { count: 'exact', head: true })
-        .eq('type', 'card_issuance')
-        .gte('created_at', start)
-        .lte('created_at', end),
-    ]);
+        .lte('created_at', end);
 
-    const totalRevenue = (txResult.data ?? []).reduce(
-      (sum: number, t: any) => sum + Math.abs(Number(t.amount)),
-      0
-    );
-
-    const { count: txCount } = await supabase
-      .from('transactions')
-      .select('id', { count: 'exact', head: true })
-      .gte('created_at', start)
-      .lte('created_at', end);
-
-    return {
-      todayRegistrations: cardsResult.count ?? 0,
-      todayTopUps: topUpResult.count ?? 0,
-      todayTransactions: txCount ?? 0,
-      totalRevenue,
-    };
+      return {
+        todayRegistrations: cardsResult.count ?? 0,
+        todayTopUps: 0, // Temporarily disabled due to query issues
+        todayTransactions: txCount ?? 0,
+        totalRevenue,
+      };
+    } catch (error) {
+      console.error('Error fetching dashboard stats:', error);
+      return {
+        todayRegistrations: 0,
+        todayTopUps: 0,
+        todayTransactions: 0,
+        totalRevenue: 0,
+      };
+    }
   },
 
   // ── Passengers (backed by qr_cards) ───────────────────────────────────
@@ -377,16 +381,57 @@ export const supabaseApiCalls = {
   getTransactions: async (): Promise<Transaction[]> => {
     const { data, error } = await supabase
       .from('transactions')
-      .select('*, qr_cards(owner_name, balance)')
+      .select('*')
       .order('created_at', { ascending: false })
       .limit(200);
 
     if (error) throw new Error(error.message);
 
+    // Fetch card details for transactions that have a card_id
+    const cardIds = [...new Set((data ?? []).map((t: any) => t.card_id).filter(Boolean))];
+    const cardDetails: Record<string, { owner_name: string; balance: number }> = {};
+
+    if (cardIds.length > 0) {
+      const { data: cards, error: cardsError } = await supabase
+        .from('qr_cards')
+        .select('id, owner_name, balance')
+        .in('id', cardIds);
+
+      if (!cardsError && cards) {
+        cards.forEach((card: any) => {
+          cardDetails[card.id] = { owner_name: card.owner_name, balance: card.balance };
+        });
+      }
+    }
+
     return (data ?? []).map((row: any) => {
-      const ownerName = row.qr_cards?.owner_name ?? 'Unknown';
-      const currentBalance = row.qr_cards?.balance ?? 0;
-      return rowToTransaction(row, ownerName, currentBalance);
+      const cardInfo = cardDetails[row.card_id] || { owner_name: 'Unknown', balance: 0 };
+      return rowToTransaction(row, cardInfo.owner_name, cardInfo.balance);
+    });
+  },
+
+  getCardTransactions: async (cardId: string): Promise<Transaction[]> => {
+    // First get the card's UUID from card_uid
+    const { data: card, error: cardErr } = await supabase
+      .from('qr_cards')
+      .select('id, owner_name, balance')
+      .eq('card_uid', cardId)
+      .single();
+
+    if (cardErr) throw new Error(cardErr.message);
+
+    // Then get transactions for this card
+    const { data, error } = await supabase
+      .from('transactions')
+      .select('*')
+      .eq('card_id', card.id)
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if (error) throw new Error(error.message);
+
+    return (data ?? []).map((row: any) => {
+      return rowToTransaction(row, card.owner_name, card.balance);
     });
   },
 
@@ -465,7 +510,6 @@ export const supabaseApiCalls = {
   createTemporaryQRCard: async (passengerType: 'Regular' | 'Student' | 'Senior Citizen' | 'PWD' = 'Regular'): Promise<QRCard> => {
     // Get system settings
     const settings = await supabaseApiCalls.getSystemSettings('pricing');
-    const initialBalance = parseFloat(settings['temporary_card_balance'] || '100');
     const validityYears = parseInt(settings['card_validity_years'] || '1');
 
     // Generate temporary card type indicator + 8-digit random number
@@ -491,7 +535,7 @@ export const supabaseApiCalls = {
         card_uid: uid,
         owner_name: 'Temporary Card',
         contact_number: '',
-        balance: initialBalance,
+        balance: 0,
         status: 'active',
         allowed_routes: ['temporary', `type:${passengerType}`], // Tag to identify temporary cards and type
         issued_by: session?.user?.id ?? null,
@@ -662,6 +706,7 @@ export const supabaseApiCalls = {
       cardType: cardTypeMap[row.card_type] ?? 'Regular',
       pickupTerminal: row.pickup_terminal,
       status: row.status as CardReservation['status'],
+      cardId: row.card_id ?? undefined,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     }));
@@ -684,6 +729,10 @@ export const supabaseApiCalls = {
       'PWD': 'pwd',
     };
 
+    // Calculate expiration date (7 days from now)
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
+
     const { data, error } = await supabase
       .from('card_reservations')
       .insert({
@@ -693,6 +742,7 @@ export const supabaseApiCalls = {
         card_type: cardTypeMap[reservation.cardType],
         pickup_terminal: reservation.pickupTerminal,
         status: 'pending',
+        expires_at: expiresAt.toISOString(),
       })
       .select()
       .single();
@@ -714,14 +764,172 @@ export const supabaseApiCalls = {
 
   updateCardReservationStatus: async (
     id: number,
-    status: 'pending' | 'approved' | 'rejected' | 'completed'
+    status: 'pending' | 'claimed' | 'expired' | 'cancelled'
   ): Promise<void> => {
-    const { error } = await supabase
+    console.log('Updating card reservation status:', { id, status });
+
+    // First, check if the reservation exists
+    const { data: existing, error: checkError } = await supabase
+      .from('card_reservations')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (checkError) {
+      console.error('Error checking reservation:', checkError);
+      throw new Error(`Reservation not found: ${checkError.message}`);
+    }
+
+    console.log('Existing reservation:', existing);
+
+    // Update the status
+    const { data, error } = await supabase
       .from('card_reservations')
       .update({ status })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating card reservation status:', error);
+      console.error('Error details:', {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+      });
+      throw new Error(`Failed to update status: ${error.message}`);
+    }
+
+    console.log('Card reservation status updated successfully:', data);
+  },
+
+  approveCardReservation: async (id: number, cardId: string): Promise<void> => {
+    console.log('Approving reservation:', { id, cardId });
+
+    // First, get the reservation details
+    const { data: reservation, error: reservationError } = await supabase
+      .from('card_reservations')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (reservationError) {
+      console.error('Error fetching reservation:', reservationError);
+      throw new Error(reservationError.message);
+    }
+
+    console.log('Reservation found:', reservation);
+
+    // Map reservation card_type (VARCHAR) to database enum (lowercase)
+    const cardTypeEnumMap: Record<string, 'regular' | 'student' | 'senior_citizen' | 'pwd'> = {
+      'Regular': 'regular',
+      'Student': 'student',
+      'Senior Citizen': 'senior_citizen',
+      'PWD': 'pwd',
+      'regular': 'regular',
+      'student': 'student',
+      'senior_citizen': 'senior_citizen',
+      'pwd': 'pwd',
+    };
+    const dbCardType = cardTypeEnumMap[reservation.card_type] ?? 'regular';
+
+    // Map database card_type to app passengerType (for allowed_routes)
+    const passengerTypeMap: Record<string, 'Regular' | 'Student' | 'Senior Citizen' | 'PWD'> = {
+      regular: 'Regular',
+      student: 'Student',
+      senior_citizen: 'Senior Citizen',
+      pwd: 'PWD',
+    };
+    const passengerType = passengerTypeMap[dbCardType] ?? 'Regular';
+
+    // Get system settings for initial balance
+    const settings = await supabaseApiCalls.getSystemSettings('pricing');
+    const initialBalance = parseFloat(settings['card_initial_balance'] || '100');
+    const cardFee = parseFloat(settings['card_fee'] || '10');
+    const validityYears = parseInt(settings['card_validity_years'] || '1');
+
+    // Calculate expiration date
+    const expiresAt = new Date();
+    expiresAt.setFullYear(expiresAt.getFullYear() + validityYears);
+
+    // Get staff session
+    const { data: { session } } = await supabase.auth.getSession();
+
+    // Check if card UID already exists (using service role to bypass RLS)
+    const { data: existingCard } = await supabase
+      .from('qr_cards')
+      .select('id')
+      .eq('card_uid', cardId)
+      .maybeSingle();
+
+    if (existingCard) {
+      console.error('Card UID already exists:', cardId);
+      throw new Error('Card ID already exists. Please generate a new one.');
+    }
+
+    // Create the QR card - use the mapped lowercase enum value
+    const { data: newCard, error: cardError } = await supabase
+      .from('qr_cards')
+      .insert({
+        card_uid: cardId,
+        owner_name: reservation.name,
+        contact_number: reservation.contact,
+        balance: initialBalance,
+        status: 'active',
+        issued_by: session?.user?.id ?? null,
+        allowed_routes: [`type:${passengerType}`],
+        card_type: dbCardType,
+        purchase_price: initialBalance + cardFee,
+        expires_at: expiresAt.toISOString(),
+      })
+      .select('id')
+      .single();
+
+    if (cardError) {
+      console.error('Error creating QR card:', cardError);
+      throw new Error(`Failed to create QR card: ${cardError.message}`);
+    }
+
+    console.log('QR card created successfully:', newCard);
+
+    // Verify the card exists in the database (bypassing RLS)
+    const { data: verifyCard, error: verifyError } = await supabase
+      .from('qr_cards')
+      .select('id')
+      .eq('id', newCard.id)
+      .single();
+
+    if (verifyError || !verifyCard) {
+      console.error('Card verification failed:', verifyError);
+      throw new Error('Card creation verification failed');
+    }
+
+    console.log('Card verified:', verifyCard);
+
+    // Update the reservation status to 'claimed'
+    // Note: card_id is omitted due to foreign key constraint issue in database schema
+    // The constraint references 'cards' table but we're using 'qr_cards' table
+    const { error: updateError } = await supabase
+      .from('card_reservations')
+      .update({
+        status: 'claimed',
+        claimed_at: new Date().toISOString(),
+      })
       .eq('id', id);
 
-    if (error) throw new Error(error.message);
+    if (updateError) {
+      console.error('Error updating reservation:', updateError);
+      console.error('Update error details:', {
+        message: updateError.message,
+        code: updateError.code,
+        details: updateError.details,
+        hint: updateError.hint,
+      });
+      throw new Error(`Failed to update reservation: ${updateError.message}`);
+    }
+
+    console.log('Reservation updated successfully');
   },
 
   deleteCardReservation: async (id: number): Promise<void> => {

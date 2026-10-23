@@ -4,7 +4,7 @@ import type { QRCard } from '../types';
 import {
   CreditCard, Plus, Power, PowerOff, RefreshCw,
   X, User, Phone, CheckCircle, ChevronRight, Ticket,
-  Edit, Trash2, Eye,
+  Edit, Trash2, Eye, Download,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -837,6 +837,13 @@ export default function QRCards() {
                           title="View Card"
                         >
                           <Eye className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => setViewCard(card)}
+                          className="p-2 text-white/60 hover:text-emerald-400 hover:bg-emerald-500/20 rounded-lg transition-colors"
+                          title="Download Card"
+                        >
+                          <Download className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => setEditCard(card)}

@@ -81,7 +81,8 @@ export interface CardReservation {
   contact: string;
   cardType: 'Regular' | 'Student' | 'Senior Citizen' | 'PWD';
   pickupTerminal: string;
-  status: 'pending' | 'approved' | 'rejected' | 'completed';
+  status: 'pending' | 'claimed' | 'expired' | 'cancelled';
+  cardId?: string;
   createdAt: string;
   updatedAt: string;
 }
