@@ -78,3 +78,54 @@ export async function sendFareValidationConfirmation(
 
   return sendSMS(phoneNumber, message);
 }
+
+/**
+ * Send card claim notification SMS
+ */
+export async function sendCardClaimNotification(
+  phoneNumber: string,
+  passengerName: string,
+  cardId: string,
+  initialBalance: number,
+  cardType: string
+): Promise<SMSSendResult> {
+  const message = `CommuteAI: Card Claimed Successfully!\n\nPassenger: ${passengerName}\nCard ID: ${cardId}\nType: ${cardType}\nInitial Balance: ₱${initialBalance.toFixed(2)}\n\nYour card is now active. Use it for seamless travel with CommuteAI!`;
+
+  return sendSMS(phoneNumber, message);
+}
+
+/**
+ * Send card expiration notification SMS
+ */
+export async function sendCardExpirationNotification(
+  phoneNumber: string,
+  passengerName: string,
+  cardId: string,
+  expiryDate: string
+): Promise<SMSSendResult> {
+  const message = `CommuteAI: Card Expiration Notice\n\nPassenger: ${passengerName}\nCard ID: ${cardId}\nExpires on: ${expiryDate}\n\nPlease renew your card at the terminal to continue enjoying discounted fares. Thank you!`;
+
+  return sendSMS(phoneNumber, message);
+}
+
+/**
+ * Send reservation status notification SMS
+ */
+export async function sendReservationStatusNotification(
+  phoneNumber: string,
+  passengerName: string,
+  reservationId: string,
+  status: 'claimed' | 'cancelled' | 'expired'
+): Promise<SMSSendResult> {
+  let message = '';
+
+  if (status === 'claimed') {
+    message = `CommuteAI: Reservation Claimed!\n\nPassenger: ${passengerName}\nReservation ID: ${reservationId}\n\nYour card is ready for pickup at the terminal. Please bring a valid ID.`;
+  } else if (status === 'cancelled') {
+    message = `CommuteAI: Reservation Cancelled\n\nPassenger: ${passengerName}\nReservation ID: ${reservationId}\n\nYour reservation has been cancelled. If this was a mistake, please visit the terminal to make a new reservation.`;
+  } else if (status === 'expired') {
+    message = `CommuteAI: Reservation Expired\n\nPassenger: ${passengerName}\nReservation ID: ${reservationId}\n\nYour reservation has expired. Please visit the terminal to make a new reservation.`;
+  }
+
+  return sendSMS(phoneNumber, message);
+}

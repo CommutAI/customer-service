@@ -7,7 +7,11 @@
 
 // @ts-nocheck - Database types are out of sync with schema, will be regenerated
 import { supabase } from './supabase';
-import { sendTopUpConfirmation } from './smsService';
+import {
+  sendTopUpConfirmation,
+  sendCardClaimNotification,
+  sendReservationStatusNotification,
+} from './smsService';
 import type {
   Passenger,
   QRCard,
@@ -802,6 +806,22 @@ export const supabaseApiCalls = {
     }
 
     console.log('Card reservation status updated successfully:', data);
+
+    // Send SMS notification for status changes (cancelled or expired)
+    if (status === 'cancelled' || status === 'expired') {
+      try {
+        await sendReservationStatusNotification(
+          existing.contact,
+          existing.name,
+          existing.reservation_id,
+          status
+        );
+        console.log('SMS notification sent successfully');
+      } catch (smsError) {
+        // Log SMS error but don't fail the entire operation
+        console.error('Failed to send SMS notification:', smsError);
+      }
+    }
   },
 
   approveCardReservation: async (id: number, cardId: string): Promise<void> => {
@@ -930,6 +950,21 @@ export const supabaseApiCalls = {
     }
 
     console.log('Reservation updated successfully');
+
+    // Send SMS notification to the passenger
+    try {
+      await sendCardClaimNotification(
+        reservation.contact,
+        reservation.name,
+        cardId,
+        initialBalance,
+        passengerType
+      );
+      console.log('SMS notification sent successfully');
+    } catch (smsError) {
+      // Log SMS error but don't fail the entire operation
+      console.error('Failed to send SMS notification:', smsError);
+    }
   },
 
   deleteCardReservation: async (id: number): Promise<void> => {
