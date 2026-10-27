@@ -10,6 +10,7 @@ import { supabase } from './supabase';
 import {
   sendTopUpConfirmation,
   sendCardClaimNotification,
+  sendCardExpirationNotification,
   sendReservationStatusNotification,
 } from './smsService';
 import type {
@@ -292,6 +293,21 @@ export const supabaseApiCalls = {
       .single();
 
     if (error) throw new Error(error.message);
+
+    // Send SMS notification if phone number is available
+    if (registration.contactNumber) {
+      sendCardClaimNotification(
+        registration.contactNumber,
+        registration.ownerName,
+        uid,
+        initialBalance,
+        registration.passengerType
+      ).catch((error) => {
+        console.error('Failed to send card claim notification:', error);
+        // Don't throw error - SMS failure shouldn't block the card issuance
+      });
+    }
+
     return rowToQRCard(data);
   },
 
@@ -342,8 +358,20 @@ export const supabaseApiCalls = {
 
     if (oldErr) throw new Error(oldErr.message);
 
+    // Extract passenger type from old card
+    let passengerType: 'Regular' | 'Student' | 'Senior Citizen' | 'PWD' = 'Regular';
+    if (old.card_type) {
+      const dbTypeToAppType: Record<string, 'Regular' | 'Student' | 'Senior Citizen' | 'PWD'> = {
+        'regular': 'Regular',
+        'student': 'Student',
+        'senior_citizen': 'Senior Citizen',
+        'pwd': 'PWD'
+      };
+      passengerType = dbTypeToAppType[old.card_type] || 'Regular';
+    }
+
     const newUid = `CARD${Date.now().toString(36).toUpperCase()}`;
-    
+
     // Calculate new expiration date (1 year from now)
     const expiresAt = new Date();
     expiresAt.setFullYear(expiresAt.getFullYear() + 1);
@@ -367,6 +395,21 @@ export const supabaseApiCalls = {
       .single();
 
     if (error) throw new Error(error.message);
+
+    // Send SMS notification if phone number is available
+    if (old.contact_number) {
+      sendCardClaimNotification(
+        old.contact_number,
+        old.owner_name,
+        newUid,
+        old.balance,
+        passengerType
+      ).catch((error) => {
+        console.error('Failed to send card replacement notification:', error);
+        // Don't throw error - SMS failure shouldn't block the card replacement
+      });
+    }
+
     return rowToQRCard(data);
   },
 
@@ -1017,5 +1060,40 @@ export const supabaseApiCalls = {
     });
 
     return settings;
+  },
+
+  // ── Card Expiration Check ───────────────────────────────────────────────
+  checkAndNotifyExpiredCards: async (): Promise<void> => {
+    const today = new Date();
+    const nextWeek = new Date();
+    nextWeek.setDate(today.getDate() + 7); // Notify cards expiring within 7 days
+
+    const { data: expiringCards, error } = await supabase
+      .from('qr_cards')
+      .select('*')
+      .lte('expires_at', nextWeek.toISOString())
+      .gt('expires_at', today.toISOString())
+      .eq('status', 'active')
+      .not('contact_number', 'is', null);
+
+    if (error) throw new Error(error.message);
+
+    // Send expiration notifications for each expiring card
+    for (const card of expiringCards ?? []) {
+      const expirationDate = new Date(card.expires_at).toLocaleDateString('en-PH', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+
+      sendCardExpirationNotification(
+        card.contact_number,
+        card.owner_name,
+        card.card_uid,
+        expirationDate
+      ).catch((error) => {
+        console.error(`Failed to send expiration notification for card ${card.card_uid}:`, error);
+      });
+    }
   },
 };

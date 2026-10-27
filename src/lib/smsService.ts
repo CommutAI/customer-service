@@ -1,9 +1,9 @@
 /**
  * smsService.ts
- * Service for sending SMS notifications via the backend SMS server
+ * Service for sending SMS notifications via the existing SMS API server on Raspberry Pi
  */
 
-const SMS_SERVER_URL = import.meta.env.VITE_SMS_SERVER_URL || 'http://localhost:3001';
+const SMS_API_URL = import.meta.env.VITE_SMS_API_URL || 'http://raspberry-pi-ip:8001';
 
 export interface SMSSendResult {
   success: boolean;
@@ -59,9 +59,41 @@ export async function sendTopUpConfirmation(
   newBalance: number,
   cardId: string
 ): Promise<SMSSendResult> {
-  const message = `CommuteAI: Top-up successful!\n\nPassenger: ${passengerName}\nCard: ${cardId}\nAmount: ₱${amount.toFixed(2)}\nNew Balance: ₱${newBalance.toFixed(2)}\n\nThank you for using CommuteAI!`;
+  try {
+    const response = await fetch(`${SMS_API_URL}/topup`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        phone_number: phoneNumber,
+        card_id: cardId,
+        card_holder: passengerName,
+        amount: amount,
+        new_balance: newBalance,
+      }),
+    });
 
-  return sendSMS(phoneNumber, message);
+    const data = await response.json();
+
+    if (!response.ok) {
+      return {
+        success: false,
+        error: data.detail || 'Failed to send SMS',
+      };
+    }
+
+    return {
+      success: true,
+      message: data.data?.message || 'SMS sent successfully',
+    };
+  } catch (error) {
+    console.error('SMS service error:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
 }
 
 /**
@@ -89,9 +121,40 @@ export async function sendCardClaimNotification(
   initialBalance: number,
   cardType: string
 ): Promise<SMSSendResult> {
-  const message = `CommuteAI: Card Claimed Successfully!\n\nPassenger: ${passengerName}\nCard ID: ${cardId}\nType: ${cardType}\nInitial Balance: ₱${initialBalance.toFixed(2)}\n\nYour card is now active. Use it for seamless travel with CommuteAI!`;
+  try {
+    const response = await fetch(`${SMS_API_URL}/card-claim`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        phone_number: phoneNumber,
+        card_id: cardId,
+        card_holder: passengerName,
+        passenger_type: cardType,
+      }),
+    });
 
-  return sendSMS(phoneNumber, message);
+    const data = await response.json();
+
+    if (!response.ok) {
+      return {
+        success: false,
+        error: data.detail || 'Failed to send SMS',
+      };
+    }
+
+    return {
+      success: true,
+      message: data.data?.message || 'SMS sent successfully',
+    };
+  } catch (error) {
+    console.error('SMS service error:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
 }
 
 /**
@@ -103,9 +166,40 @@ export async function sendCardExpirationNotification(
   cardId: string,
   expiryDate: string
 ): Promise<SMSSendResult> {
-  const message = `CommuteAI: Card Expiration Notice\n\nPassenger: ${passengerName}\nCard ID: ${cardId}\nExpires on: ${expiryDate}\n\nPlease renew your card at the terminal to continue enjoying discounted fares. Thank you!`;
+  try {
+    const response = await fetch(`${SMS_API_URL}/card-expiration`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        phone_number: phoneNumber,
+        card_id: cardId,
+        card_holder: passengerName,
+        expiration_date: expiryDate,
+      }),
+    });
 
-  return sendSMS(phoneNumber, message);
+    const data = await response.json();
+
+    if (!response.ok) {
+      return {
+        success: false,
+        error: data.detail || 'Failed to send SMS',
+      };
+    }
+
+    return {
+      success: true,
+      message: data.data?.message || 'SMS sent successfully',
+    };
+  } catch (error) {
+    console.error('SMS service error:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
 }
 
 /**
