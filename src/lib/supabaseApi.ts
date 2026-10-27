@@ -10,7 +10,6 @@ import { supabase } from './supabase';
 import {
   sendTopUpConfirmation,
   sendCardClaimNotification,
-  sendCardExpirationNotification,
   sendReservationStatusNotification,
 } from './smsService';
 import type {
@@ -1078,7 +1077,7 @@ export const supabaseApiCalls = {
 
     if (error) throw new Error(error.message);
 
-    // Send expiration notifications for each expiring card
+    // Queue expiration notifications for each expiring card
     for (const card of expiringCards ?? []) {
       const expirationDate = new Date(card.expires_at).toLocaleDateString('en-PH', {
         year: 'numeric',
@@ -1086,14 +1085,24 @@ export const supabaseApiCalls = {
         day: 'numeric'
       });
 
-      sendCardExpirationNotification(
-        card.contact_number,
-        card.owner_name,
-        card.card_uid,
-        expirationDate
-      ).catch((error) => {
-        console.error(`Failed to send expiration notification for card ${card.card_uid}:`, error);
-      });
+      const message = `CommuteAI: Card Expiration Notice\n\nPassenger: ${card.owner_name}\nCard ID: ${card.card_uid}\nExpires on: ${expirationDate}\n\nPlease renew your card at the terminal to continue enjoying discounted fares. Thank you!`;
+
+      await supabase
+        .from('sms_queue')
+        .insert({
+          phone_number: card.contact_number,
+          message: message,
+          sms_type: 'card_expiration',
+          status: 'pending',
+          metadata: {
+            passengerName: card.owner_name,
+            cardId: card.card_uid,
+            expiryDate: expirationDate,
+          },
+          created_at: new Date().toISOString(),
+        }).catch((error) => {
+          console.error(`Failed to queue expiration notification for card ${card.card_uid}:`, error);
+        });
     }
   },
 };

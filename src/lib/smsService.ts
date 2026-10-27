@@ -1,9 +1,10 @@
 /**
  * smsService.ts
- * Service for sending SMS notifications via the existing SMS API server on Raspberry Pi
+ * Service for queuing SMS notifications via Supabase database
+ * SMS is sent by a backend service that polls the database
  */
 
-const SMS_API_URL = import.meta.env.VITE_SMS_API_URL || 'http://raspberry-pi-ip:8001';
+import { supabase } from './supabase';
 
 export interface SMSSendResult {
   success: boolean;
@@ -12,36 +13,40 @@ export interface SMSSendResult {
 }
 
 /**
- * Send SMS notification
+ * Queue SMS to be sent by backend service
  */
-export async function sendSMS(phoneNumber: string, message: string): Promise<SMSSendResult> {
+async function queueSMS(
+  phoneNumber: string,
+  message: string,
+  smsType: string,
+  metadata?: Record<string, any>
+): Promise<SMSSendResult> {
   try {
-    const response = await fetch(`${SMS_SERVER_URL}/api/send-sms`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        phoneNumber,
-        message,
-      }),
-    });
+    const { error } = await supabase
+      .from('sms_queue')
+      .insert({
+        phone_number: phoneNumber,
+        message: message,
+        sms_type: smsType,
+        status: 'pending',
+        metadata: metadata || {},
+        created_at: new Date().toISOString(),
+      });
 
-    const data = await response.json();
-
-    if (!response.ok) {
+    if (error) {
+      console.error('Failed to queue SMS:', error);
       return {
         success: false,
-        error: data.error || 'Failed to send SMS',
+        error: error.message,
       };
     }
 
     return {
       success: true,
-      message: data.message,
+      message: 'SMS queued successfully',
     };
   } catch (error) {
-    // console.error('SMS service error:', error);
+    console.error('SMS queue error:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
@@ -59,41 +64,52 @@ export async function sendTopUpConfirmation(
   newBalance: number,
   cardId: string
 ): Promise<SMSSendResult> {
-  try {
-    const response = await fetch(`${SMS_API_URL}/topup`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        phone_number: phoneNumber,
-        card_id: cardId,
-        card_holder: passengerName,
-        amount: amount,
-        new_balance: newBalance,
-      }),
-    });
+  const message = `CommuteAI: Top-up successful!\n\nPassenger: ${passengerName}\nCard: ${cardId}\nAmount: ₱${amount.toFixed(2)}\nNew Balance: ₱${newBalance.toFixed(2)}\n\nThank you for using CommuteAI!`;
 
-    const data = await response.json();
+  return queueSMS(phoneNumber, message, 'topup', {
+    passengerName,
+    cardId,
+    amount,
+    newBalance,
+  });
+}
 
-    if (!response.ok) {
-      return {
-        success: false,
-        error: data.detail || 'Failed to send SMS',
-      };
-    }
+/**
+ * Send card claim notification SMS
+ */
+export async function sendCardClaimNotification(
+  phoneNumber: string,
+  passengerName: string,
+  cardId: string,
+  initialBalance: number,
+  cardType: string
+): Promise<SMSSendResult> {
+  const message = `CommuteAI: Card Claimed Successfully!\n\nPassenger: ${passengerName}\nCard ID: ${cardId}\nType: ${cardType}\nInitial Balance: ₱${initialBalance.toFixed(2)}\n\nYour card is now active. Use it for seamless travel with CommuteAI!`;
 
-    return {
-      success: true,
-      message: data.data?.message || 'SMS sent successfully',
-    };
-  } catch (error) {
-    console.error('SMS service error:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-    };
-  }
+  return queueSMS(phoneNumber, message, 'card_claim', {
+    passengerName,
+    cardId,
+    initialBalance,
+    cardType,
+  });
+}
+
+/**
+ * Send card expiration notification SMS
+ */
+export async function sendCardExpirationNotification(
+  phoneNumber: string,
+  passengerName: string,
+  cardId: string,
+  expiryDate: string
+): Promise<SMSSendResult> {
+  const message = `CommuteAI: Card Expiration Notice\n\nPassenger: ${passengerName}\nCard ID: ${cardId}\nExpires on: ${expiryDate}\n\nPlease renew your card at the terminal to continue enjoying discounted fares. Thank you!`;
+
+  return queueSMS(phoneNumber, message, 'card_expiration', {
+    passengerName,
+    cardId,
+    expiryDate,
+  });
 }
 
 /**
@@ -108,98 +124,12 @@ export async function sendFareValidationConfirmation(
 ): Promise<SMSSendResult> {
   const message = `CommuteAI: Fare validated!\n\nPassenger: ${passengerName}\nDestination: ${destination}\nFare: ₱${fare.toFixed(2)}\nRemaining Balance: ₱${newBalance.toFixed(2)}\n\nSafe travels!`;
 
-  return sendSMS(phoneNumber, message);
-}
-
-/**
- * Send card claim notification SMS
- */
-export async function sendCardClaimNotification(
-  phoneNumber: string,
-  passengerName: string,
-  cardId: string,
-  initialBalance: number,
-  cardType: string
-): Promise<SMSSendResult> {
-  try {
-    const response = await fetch(`${SMS_API_URL}/card-claim`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        phone_number: phoneNumber,
-        card_id: cardId,
-        card_holder: passengerName,
-        passenger_type: cardType,
-      }),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      return {
-        success: false,
-        error: data.detail || 'Failed to send SMS',
-      };
-    }
-
-    return {
-      success: true,
-      message: data.data?.message || 'SMS sent successfully',
-    };
-  } catch (error) {
-    console.error('SMS service error:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-    };
-  }
-}
-
-/**
- * Send card expiration notification SMS
- */
-export async function sendCardExpirationNotification(
-  phoneNumber: string,
-  passengerName: string,
-  cardId: string,
-  expiryDate: string
-): Promise<SMSSendResult> {
-  try {
-    const response = await fetch(`${SMS_API_URL}/card-expiration`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        phone_number: phoneNumber,
-        card_id: cardId,
-        card_holder: passengerName,
-        expiration_date: expiryDate,
-      }),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      return {
-        success: false,
-        error: data.detail || 'Failed to send SMS',
-      };
-    }
-
-    return {
-      success: true,
-      message: data.data?.message || 'SMS sent successfully',
-    };
-  } catch (error) {
-    console.error('SMS service error:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-    };
-  }
+  return queueSMS(phoneNumber, message, 'fare_validation', {
+    passengerName,
+    fare,
+    newBalance,
+    destination,
+  });
 }
 
 /**
@@ -221,5 +151,9 @@ export async function sendReservationStatusNotification(
     message = `CommuteAI: Reservation Expired\n\nPassenger: ${passengerName}\nReservation ID: ${reservationId}\n\nYour reservation has expired. Please visit the terminal to make a new reservation.`;
   }
 
-  return sendSMS(phoneNumber, message);
+  return queueSMS(phoneNumber, message, 'reservation_status', {
+    passengerName,
+    reservationId,
+    status,
+  });
 }

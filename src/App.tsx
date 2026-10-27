@@ -14,7 +14,6 @@ import Reports from './pages/Reports';
 import Passengers from './pages/Passengers';
 import CardReservations from './pages/CardReservations';
 import NotFound from './pages/NotFound';
-import { initScheduledTasks } from './lib/scheduledTasks';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -26,9 +25,6 @@ const queryClient = new QueryClient({
 });
 
 function App() {
-  // Initialize scheduled tasks (card expiration checks)
-  initScheduledTasks();
-
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
