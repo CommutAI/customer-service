@@ -26,7 +26,7 @@ async function queueSMS(
 
     // Try inserting with metadata first (new schema)
     const { error: error1 } = await supabase
-      .from('sms_queue')
+      .from('sms_queue' as any)
       .insert({
         phone_number: phoneNumber,
         message: message,
@@ -39,7 +39,7 @@ async function queueSMS(
     if (error1 && error1.message.includes('metadata')) {
       console.log('Metadata column not found, using old schema...');
       const { error: error2 } = await supabase
-        .from('sms_queue')
+        .from('sms_queue' as any)
         .insert({
           phone_number: phoneNumber,
           message: message,
