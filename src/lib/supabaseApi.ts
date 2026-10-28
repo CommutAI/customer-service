@@ -79,6 +79,7 @@ function rowToQRCard(row: any): QRCard {
     qrCode: row.card_uid,
     isTemporary,
     balance: row.balance ?? 0,
+    idFile: row.id_file,
   };
 }
 
@@ -377,6 +378,7 @@ export const supabaseApiCalls = {
         card_type: old.card_type,
         purchase_price: old.purchase_price,
         expires_at: expiresAt.toISOString(),
+        id_file: old.id_file, // Preserve ID file when replacing card
       })
       .select()
       .single();
@@ -736,6 +738,7 @@ export const supabaseApiCalls = {
       cardId: row.card_id ?? undefined,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
+      idFile: row.id_file ?? undefined,
     }));
   },
 
@@ -936,6 +939,7 @@ export const supabaseApiCalls = {
         card_type: dbCardType,
         purchase_price: initialBalance + cardFee,
         expires_at: expiresAt.toISOString(),
+        id_file: reservation.id_file, // Include ID file from reservation for Student, PWD, Senior Citizen
       })
       .select('*')
       .single();

@@ -34,6 +34,7 @@ export interface QRCard {
   qrCode: string;       // qr_cards.card_uid
   isTemporary?: boolean; // Flag to identify temporary QR cards
   balance?: number;     // qr_cards.balance
+  idFile?: string;      // qr_cards.id_file (Base64 encoded ID for Student, PWD, Senior Citizen)
 }
 
 export interface Transaction {
@@ -85,4 +86,5 @@ export interface CardReservation {
   cardId?: string;
   createdAt: string;
   updatedAt: string;
+  idFile?: string;      // Base64 encoded ID file for Student, PWD, Senior Citizen
 }
