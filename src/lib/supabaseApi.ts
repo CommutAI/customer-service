@@ -7,7 +7,10 @@
 
 // @ts-nocheck - Database types are out of sync with schema, will be regenerated
 import { supabase } from './supabase';
-import { sendTopUpConfirmation } from './smsService';
+import {
+  sendReservationStatusNotification,
+} from './smsService';
+// Note: SMS notifications for card creation/claim/topup are now handled by database triggers
 import type {
   Passenger,
   QRCard,
@@ -76,6 +79,7 @@ function rowToQRCard(row: any): QRCard {
     qrCode: row.card_uid,
     isTemporary,
     balance: row.balance ?? 0,
+    idFile: row.id_file,
   };
 }
 
@@ -115,42 +119,46 @@ export const supabaseApiCalls = {
     const start = `${today()}T00:00:00.000Z`;
     const end = `${today()}T23:59:59.999Z`;
 
-    const [cardsResult, txResult, topUpResult] = await Promise.all([
-      supabase
-        .from('qr_cards')
+    try {
+      const [cardsResult, txResult] = await Promise.all([
+        supabase
+          .from('qr_cards')
+          .select('id', { count: 'exact', head: true })
+          .gte('created_at', start)
+          .lte('created_at', end),
+        supabase
+          .from('transactions')
+          .select('amount')
+          .gte('created_at', start)
+          .lte('created_at', end),
+      ]);
+
+      const totalRevenue = (txResult.data ?? []).reduce(
+        (sum: number, t: any) => sum + Math.abs(Number(t.amount)),
+        0
+      );
+
+      const { count: txCount } = await supabase
+        .from('transactions')
         .select('id', { count: 'exact', head: true })
         .gte('created_at', start)
-        .lte('created_at', end),
-      supabase
-        .from('transactions')
-        .select('amount')
-        .gte('created_at', start)
-        .lte('created_at', end),
-      supabase
-        .from('transactions')
-        .select('id', { count: 'exact', head: true })
-        .eq('type', 'card_issuance')
-        .gte('created_at', start)
-        .lte('created_at', end),
-    ]);
+        .lte('created_at', end);
 
-    const totalRevenue = (txResult.data ?? []).reduce(
-      (sum: number, t: any) => sum + Math.abs(Number(t.amount)),
-      0
-    );
-
-    const { count: txCount } = await supabase
-      .from('transactions')
-      .select('id', { count: 'exact', head: true })
-      .gte('created_at', start)
-      .lte('created_at', end);
-
-    return {
-      todayRegistrations: cardsResult.count ?? 0,
-      todayTopUps: topUpResult.count ?? 0,
-      todayTransactions: txCount ?? 0,
-      totalRevenue,
-    };
+      return {
+        todayRegistrations: cardsResult.count ?? 0,
+        todayTopUps: 0, // Temporarily disabled due to query issues
+        todayTransactions: txCount ?? 0,
+        totalRevenue,
+      };
+    } catch (error) {
+      console.error('Error fetching dashboard stats:', error);
+      return {
+        todayRegistrations: 0,
+        todayTopUps: 0,
+        todayTransactions: 0,
+        totalRevenue: 0,
+      };
+    }
   },
 
   // ── Passengers (backed by qr_cards) ───────────────────────────────────
@@ -284,6 +292,10 @@ export const supabaseApiCalls = {
       .single();
 
     if (error) throw new Error(error.message);
+
+    // Note: SMS is sent via database trigger (queue_sms_on_card_creation)
+    // No need to queue SMS from application code - trigger handles it automatically
+
     return rowToQRCard(data);
   },
 
@@ -334,8 +346,20 @@ export const supabaseApiCalls = {
 
     if (oldErr) throw new Error(oldErr.message);
 
+    // Extract passenger type from old card
+    let passengerType: 'Regular' | 'Student' | 'Senior Citizen' | 'PWD' = 'Regular';
+    if (old.card_type) {
+      const dbTypeToAppType: Record<string, 'Regular' | 'Student' | 'Senior Citizen' | 'PWD'> = {
+        'regular': 'Regular',
+        'student': 'Student',
+        'senior_citizen': 'Senior Citizen',
+        'pwd': 'PWD'
+      };
+      passengerType = dbTypeToAppType[old.card_type] || 'Regular';
+    }
+
     const newUid = `CARD${Date.now().toString(36).toUpperCase()}`;
-    
+
     // Calculate new expiration date (1 year from now)
     const expiresAt = new Date();
     expiresAt.setFullYear(expiresAt.getFullYear() + 1);
@@ -354,11 +378,16 @@ export const supabaseApiCalls = {
         card_type: old.card_type,
         purchase_price: old.purchase_price,
         expires_at: expiresAt.toISOString(),
+        id_file: old.id_file, // Preserve ID file when replacing card
       })
       .select()
       .single();
 
     if (error) throw new Error(error.message);
+
+    // Note: SMS is sent via database trigger (queue_sms_on_card_creation)
+    // No need to queue SMS from application code - trigger handles it automatically
+
     return rowToQRCard(data);
   },
 
@@ -377,16 +406,57 @@ export const supabaseApiCalls = {
   getTransactions: async (): Promise<Transaction[]> => {
     const { data, error } = await supabase
       .from('transactions')
-      .select('*, qr_cards(owner_name, balance)')
+      .select('*')
       .order('created_at', { ascending: false })
       .limit(200);
 
     if (error) throw new Error(error.message);
 
+    // Fetch card details for transactions that have a card_id
+    const cardIds = [...new Set((data ?? []).map((t: any) => t.card_id).filter(Boolean))];
+    const cardDetails: Record<string, { owner_name: string; balance: number }> = {};
+
+    if (cardIds.length > 0) {
+      const { data: cards, error: cardsError } = await supabase
+        .from('qr_cards')
+        .select('id, owner_name, balance')
+        .in('id', cardIds);
+
+      if (!cardsError && cards) {
+        cards.forEach((card: any) => {
+          cardDetails[card.id] = { owner_name: card.owner_name, balance: card.balance };
+        });
+      }
+    }
+
     return (data ?? []).map((row: any) => {
-      const ownerName = row.qr_cards?.owner_name ?? 'Unknown';
-      const currentBalance = row.qr_cards?.balance ?? 0;
-      return rowToTransaction(row, ownerName, currentBalance);
+      const cardInfo = cardDetails[row.card_id] || { owner_name: 'Unknown', balance: 0 };
+      return rowToTransaction(row, cardInfo.owner_name, cardInfo.balance);
+    });
+  },
+
+  getCardTransactions: async (cardId: string): Promise<Transaction[]> => {
+    // First get the card's UUID from card_uid
+    const { data: card, error: cardErr } = await supabase
+      .from('qr_cards')
+      .select('id, owner_name, balance')
+      .eq('card_uid', cardId)
+      .single();
+
+    if (cardErr) throw new Error(cardErr.message);
+
+    // Then get transactions for this card
+    const { data, error } = await supabase
+      .from('transactions')
+      .select('*')
+      .eq('card_id', card.id)
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if (error) throw new Error(error.message);
+
+    return (data ?? []).map((row: any) => {
+      return rowToTransaction(row, card.owner_name, card.balance);
     });
   },
 
@@ -395,6 +465,8 @@ export const supabaseApiCalls = {
     amount: number,
     method: 'cash' | 'card'
   ): Promise<Transaction> => {
+    console.log('Top-up - Starting with passengerId:', passengerId);
+
     // 1. Fetch current card by card_uid (the format like "RC—12345678", "SC—12345678", etc.)
     const { data: card, error: cardErr } = await supabase
       .from('qr_cards')
@@ -402,7 +474,17 @@ export const supabaseApiCalls = {
       .eq('card_uid', passengerId)
       .single();
 
-    if (cardErr) throw new Error(cardErr.message);
+    if (cardErr) {
+      console.error('Top-up - Card fetch error:', cardErr);
+      throw new Error(cardErr.message);
+    }
+
+    if (!card) {
+      console.error('Top-up - Card not found for card_uid:', passengerId);
+      throw new Error('Card not found');
+    }
+
+    console.log('Top-up - Card found:', card.id, card.card_uid);
 
     // 2. No discount for reloads/top-ups - full amount is added to balance
     const finalAmount = amount;
@@ -419,44 +501,36 @@ export const supabaseApiCalls = {
     // 5. Get staff session
     const { data: { session } } = await supabase.auth.getSession();
 
-    // 6. Insert transaction record using the card's UUID (id field)
-    const { data: tx, error: txErr } = await supabase
-      .from('transactions')
+    // 6. Insert card reload record
+    console.log('Top-up - Inserting reload with card_id:', card.id);
+    const { data: reload, error: reloadErr } = await supabase
+      .from('card_reloads')
       .insert({
         card_id: card.id,
-        type: 'card_issuance',
         amount: finalAmount,
-        channel: method,
-        staff_id: session?.user?.id ?? null,
-        balance_after: newBalance,
+        reload_method: method,
+        status: 'completed',
       })
       .select()
       .single();
 
-    if (txErr) throw new Error(txErr.message);
-
-    // Send SMS confirmation if phone number is available
-    if (card.contact_number) {
-      sendTopUpConfirmation(
-        card.contact_number,
-        card.owner_name,
-        amount,
-        newBalance,
-        card.card_uid
-      ).catch(() => {
-        // console.error('Failed to send SMS confirmation:', error);
-        // Don't throw error - SMS failure shouldn't block the transaction
-      });
+    if (reloadErr) {
+      console.error('Top-up - Reload insert error:', reloadErr);
+      throw new Error(reloadErr.message);
     }
+    console.log('Top-up - Reload inserted successfully:', reload);
+
+    // Note: SMS is sent via database trigger (queue_sms_on_card_reload)
+    // No need to queue SMS from application code - trigger handles it automatically
 
     return {
-      id: tx.id,
+      id: reload.id,
       passengerId: card.id,
       passengerName: card.owner_name,
       type: 'reload',
       amount,
       balanceAfter: newBalance,
-      timestamp: tx.created_at,
+      timestamp: reload.created_at,
       method,
     };
   },
@@ -465,7 +539,6 @@ export const supabaseApiCalls = {
   createTemporaryQRCard: async (passengerType: 'Regular' | 'Student' | 'Senior Citizen' | 'PWD' = 'Regular'): Promise<QRCard> => {
     // Get system settings
     const settings = await supabaseApiCalls.getSystemSettings('pricing');
-    const initialBalance = parseFloat(settings['temporary_card_balance'] || '100');
     const validityYears = parseInt(settings['card_validity_years'] || '1');
 
     // Generate temporary card type indicator + 8-digit random number
@@ -491,7 +564,7 @@ export const supabaseApiCalls = {
         card_uid: uid,
         owner_name: 'Temporary Card',
         contact_number: '',
-        balance: initialBalance,
+        balance: 1000,
         status: 'active',
         allowed_routes: ['temporary', `type:${passengerType}`], // Tag to identify temporary cards and type
         issued_by: session?.user?.id ?? null,
@@ -662,8 +735,10 @@ export const supabaseApiCalls = {
       cardType: cardTypeMap[row.card_type] ?? 'Regular',
       pickupTerminal: row.pickup_terminal,
       status: row.status as CardReservation['status'],
+      cardId: row.card_id ?? undefined,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
+      idFile: row.id_file ?? undefined,
     }));
   },
 
@@ -684,6 +759,10 @@ export const supabaseApiCalls = {
       'PWD': 'pwd',
     };
 
+    // Calculate expiration date (7 days from now)
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
+
     const { data, error } = await supabase
       .from('card_reservations')
       .insert({
@@ -693,6 +772,7 @@ export const supabaseApiCalls = {
         card_type: cardTypeMap[reservation.cardType],
         pickup_terminal: reservation.pickupTerminal,
         status: 'pending',
+        expires_at: expiresAt.toISOString(),
       })
       .select()
       .single();
@@ -714,14 +794,205 @@ export const supabaseApiCalls = {
 
   updateCardReservationStatus: async (
     id: number,
-    status: 'pending' | 'approved' | 'rejected' | 'completed'
+    status: 'pending' | 'approved' | 'expired' | 'cancelled'
   ): Promise<void> => {
-    const { error } = await supabase
+    console.log('Updating card reservation status:', { id, status });
+
+    // Validate: 'claimed' status should only be set via claimCardReservation
+    if (status === 'claimed') {
+      throw new Error("Cannot set status to 'claimed' directly. Use claimCardReservation to claim a reservation.");
+    }
+
+    // First, check if the reservation exists
+    const { data: existing, error: checkError } = await supabase
+      .from('card_reservations')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (checkError) {
+      console.error('Error checking reservation:', checkError);
+      throw new Error(`Reservation not found: ${checkError.message}`);
+    }
+
+    console.log('Existing reservation:', existing);
+
+    // Update the status
+    const { data, error } = await supabase
       .from('card_reservations')
       .update({ status })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error updating card reservation status:', error);
+      console.error('Error details:', {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+      });
+      throw new Error(`Failed to update status: ${error.message}`);
+    }
+
+    console.log('Card reservation status updated successfully:', data);
+
+    // Send SMS notification for status changes (cancelled or expired)
+    if (status === 'cancelled' || status === 'expired') {
+      try {
+        await sendReservationStatusNotification(
+          existing.contact,
+          existing.name,
+          existing.reservation_id,
+          status
+        );
+        console.log('SMS notification sent successfully');
+      } catch (smsError) {
+        // Log SMS error but don't fail the entire operation
+        console.error('Failed to send SMS notification:', smsError);
+      }
+    }
+  },
+
+  approveCardReservation: async (id: number, cardId: string): Promise<QRCard> => {
+    console.log('Approving reservation:', { id, cardId });
+
+    // First, get the reservation details
+    const { data: reservation, error: reservationError } = await supabase
+      .from('card_reservations')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (reservationError) {
+      console.error('Error fetching reservation:', reservationError);
+      throw new Error(reservationError.message);
+    }
+
+    console.log('Reservation found:', reservation);
+
+    // Check if reservation is already approved or claimed
+    if (reservation.status === 'approved' || reservation.status === 'claimed') {
+      console.error('Reservation already processed:', reservation.status);
+      throw new Error(`Reservation is already ${reservation.status}. Cannot approve again.`);
+    }
+
+    // Map reservation card_type (VARCHAR) to database enum (lowercase)
+    const cardTypeEnumMap: Record<string, 'regular' | 'student' | 'senior_citizen' | 'pwd'> = {
+      'Regular': 'regular',
+      'Student': 'student',
+      'Senior Citizen': 'senior_citizen',
+      'PWD': 'pwd',
+      'regular': 'regular',
+      'student': 'student',
+      'senior_citizen': 'senior_citizen',
+      'pwd': 'pwd',
+    };
+    const dbCardType = cardTypeEnumMap[reservation.card_type] ?? 'regular';
+
+    // Map database card_type to app passengerType (for allowed_routes)
+    const passengerTypeMap: Record<string, 'Regular' | 'Student' | 'Senior Citizen' | 'PWD'> = {
+      regular: 'Regular',
+      student: 'Student',
+      senior_citizen: 'Senior Citizen',
+      pwd: 'PWD',
+    };
+    const passengerType = passengerTypeMap[dbCardType] ?? 'Regular';
+
+    // Get system settings for initial balance
+    const settings = await supabaseApiCalls.getSystemSettings('pricing');
+    const initialBalance = parseFloat(settings['card_initial_balance'] || '100');
+    const cardFee = parseFloat(settings['card_fee'] || '10');
+    const validityYears = parseInt(settings['card_validity_years'] || '1');
+
+    // Calculate expiration date
+    const expiresAt = new Date();
+    expiresAt.setFullYear(expiresAt.getFullYear() + validityYears);
+
+    // Get staff session
+    const { data: { session } } = await supabase.auth.getSession();
+
+    // Check if card UID already exists (using service role to bypass RLS)
+    const { data: existingCard } = await supabase
+      .from('qr_cards')
+      .select('id')
+      .eq('card_uid', cardId)
+      .maybeSingle();
+
+    if (existingCard) {
+      console.error('Card UID already exists:', cardId);
+      throw new Error('Card ID already exists. Please generate a new one.');
+    }
+
+    // Create the QR card - use the mapped lowercase enum value
+    const { data: newCard, error: cardError } = await supabase
+      .from('qr_cards')
+      .insert({
+        card_uid: cardId,
+        owner_name: reservation.name,
+        contact_number: reservation.contact,
+        balance: initialBalance,
+        status: 'active',
+        issued_by: session?.user?.id ?? null,
+        allowed_routes: [`type:${passengerType}`],
+        card_type: dbCardType,
+        purchase_price: initialBalance + cardFee,
+        expires_at: expiresAt.toISOString(),
+        id_file: reservation.id_file, // Include ID file from reservation for Student, PWD, Senior Citizen
+      })
+      .select('*')
+      .single();
+
+    if (cardError) {
+      console.error('Error creating QR card:', cardError);
+      throw new Error(`Failed to create QR card: ${cardError.message}`);
+    }
+
+    console.log('QR card created successfully:', newCard);
+
+    // Verify the card exists in the database (bypassing RLS)
+    const { data: verifyCard, error: verifyError } = await supabase
+      .from('qr_cards')
+      .select('id')
+      .eq('id', newCard.id)
+      .single();
+
+    if (verifyError || !verifyCard) {
+      console.error('Card verification failed:', verifyError);
+      throw new Error('Card creation verification failed');
+    }
+
+    console.log('Card verified:', verifyCard);
+
+    // Update the reservation status to 'approved' and link to the QR card
+    const { error: updateError } = await supabase
+      .from('card_reservations')
+      .update({
+        status: 'approved',
+        approved_at: new Date().toISOString(),
+        card_id: newCard.id,
+      })
       .eq('id', id);
 
-    if (error) throw new Error(error.message);
+    if (updateError) {
+      console.error('Error updating reservation:', updateError);
+      console.error('Update error details:', {
+        message: updateError.message,
+        code: updateError.code,
+        details: updateError.details,
+        hint: updateError.hint,
+      });
+      throw new Error(`Failed to update reservation: ${updateError.message}`);
+    }
+
+    console.log('Reservation updated successfully');
+
+    // Note: SMS is now sent via database trigger (queue_sms_on_card_created)
+    // No need to send SMS from application code
+
+    // Return the created card
+    return rowToQRCard(newCard);
   },
 
   deleteCardReservation: async (id: number): Promise<void> => {
@@ -736,17 +1007,21 @@ export const supabaseApiCalls = {
   // ── System Settings ─────────────────────────────────────────────────────
   getSystemSetting: async (key: string): Promise<string | null> => {
     const { data, error } = await supabase
-      .from('system_settings')
+      .from('system_config')
       .select('value')
       .eq('key', key)
       .single();
 
     if (error) return null;
-    return data?.value ?? null;
+    // Handle JSONB value - if it's a string, return it directly
+    const value = data?.value;
+    if (typeof value === 'string') return value;
+    if (typeof value === 'object') return JSON.stringify(value);
+    return String(value);
   },
 
   getSystemSettings: async (category?: string): Promise<Record<string, string>> => {
-    let query = supabase.from('system_settings').select('key, value');
+    let query = supabase.from('system_config').select('key, value');
 
     if (category) {
       query = query.eq('category', category);
@@ -758,9 +1033,112 @@ export const supabaseApiCalls = {
 
     const settings: Record<string, string> = {};
     (data ?? []).forEach((setting: any) => {
-      settings[setting.key] = setting.value;
+      // Handle JSONB value - if it's a string, use it directly
+      const value = setting.value;
+      if (typeof value === 'string') {
+        settings[setting.key] = value;
+      } else if (typeof value === 'object') {
+        settings[setting.key] = JSON.stringify(value);
+      } else {
+        settings[setting.key] = String(value);
+      }
     });
 
     return settings;
+  },
+
+  // ── Card Expiration Check ───────────────────────────────────────────────
+  checkAndNotifyExpiredCards: async (): Promise<void> => {
+    const today = new Date();
+    const nextWeek = new Date();
+    nextWeek.setDate(today.getDate() + 7); // Notify cards expiring within 7 days
+
+    const { data: expiringCards, error } = await supabase
+      .from('qr_cards')
+      .select('*')
+      .lte('expires_at', nextWeek.toISOString())
+      .gt('expires_at', today.toISOString())
+      .eq('status', 'active')
+      .not('contact_number', 'is', null);
+
+    if (error) throw new Error(error.message);
+
+    // Queue expiration notifications for each expiring card
+    for (const card of expiringCards ?? []) {
+      const expirationDate = new Date(card.expires_at).toLocaleDateString('en-PH', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+
+      const message = `CommuteAI: Card Expiration Notice\n\nPassenger: ${card.owner_name}\nCard ID: ${card.card_uid}\nExpires on: ${expirationDate}\n\nPlease renew your card at the terminal to continue enjoying discounted fares. Thank you!`;
+
+      await supabase
+        .from('sms_queue')
+        .insert({
+          phone_number: card.contact_number,
+          message: message,
+          sms_type: 'card_expiration',
+          status: 'pending',
+          metadata: {
+            passengerName: card.owner_name,
+            cardId: card.card_uid,
+            expiryDate: expirationDate,
+          },
+          created_at: new Date().toISOString(),
+        }).catch((error) => {
+          console.error(`Failed to queue expiration notification for card ${card.card_uid}:`, error);
+        });
+    }
+  },
+
+  claimCardReservation: async (id: number): Promise<void> => {
+    console.log('=== CLAIM RESERVATION START ===');
+    console.log('Claiming reservation:', { id });
+
+    // First, get the reservation details
+    const { data: reservation, error: reservationError } = await supabase
+      .from('card_reservations')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (reservationError) {
+      console.error('Error fetching reservation:', reservationError);
+      throw new Error(reservationError.message);
+    }
+
+    console.log('Reservation found:', reservation);
+
+    // Check if reservation is already claimed
+    if (reservation.status === 'claimed') {
+      console.error('Reservation already claimed:', reservation);
+      throw new Error('Reservation is already claimed.');
+    }
+
+    // Check if reservation has a card_id (must be approved first)
+    if (!reservation.card_id) {
+      console.error('Reservation has no card_id:', reservation);
+      throw new Error('Reservation must be approved before it can be claimed. No card has been created yet.');
+    }
+
+    // Update the reservation status to 'claimed'
+    const { error: updateError } = await supabase
+      .from('card_reservations')
+      .update({
+        status: 'claimed',
+        claimed_at: new Date().toISOString(),
+      })
+      .eq('id', id);
+
+    if (updateError) {
+      console.error('Error updating reservation:', updateError);
+      throw new Error(`Failed to claim reservation: ${updateError.message}`);
+    }
+
+    console.log('Reservation claimed successfully');
+
+    // Note: SMS is sent via database trigger (queue_sms_on_reservation_status_change)
+    // No need to queue SMS from application code - trigger handles it automatically
   },
 };

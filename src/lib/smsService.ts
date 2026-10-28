@@ -1,9 +1,10 @@
 /**
  * smsService.ts
- * Service for sending SMS notifications via the backend SMS server
+ * Service for queuing SMS notifications via Supabase database
+ * SMS is sent by a backend service that polls the database
  */
 
-const SMS_SERVER_URL = import.meta.env.VITE_SMS_SERVER_URL || 'http://localhost:3001';
+import { supabase } from './supabase';
 
 export interface SMSSendResult {
   success: boolean;
@@ -12,36 +13,72 @@ export interface SMSSendResult {
 }
 
 /**
- * Send SMS notification
+ * Queue SMS to be sent by backend service
  */
-export async function sendSMS(phoneNumber: string, message: string): Promise<SMSSendResult> {
+async function queueSMS(
+  phoneNumber: string,
+  message: string,
+  smsType: string,
+  metadata?: Record<string, any>
+): Promise<SMSSendResult> {
   try {
-    const response = await fetch(`${SMS_SERVER_URL}/api/send-sms`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        phoneNumber,
-        message,
-      }),
-    });
+    console.log('Attempting to queue SMS:', { phoneNumber, smsType, messageLength: message.length });
 
-    const data = await response.json();
+    // Try inserting with metadata first (new schema)
+    const { error: error1 } = await supabase
+      .from('sms_queue')
+      .insert({
+        phone_number: phoneNumber,
+        message: message,
+        sms_type: smsType,
+        status: 'pending',
+        metadata: metadata || {},
+      });
 
-    if (!response.ok) {
+    // If metadata column doesn't exist, try without it (old schema)
+    if (error1 && error1.message.includes('metadata')) {
+      console.log('Metadata column not found, using old schema...');
+      const { error: error2 } = await supabase
+        .from('sms_queue')
+        .insert({
+          phone_number: phoneNumber,
+          message: message,
+          sms_type: smsType,
+          status: 'pending',
+        });
+
+      if (error2) {
+        console.error('Failed to queue SMS (old schema):', error2);
+        console.error('Error details:', JSON.stringify(error2, null, 2));
+        return {
+          success: false,
+          error: error2.message,
+        };
+      }
+
+      console.log('SMS queued successfully (old schema)');
       return {
-        success: false,
-        error: data.error || 'Failed to send SMS',
+        success: true,
+        message: 'SMS queued successfully',
       };
     }
 
+    if (error1) {
+      console.error('Failed to queue SMS:', error1);
+      console.error('Error details:', JSON.stringify(error1, null, 2));
+      return {
+        success: false,
+        error: error1.message,
+      };
+    }
+
+    console.log('SMS queued successfully (new schema)');
     return {
       success: true,
-      message: data.message,
+      message: 'SMS queued successfully',
     };
   } catch (error) {
-    // console.error('SMS service error:', error);
+    console.error('SMS queue error:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
@@ -61,7 +98,50 @@ export async function sendTopUpConfirmation(
 ): Promise<SMSSendResult> {
   const message = `CommuteAI: Top-up successful!\n\nPassenger: ${passengerName}\nCard: ${cardId}\nAmount: ₱${amount.toFixed(2)}\nNew Balance: ₱${newBalance.toFixed(2)}\n\nThank you for using CommuteAI!`;
 
-  return sendSMS(phoneNumber, message);
+  return queueSMS(phoneNumber, message, 'topup', {
+    passengerName,
+    cardId,
+    amount,
+    newBalance,
+  });
+}
+
+/**
+ * Send card claim notification SMS
+ */
+export async function sendCardClaimNotification(
+  phoneNumber: string,
+  passengerName: string,
+  cardId: string,
+  initialBalance: number,
+  cardType: string
+): Promise<SMSSendResult> {
+  const message = `CommuteAI: Card Claimed Successfully!\n\nPassenger: ${passengerName}\nCard ID: ${cardId}\nType: ${cardType}\nInitial Balance: ₱${initialBalance.toFixed(2)}\n\nYour card is now active. Use it for seamless travel with CommuteAI!`;
+
+  return queueSMS(phoneNumber, message, 'card_claim', {
+    passengerName,
+    cardId,
+    initialBalance,
+    cardType,
+  });
+}
+
+/**
+ * Send card expiration notification SMS
+ */
+export async function sendCardExpirationNotification(
+  phoneNumber: string,
+  passengerName: string,
+  cardId: string,
+  expiryDate: string
+): Promise<SMSSendResult> {
+  const message = `CommuteAI: Card Expiration Notice\n\nPassenger: ${passengerName}\nCard ID: ${cardId}\nExpires on: ${expiryDate}\n\nPlease renew your card at the terminal to continue enjoying discounted fares. Thank you!`;
+
+  return queueSMS(phoneNumber, message, 'card_expiration', {
+    passengerName,
+    cardId,
+    expiryDate,
+  });
 }
 
 /**
@@ -76,5 +156,36 @@ export async function sendFareValidationConfirmation(
 ): Promise<SMSSendResult> {
   const message = `CommuteAI: Fare validated!\n\nPassenger: ${passengerName}\nDestination: ${destination}\nFare: ₱${fare.toFixed(2)}\nRemaining Balance: ₱${newBalance.toFixed(2)}\n\nSafe travels!`;
 
-  return sendSMS(phoneNumber, message);
+  return queueSMS(phoneNumber, message, 'fare_validation', {
+    passengerName,
+    fare,
+    newBalance,
+    destination,
+  });
+}
+
+/**
+ * Send reservation status notification SMS
+ */
+export async function sendReservationStatusNotification(
+  phoneNumber: string,
+  passengerName: string,
+  reservationId: string,
+  status: 'claimed' | 'cancelled' | 'expired'
+): Promise<SMSSendResult> {
+  let message = '';
+
+  if (status === 'claimed') {
+    message = `CommuteAI: Reservation Claimed!\n\nPassenger: ${passengerName}\nReservation ID: ${reservationId}\n\nYour card is ready for pickup at the terminal. Please bring a valid ID.`;
+  } else if (status === 'cancelled') {
+    message = `CommuteAI: Reservation Cancelled\n\nPassenger: ${passengerName}\nReservation ID: ${reservationId}\n\nYour reservation has been cancelled. If this was a mistake, please visit the terminal to make a new reservation.`;
+  } else if (status === 'expired') {
+    message = `CommuteAI: Reservation Expired\n\nPassenger: ${passengerName}\nReservation ID: ${reservationId}\n\nYour reservation has expired. Please visit the terminal to make a new reservation.`;
+  }
+
+  return queueSMS(phoneNumber, message, 'reservation_status', {
+    passengerName,
+    reservationId,
+    status,
+  });
 }
