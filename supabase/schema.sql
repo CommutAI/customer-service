@@ -865,9 +865,10 @@ CREATE TABLE IF NOT EXISTS card_reservations (
   card_type         VARCHAR(50) NOT NULL,
   pickup_terminal   VARCHAR(100) NOT NULL,
   id_file           TEXT,       -- Base64 encoded ID file for Student, PWD, Senior Citizen
-  status            VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'claimed', 'expired', 'cancelled')),
+  status            VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'claimed', 'expired', 'cancelled')),
   created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   expires_at        TIMESTAMPTZ NOT NULL,
+  approved_at       TIMESTAMPTZ,
   claimed_at        TIMESTAMPTZ,
   card_id           UUID        REFERENCES qr_cards (id)
 );
@@ -882,6 +883,19 @@ BEGIN
   ) THEN
     ALTER TABLE card_reservations ADD COLUMN id_file TEXT;
   END IF;
+
+  -- Add approved_at if missing
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'card_reservations' AND column_name = 'approved_at'
+  ) THEN
+    ALTER TABLE card_reservations ADD COLUMN approved_at TIMESTAMPTZ;
+  END IF;
+
+  -- Update check constraint to include 'approved' status
+  ALTER TABLE card_reservations DROP CONSTRAINT IF EXISTS card_reservations_status_check;
+  ALTER TABLE card_reservations ADD CONSTRAINT card_reservations_status_check
+    CHECK (status IN ('pending', 'approved', 'claimed', 'expired', 'cancelled'));
 END $$;
 
 -- Fix foreign key constraint if it references wrong table

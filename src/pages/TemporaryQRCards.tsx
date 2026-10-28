@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiCalls } from '../lib/api';
 import type { QRCard } from '../types';
-import { QrCode, Plus, Clock, XCircle, Trash2, DollarSign, Printer, Download } from 'lucide-react';
+import { QrCode, Plus, Clock, XCircle, Trash2, DollarSign, Printer, Download, RotateCcw } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { QRCodeCanvas } from 'qrcode.react';
 import toast from 'react-hot-toast';
@@ -17,6 +17,9 @@ export default function TemporaryQRCards() {
   const [showTopUpModal, setShowTopUpModal] = useState(false);
   const [selectedCard, setSelectedCard] = useState<QRCard | null>(null);
   const [topUpAmount, setTopUpAmount] = useState('');
+  const [activePage, setActivePage] = useState(1);
+  const [inactivePage, setInactivePage] = useState(1);
+  const itemsPerPage = 10;
   const queryClient = useQueryClient();
 
   const { data: cards, isLoading } = useQuery({
@@ -51,6 +54,19 @@ export default function TemporaryQRCards() {
     },
   });
 
+  const activateMutation = useMutation({
+    mutationFn: (cardId: string) => apiCalls.activateQR(cardId),
+    onSuccess: () => {
+      toast.success('Temporary card reactivated successfully!');
+      queryClient.invalidateQueries({ queryKey: ['temporaryQRCards'] });
+      queryClient.invalidateQueries({ queryKey: ['qrCards'] });
+      setSelectedCard(null);
+    },
+    onError: (err: Error) => {
+      toast.error(`Failed to reactivate card: ${err.message}`);
+    },
+  });
+
   const topUpMutation = useMutation({
     mutationFn: (cardId: string) => apiCalls.topUp(cardId, parseFloat(topUpAmount), 'cash'),
     onSuccess: () => {
@@ -74,6 +90,20 @@ export default function TemporaryQRCards() {
 
   const activeCards = cards?.filter(c => c.status === 'active') ?? [];
   const inactiveCards = cards?.filter(c => c.status !== 'active') ?? [];
+
+  // Pagination for active cards
+  const activeTotalPages = Math.ceil(activeCards.length / itemsPerPage);
+  const paginatedActiveCards = activeCards.slice(
+    (activePage - 1) * itemsPerPage,
+    activePage * itemsPerPage
+  );
+
+  // Pagination for inactive cards
+  const inactiveTotalPages = Math.ceil(inactiveCards.length / itemsPerPage);
+  const paginatedInactiveCards = inactiveCards.slice(
+    (inactivePage - 1) * itemsPerPage,
+    inactivePage * itemsPerPage
+  );
 
   return (
     <div>
@@ -124,17 +154,70 @@ export default function TemporaryQRCards() {
                 Active Cards ({activeCards.length})
               </h2>
               <div className="space-y-3">
-                {activeCards.map((card) => (
+                {paginatedActiveCards.map((card) => (
                   <CardListItem
                     key={card.id}
                     card={card}
                     onView={() => setSelectedCard(card)}
                     onDeactivate={() => deactivateMutation.mutate(card.id)}
+                    onActivate={() => activateMutation.mutate(card.cardId)}
                     onTopUp={() => handleTopUp(card)}
                     isDeactivating={deactivateMutation.isPending}
+                    isActivating={activateMutation.isPending}
                   />
                 ))}
               </div>
+              {activeTotalPages > 1 && (
+                <div className="flex items-center justify-between mt-4 pt-4 border-t border-white/10">
+                  <p className="text-sm text-white/60">
+                    Showing {((activePage - 1) * itemsPerPage) + 1} to {Math.min(activePage * itemsPerPage, activeCards.length)} of {activeCards.length} active cards
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setActivePage(p => Math.max(1, p - 1))}
+                      disabled={activePage === 1}
+                      className="px-3 py-2 border border-white/20 rounded-lg text-sm text-white/60 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Previous
+                    </button>
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: Math.min(5, activeTotalPages) }, (_, i) => {
+                        let pageNum;
+                        if (activeTotalPages <= 5) {
+                          pageNum = i + 1;
+                        } else if (activePage <= 3) {
+                          pageNum = i + 1;
+                        } else if (activePage >= activeTotalPages - 2) {
+                          pageNum = activeTotalPages - 4 + i;
+                        } else {
+                          pageNum = activePage - 2 + i;
+                        }
+
+                        return (
+                          <button
+                            key={pageNum}
+                            onClick={() => setActivePage(pageNum)}
+                            className={`px-3 py-2 border rounded-lg text-sm transition-colors ${
+                              activePage === pageNum
+                                ? 'bg-primary-500 text-white border-primary-400'
+                                : 'border-white/20 text-white/60 hover:bg-white/10'
+                            }`}
+                          >
+                            {pageNum}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <button
+                      onClick={() => setActivePage(p => Math.min(activeTotalPages, p + 1))}
+                      disabled={activePage === activeTotalPages}
+                      className="px-3 py-2 border border-white/20 rounded-lg text-sm text-white/60 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -146,17 +229,70 @@ export default function TemporaryQRCards() {
                 Inactive Cards ({inactiveCards.length})
               </h2>
               <div className="space-y-3">
-                {inactiveCards.map((card) => (
+                {paginatedInactiveCards.map((card) => (
                   <CardListItem
                     key={card.id}
                     card={card}
                     onView={() => setSelectedCard(card)}
                     onDeactivate={() => deactivateMutation.mutate(card.id)}
+                    onActivate={() => activateMutation.mutate(card.cardId)}
                     onTopUp={() => {}}
                     isDeactivating={deactivateMutation.isPending}
+                    isActivating={activateMutation.isPending}
                   />
                 ))}
               </div>
+              {inactiveTotalPages > 1 && (
+                <div className="flex items-center justify-between mt-4 pt-4 border-t border-white/10">
+                  <p className="text-sm text-white/60">
+                    Showing {((inactivePage - 1) * itemsPerPage) + 1} to {Math.min(inactivePage * itemsPerPage, inactiveCards.length)} of {inactiveCards.length} inactive cards
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setInactivePage(p => Math.max(1, p - 1))}
+                      disabled={inactivePage === 1}
+                      className="px-3 py-2 border border-white/20 rounded-lg text-sm text-white/60 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Previous
+                    </button>
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: Math.min(5, inactiveTotalPages) }, (_, i) => {
+                        let pageNum;
+                        if (inactiveTotalPages <= 5) {
+                          pageNum = i + 1;
+                        } else if (inactivePage <= 3) {
+                          pageNum = i + 1;
+                        } else if (inactivePage >= inactiveTotalPages - 2) {
+                          pageNum = inactiveTotalPages - 4 + i;
+                        } else {
+                          pageNum = inactivePage - 2 + i;
+                        }
+
+                        return (
+                          <button
+                            key={pageNum}
+                            onClick={() => setInactivePage(pageNum)}
+                            className={`px-3 py-2 border rounded-lg text-sm transition-colors ${
+                              inactivePage === pageNum
+                                ? 'bg-primary-500 text-white border-primary-400'
+                                : 'border-white/20 text-white/60 hover:bg-white/10'
+                            }`}
+                          >
+                            {pageNum}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <button
+                      onClick={() => setInactivePage(p => Math.min(inactiveTotalPages, p + 1))}
+                      disabled={inactivePage === inactiveTotalPages}
+                      className="px-3 py-2 border border-white/20 rounded-lg text-sm text-white/60 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -202,14 +338,18 @@ function CardListItem({
   card,
   onView,
   onDeactivate,
+  onActivate,
   onTopUp,
   isDeactivating,
+  isActivating,
 }: {
   card: QRCard;
   onView: () => void;
   onDeactivate: () => void;
+  onActivate: () => void;
   onTopUp: () => void;
   isDeactivating: boolean;
+  isActivating: boolean;
 }) {
   const isActive = card.status === 'active';
 
@@ -258,7 +398,7 @@ function CardListItem({
             >
               <Download className="w-4 h-4" />
             </button>
-            {isActive && (
+            {isActive ? (
               <>
                 <button
                   onClick={onTopUp}
@@ -274,6 +414,16 @@ function CardListItem({
                   <Trash2 className="w-4 h-4" />
                 </button>
               </>
+            ) : (
+              <button
+                onClick={onActivate}
+                disabled={isActivating}
+                className="px-3 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-xl text-xs font-semibold transition-colors disabled:opacity-50 border border-blue-400 flex items-center gap-1"
+                title="Reactivate Card"
+              >
+                <RotateCcw className="w-3 h-3" />
+                Activate
+              </button>
             )}
           </div>
         </div>

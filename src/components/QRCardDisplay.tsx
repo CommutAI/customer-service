@@ -60,15 +60,15 @@ function useCardCanvas(card: QRCard, qrRef: React.RefObject<HTMLDivElement | nul
         //   QR zone        : x=52%, y=8%, size=44% of width (square)
 
         // 2. Draw Card ID value after the "CARD ID:" label
-        ctx.font          = `700 ${Math.round(W * 0.05)}px 'Telegraf', sans-serif`; // Reduced from 0.07 to 0.05
+        ctx.font          = `700 ${Math.round(W * 0.04)}px 'Telegraf', sans-serif`; // Reduced to 0.04 for longer card IDs
         ctx.fillStyle     = '#ffffff';
         ctx.shadowColor   = 'rgba(0,0,0,0.5)';
         ctx.shadowBlur    = 4;
         ctx.shadowOffsetY = 1;
         ctx.fillText(
           card.cardId,
-          Math.round(W * 0.08),
-          Math.round(H * 0.54)   // Moved card ID down (was 0.44)
+          Math.round(W * 0.10),
+          Math.round(H * 0.52)   // Moved card ID down (was 0.44)
         );
 
         // 3. Draw QR code on the right panel (no glass style, same size as box)
@@ -110,22 +110,29 @@ export default function QRCardDisplay({ card, onClose }: Props) {
   const [showDownloadPreview, setShowDownloadPreview] = useState(false);
   const [combinedImage, setCombinedImage] = useState<string | null>(null);
 
-  // Fetch transactions when card changes
+  // Fetch transactions when card changes (only for real cards, not from reservations)
   useEffect(() => {
     const fetchTransactions = async () => {
+      // Skip fetching transactions for cards from reservations
+      if ((card as any).isFromReservation) {
+        setTransactions([]);
+        return;
+      }
+
       setIsLoadingTransactions(true);
       try {
         const txs = await apiCalls.getCardTransactions(card.cardId);
         setTransactions(txs);
       } catch (error) {
         console.error('Failed to fetch transactions:', error);
+        setTransactions([]);
       } finally {
         setIsLoadingTransactions(false);
       }
     };
 
     fetchTransactions();
-  }, [card.cardId]);
+  }, [card.cardId, (card as any).isFromReservation]);
 
   const handleGoToTopUp = () => {
     // Navigate to TopUp page with card ID pre-filled
@@ -202,7 +209,8 @@ export default function QRCardDisplay({ card, onClose }: Props) {
     if (canvas && canvas.width > 0 && canvas.height > 0) {
       const printWindow = window.open('', '', 'width=800,height=1000');
       if (printWindow) {
-        const transactionsHtml = transactions.length > 0
+        const isFromReservation = (card as any).isFromReservation;
+        const transactionsHtml = (!isFromReservation && transactions.length > 0)
           ? transactions.map(tx => `
               <tr>
                 <td style="padding: 8px; border-bottom: 1px solid #ddd;">${new Date(tx.timestamp).toLocaleDateString()}</td>
@@ -286,23 +294,31 @@ export default function QRCardDisplay({ card, onClose }: Props) {
                       <div class="info-label">Status</div>
                       <div class="info-value">${card.status}</div>
                     </div>
+                    ${!isFromReservation ? `
                     <div class="info-item">
                       <div class="info-label">Current Balance</div>
                       <div class="info-value">₱${(card.balance ?? 0).toFixed(2)}</div>
                     </div>
+                    ` : ''}
                     <div class="info-item">
                       <div class="info-label">Issued Date</div>
                       <div class="info-value">${new Date(card.issuedAt).toLocaleDateString()}</div>
                     </div>
-                    ${card.expiresAt ? `
+                    ${!isFromReservation && card.expiresAt ? `
                     <div class="info-item">
                       <div class="info-label">Expiration Date</div>
                       <div class="info-value">${new Date(card.expiresAt).toLocaleDateString()}</div>
                     </div>
                     ` : ''}
+                    ${isFromReservation ? `
+                    <div class="info-item" style="grid-column: span 2;">
+                      <div class="info-label">Note</div>
+                      <div class="info-value" style="color: #16a34a;">Card from reservation - activate to enable top-up</div>
+                    </div>
+                    ` : ''}
                   </div>
                 </div>
-
+                ${!isFromReservation ? `
                 <div class="card-section">
                   <h2>Transaction History</h2>
                   <table>
@@ -319,6 +335,7 @@ export default function QRCardDisplay({ card, onClose }: Props) {
                     </tbody>
                   </table>
                 </div>
+                ` : ''}
               </div>
             </body>
           </html>
@@ -393,10 +410,22 @@ export default function QRCardDisplay({ card, onClose }: Props) {
                 <p className="text-white/60 uppercase tracking-wide text-[10px]">Status</p>
                 <p className="font-semibold text-emerald-400 mt-0.5 capitalize">{card.status}</p>
               </div>
-              {card.expiresAt && (
-                <div className="col-span-2">
+              {! (card as any).isFromReservation && card.balance !== undefined && (
+                <div>
+                  <p className="text-white/60 uppercase tracking-wide text-[10px]">Balance</p>
+                  <p className="font-semibold text-white mt-0.5">₱{(card.balance ?? 0).toFixed(2)}</p>
+                </div>
+              )}
+              {! (card as any).isFromReservation && card.expiresAt && (
+                <div>
                   <p className="text-white/60 uppercase tracking-wide text-[10px]">Expiration Date</p>
                   <p className="font-semibold text-white mt-0.5">{new Date(card.expiresAt).toLocaleDateString()}</p>
+                </div>
+              )}
+              {(card as any).isFromReservation && (
+                <div className="col-span-2">
+                  <p className="text-white/60 uppercase tracking-wide text-[10px]">Note</p>
+                  <p className="font-semibold text-emerald-400 mt-0.5">Card from reservation - activate to enable top-up</p>
                 </div>
               )}
             </div>
@@ -418,13 +447,15 @@ export default function QRCardDisplay({ card, onClose }: Props) {
                   Print
                 </button>
               </div>
-              <button
-                onClick={handleGoToTopUp}
-                className="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl text-sm font-semibold flex items-center justify-center gap-2 transition-colors border border-amber-400"
-              >
-                <Wallet className="w-4 h-4" />
-                Proceed to Top-up
-              </button>
+              {! (card as any).isFromReservation && (
+                <button
+                  onClick={handleGoToTopUp}
+                  className="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl text-sm font-semibold flex items-center justify-center gap-2 transition-colors border border-amber-400"
+                >
+                  <Wallet className="w-4 h-4" />
+                  Proceed to Top-up
+                </button>
+              )}
             </div>
         </>
       </div>

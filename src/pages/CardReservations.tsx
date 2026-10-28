@@ -1,10 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiCalls } from '../lib/api';
 import type { CardReservation } from '../types';
-import { Search, Plus, User, Phone, MapPin, CheckCircle, XCircle, Clock, Trash2, Calendar, Printer, Check, Square, RotateCcw } from 'lucide-react';
+import { Search, Plus, User, Phone, MapPin, CheckCircle, XCircle, Clock, Trash2, Calendar, Printer, Check, X, RotateCcw, Eye } from 'lucide-react';
 import { useState, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { QRCodeSVG } from 'qrcode.react';
+import QRCardDisplay from '../components/QRCardDisplay';
+import type { QRCard } from '../types';
 
 type PassengerType = 'Regular' | 'Student' | 'Senior Citizen' | 'PWD';
 
@@ -17,10 +19,14 @@ const TYPE_OPTIONS: { value: PassengerType; label: string }[] = [
 
 const STATUS_OPTIONS = [
   { value: 'pending', label: 'Pending', color: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' },
+  { value: 'approved', label: 'Approved', color: 'bg-blue-500/20 text-blue-400 border-blue-500/30' },
   { value: 'claimed', label: 'Claimed', color: 'bg-green-500/20 text-green-400 border-green-500/30' },
   { value: 'expired', label: 'Expired', color: 'bg-red-500/20 text-red-400 border-red-500/30' },
   { value: 'cancelled', label: 'Cancelled', color: 'bg-gray-500/20 text-gray-400 border-gray-500/30' },
 ];
+
+// Status options that can be changed via dropdown
+const STATUS_CHANGE_OPTIONS = STATUS_OPTIONS.filter(opt => opt.value !== 'approved' && opt.value !== 'claimed');
 
 function QRCardPrint({ reservations, onClose }: { reservations: CardReservation[]; onClose: () => void }) {
   const printRef = useRef<HTMLDivElement>(null);
@@ -406,6 +412,7 @@ function StatusConfirmModal({
   onCardIdChange,
   onClose,
   onConfirm,
+  isPending,
 }: {
   reservation: CardReservation;
   newStatus: CardReservation['status'];
@@ -413,6 +420,7 @@ function StatusConfirmModal({
   onCardIdChange: (value: string) => void;
   onClose: () => void;
   onConfirm: () => void;
+  isPending?: boolean;
 }) {
   const generateCardId = (cardType: string) => {
     const typeIndicators: Record<string, string> = {
@@ -431,7 +439,7 @@ function StatusConfirmModal({
     onCardIdChange(generateCardId(reservation.cardType));
   };
 
-  const isClaim = newStatus === 'claimed';
+  const isApprove = newStatus === 'approved';
   const isCancellation = newStatus === 'cancelled';
 
   return (
@@ -439,7 +447,7 @@ function StatusConfirmModal({
       <div className="glass-card w-full max-w-md border border-white/20 overflow-hidden">
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/20">
           <h2 className="text-base font-bold text-white">
-            {isClaim ? 'Claim Reservation' : isCancellation ? 'Cancel Reservation' : 'Confirm Status Change'}
+            {isApprove ? 'Approve Reservation' : isCancellation ? 'Cancel Reservation' : 'Confirm Status Change'}
           </h2>
           <button onClick={onClose} className="p-2 rounded-xl hover:bg-white/10 text-white/60 border border-white/20">
             <XCircle className="w-4 h-4" />
@@ -459,7 +467,7 @@ function StatusConfirmModal({
             <p className="font-semibold text-white">{reservation.cardType}</p>
           </div>
 
-          {isClaim && (
+          {isApprove && (
             <div>
               <label className="block text-sm font-semibold text-white/60 mb-1.5">
                 Generated Card ID
@@ -503,20 +511,30 @@ function StatusConfirmModal({
             </button>
             <button
               onClick={onConfirm}
-              className={`flex-1 py-2.5 rounded-2xl text-sm font-semibold transition-colors shadow-soft border ${
-                isClaim
+              disabled={isPending}
+              className={`flex-1 py-2.5 rounded-2xl text-sm font-semibold transition-colors shadow-soft border disabled:opacity-50 disabled:cursor-not-allowed ${
+                isApprove
                   ? 'bg-green-500 hover:bg-green-600 text-white border-green-400'
                   : isCancellation
                   ? 'bg-red-500 hover:bg-red-600 text-white border-red-400'
                   : 'bg-primary-500 hover:bg-primary-600 text-white border-primary-400'
               }`}
             >
-              {isClaim ? 'Claim & Assign' : isCancellation ? 'Cancel' : 'Confirm'}
+              {isPending ? 'Processing...' : isApprove ? 'Approve & Create Card' : isCancellation ? 'Cancel' : 'Confirm'}
             </button>
           </div>
         </div>
       </div>
     </div>
+  );
+}
+
+function ViewCardModal({ card, onClose }: { card: QRCard; onClose: () => void }) {
+  return (
+    <QRCardDisplay
+      card={card}
+      onClose={onClose}
+    />
   );
 }
 
@@ -527,6 +545,9 @@ export default function CardReservations() {
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [statusConfirm, setStatusConfirm] = useState<{ reservation: CardReservation; newStatus: CardReservation['status'] } | null>(null);
   const [cardId, setCardId] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+  const [viewCard, setViewCard] = useState<QRCard | null>(null);
   const queryClient = useQueryClient();
 
   const { data: reservations, isLoading } = useQuery({
@@ -546,7 +567,7 @@ export default function CardReservations() {
   });
 
   const updateStatusMutation = useMutation({
-    mutationFn: ({ id, status }: { id: number; status: CardReservation['status'] }) => {
+    mutationFn: ({ id, status }: { id: number; status: 'pending' | 'approved' | 'expired' | 'cancelled' }) => {
       console.log('Calling updateCardReservationStatus with:', { id, status });
       return apiCalls.updateCardReservationStatus(id, status);
     },
@@ -581,32 +602,61 @@ export default function CardReservations() {
       await queryClient.cancelQueries({ queryKey: ['cardReservations'] });
       const previousData = queryClient.getQueryData<CardReservation[]>(['cardReservations']);
       queryClient.setQueryData<CardReservation[]>(['cardReservations'], (old) =>
-        old?.map((r) => (r.id === id ? { ...r, status: 'claimed' as const } : r))
+        old?.map((r) => (r.id === id ? { ...r, status: 'approved' as const } : r))
       );
       return { previousData };
     },
-    onSuccess: () => {
-      toast.success('Reservation claimed and card assigned');
+    onSuccess: (card: QRCard) => {
+      toast.success('Reservation approved and card created');
       queryClient.invalidateQueries({ queryKey: ['cardReservations'] });
+      queryClient.invalidateQueries({ queryKey: ['qrCards'] });
       setStatusConfirm(null);
+      // Automatically open card preview with the actual card data
+      setViewCard(card);
     },
     onError: (err: Error, variables, context) => {
-      toast.error(`Failed to claim reservation: ${err.message}`);
+      toast.error(`Failed to approve reservation: ${err.message}`);
       if (context?.previousData) {
         queryClient.setQueryData(['cardReservations'], context.previousData);
       }
     },
   });
 
+  const claimMutation = useMutation({
+    mutationFn: (id: number) => apiCalls.claimCardReservation(id),
+    onSuccess: () => {
+      toast.success('Reservation claimed successfully');
+      queryClient.invalidateQueries({ queryKey: ['cardReservations'] });
+      queryClient.invalidateQueries({ queryKey: ['qrCards'] });
+    },
+    onError: (err: Error) => {
+      toast.error(`Failed to claim reservation: ${err.message}`);
+    },
+  });
+
   const filteredReservations = reservations?.filter(r =>
-    r.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    r.status !== 'claimed' && // Hide claimed reservations
+    (r.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     r.reservationId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    r.contact.toLowerCase().includes(searchTerm.toLowerCase())
+    r.contact.toLowerCase().includes(searchTerm.toLowerCase()))
   ) || [];
+
+  // Pagination
+  const totalPages = Math.ceil(filteredReservations.length / itemsPerPage);
+  const paginatedReservations = filteredReservations.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  // Reset to page 1 when search changes
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+    setCurrentPage(1);
+  };
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      const allWithCardIds = filteredReservations.filter(r => r.cardId).map(r => r.id);
+      const allWithCardIds = paginatedReservations.filter(r => r.cardId).map(r => r.id);
       setSelectedReservations(new Set(allWithCardIds));
     } else {
       setSelectedReservations(new Set());
@@ -627,7 +677,7 @@ export default function CardReservations() {
     // Don't do anything if status hasn't changed
     if (newStatus === reservation.status) return;
 
-    if (newStatus === 'claimed') {
+    if (newStatus === 'approved') {
       // Generate card ID and show approval modal
       const generateCardId = (cardType: string) => {
         const typeIndicators: Record<string, string> = {
@@ -646,15 +696,18 @@ export default function CardReservations() {
     } else if (newStatus === 'cancelled') {
       // Show cancellation confirmation
       setStatusConfirm({ reservation, newStatus });
+    } else if (newStatus === 'claimed') {
+      // Cannot claim directly from dropdown - must use claim button
+      return;
     } else {
-      // Direct update for other statuses
-      updateStatusMutation.mutate({ id: reservation.id, status: newStatus });
+      // Direct update for other statuses (pending, expired)
+      updateStatusMutation.mutate({ id: reservation.id, status: newStatus as 'pending' | 'approved' | 'expired' | 'cancelled' });
     }
   };
 
-  const isAllSelected = filteredReservations.length > 0 &&
-    filteredReservations.filter(r => r.cardId).length === selectedReservations.size &&
-    filteredReservations.filter(r => r.cardId).every(r => selectedReservations.has(r.id));
+  const isAllSelected = paginatedReservations.length > 0 &&
+    paginatedReservations.filter(r => r.cardId).length === selectedReservations.size &&
+    paginatedReservations.filter(r => r.cardId).every(r => selectedReservations.has(r.id));
 
   const selectedReservationsData = filteredReservations.filter(r => selectedReservations.has(r.id));
 
@@ -662,6 +715,8 @@ export default function CardReservations() {
     switch (status) {
       case 'pending':
         return <Clock className="w-5 h-5" />;
+      case 'approved':
+        return <CheckCircle className="w-5 h-5" />;
       case 'claimed':
         return <CheckCircle className="w-5 h-5" />;
       case 'cancelled':
@@ -732,7 +787,7 @@ export default function CardReservations() {
               type="text"
               placeholder="Search by name, reservation ID, or contact..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               className="w-full pl-12 pr-4 py-3 border border-white/20 rounded-2xl focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white/10 text-white placeholder-white/40"
             />
           </div>
@@ -742,14 +797,6 @@ export default function CardReservations() {
           <table className="w-full">
             <thead className="bg-white/5">
               <tr>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider w-12">
-                  <input
-                    type="checkbox"
-                    checked={isAllSelected}
-                    onChange={(e) => handleSelectAll(e.target.checked)}
-                    className="w-4 h-4 rounded border-white/20 bg-white/10 text-primary-500 focus:ring-2 focus:ring-primary-500"
-                  />
-                </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Status</th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Reservation ID</th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Name</th>
@@ -761,20 +808,8 @@ export default function CardReservations() {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/10">
-              {filteredReservations.map((reservation) => (
+              {paginatedReservations.map((reservation) => (
                 <tr key={reservation.id} className="hover:bg-white/5 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {reservation.cardId ? (
-                      <input
-                        type="checkbox"
-                        checked={selectedReservations.has(reservation.id)}
-                        onChange={(e) => handleSelectOne(reservation.id, e.target.checked)}
-                        className="w-4 h-4 rounded border-white/20 bg-white/10 text-primary-500 focus:ring-2 focus:ring-primary-500"
-                      />
-                    ) : (
-                      <div className="w-4 h-4" />
-                    )}
-                  </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border ${getStatusColor(reservation.status)}`}>
                       {getStatusIcon(reservation.status)}
@@ -803,31 +838,44 @@ export default function CardReservations() {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center gap-2">
                       {reservation.status === 'pending' ? (
-                        <select
-                          value={reservation.status}
-                          onChange={(e) => handleStatusChange(reservation, e.target.value as CardReservation['status'])}
-                          disabled={updateStatusMutation.isPending || approveMutation.isPending}
-                          className="px-2 py-1 text-xs border border-white/20 rounded-lg bg-white/10 text-white focus:ring-2 focus:ring-primary-500"
-                        >
-                          {STATUS_OPTIONS.map(opt => (
-                            <option key={opt.value} value={opt.value} className="bg-gray-800">
-                              {opt.label}
-                            </option>
-                          ))}
-                        </select>
+                        <>
+                          <button
+                            onClick={() => handleStatusChange(reservation, 'approved')}
+                            disabled={approveMutation.isPending}
+                            className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                            title="Approve & Create Card"
+                          >
+                            <Check className="w-4 h-4" />
+                            Approve
+                          </button>
+                          <button
+                            onClick={() => handleStatusChange(reservation, 'cancelled')}
+                            disabled={updateStatusMutation.isPending}
+                            className="px-3 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                            title="Cancel"
+                          >
+                            <X className="w-4 h-4" />
+                            Cancel
+                          </button>
+                        </>
                       ) : (
-                        <span className={`px-2 py-1 text-xs rounded-lg border ${STATUS_OPTIONS.find(s => s.value === reservation.status)?.color}`}>
-                          {STATUS_OPTIONS.find(s => s.value === reservation.status)?.label}
-                        </span>
+                        <>
+                          <span className={`px-3 py-2 text-sm rounded-lg border ${STATUS_OPTIONS.find(s => s.value === reservation.status)?.color}`}>
+                            {STATUS_OPTIONS.find(s => s.value === reservation.status)?.label}
+                          </span>
+                          {reservation.status === 'approved' && (
+                            <button
+                              onClick={() => claimMutation.mutate(reservation.id)}
+                              disabled={claimMutation.isPending}
+                              className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                              title="Claim Card"
+                            >
+                              <Check className="w-4 h-4" />
+                              Claim
+                            </button>
+                          )}
+                        </>
                       )}
-                      <button
-                        onClick={() => deleteMutation.mutate(reservation.id)}
-                        disabled={deleteMutation.isPending || reservation.status !== 'pending'}
-                        className="p-1.5 rounded-lg hover:bg-red-500/20 text-red-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        title="Delete"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
                     </div>
                   </td>
                 </tr>
@@ -840,6 +888,58 @@ export default function CardReservations() {
           <div className="text-center py-12">
             <Calendar className="w-12 h-12 mx-auto text-white/20 mb-4" />
             <p className="text-white/60">No reservations found</p>
+          </div>
+        )}
+
+        {filteredReservations.length > 0 && (
+          <div className="px-6 py-4 border-t border-white/10 flex items-center justify-between">
+            <p className="text-sm text-white/60">
+              Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredReservations.length)} of {filteredReservations.length} reservations
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-2 border border-white/20 rounded-lg text-sm text-white/60 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Previous
+              </button>
+              <div className="flex items-center gap-1">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum;
+                  if (totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (currentPage <= 3) {
+                    pageNum = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    pageNum = currentPage - 2 + i;
+                  }
+
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={`px-3 py-2 border rounded-lg text-sm transition-colors ${
+                        currentPage === pageNum
+                          ? 'bg-primary-500 text-white border-primary-400'
+                          : 'border-white/20 text-white/60 hover:bg-white/10'
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+              </div>
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="px-3 py-2 border border-white/20 rounded-lg text-sm text-white/60 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Next
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -868,13 +968,21 @@ export default function CardReservations() {
           cardId={cardId}
           onCardIdChange={setCardId}
           onClose={() => setStatusConfirm(null)}
+          isPending={statusConfirm.newStatus === 'approved' ? approveMutation.isPending : updateStatusMutation.isPending}
           onConfirm={() => {
-            if (statusConfirm.newStatus === 'claimed') {
+            if (statusConfirm.newStatus === 'approved') {
               approveMutation.mutate({ id: statusConfirm.reservation.id, cardId });
             } else {
-              updateStatusMutation.mutate({ id: statusConfirm.reservation.id, status: statusConfirm.newStatus });
+              updateStatusMutation.mutate({ id: statusConfirm.reservation.id, status: statusConfirm.newStatus as 'pending' | 'approved' | 'expired' | 'cancelled' });
             }
           }}
+        />
+      )}
+
+      {viewCard && (
+        <ViewCardModal
+          card={viewCard}
+          onClose={() => setViewCard(null)}
         />
       )}
     </div>

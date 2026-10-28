@@ -1,10 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiCalls } from '../lib/api';
-import type { QRCard } from '../types';
+import type { QRCard, CardReservation } from '../types';
 import {
   CreditCard, Plus, Power, PowerOff, RefreshCw,
   X, User, Phone, CheckCircle, ChevronRight, Ticket,
-  Edit, Trash2, Eye, Download,
+  Edit, Trash2, Eye, Download, Search,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -559,6 +559,9 @@ export default function QRCards() {
   const [editCard, setEditCard]           = useState<QRCard | null>(null);
   const [deleteCard, setDeleteCard]       = useState<QRCard | null>(null);
   const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchTerm, setSearchTerm] = useState('');
+  const itemsPerPage = 10;
   const queryClient = useQueryClient();
 
   const { data: cards, isLoading } = useQuery({
@@ -571,6 +574,39 @@ export default function QRCards() {
     queryFn: apiCalls.getTemporaryQRCards,
   });
 
+  const { data: reservations } = useQuery({
+    queryKey: ['cardReservations'],
+    queryFn: apiCalls.getCardReservations,
+  });
+
+  // Convert claimed reservations to QRCard format - fetch actual cards from qr_cards table
+  const claimedCards = useMemo(() => {
+    if (!reservations || !cards) return [];
+    return reservations
+      .filter(r => r.status === 'claimed' && r.cardId)
+      .map(r => {
+        // Find the actual card in qr_cards table
+        const actualCard = cards.find(c => c.cardId === r.cardId);
+        if (actualCard) {
+          return { ...actualCard, isFromReservation: true };
+        }
+        // Fallback if card not found (shouldn't happen)
+        return {
+          id: r.id.toString(),
+          passengerId: r.id.toString(),
+          cardId: r.cardId!,
+          passengerName: r.name,
+          passengerType: r.cardType as QRCard['passengerType'],
+          contactNumber: r.contact,
+          status: 'active' as const,
+          issuedAt: r.createdAt,
+          qrCode: r.cardId!,
+          balance: 0,
+          isFromReservation: true,
+        };
+      });
+  }, [reservations, cards]);
+
   // Calculate card counts
   const cardCounts = useMemo(() => {
     // Exclude temporary cards from passenger type counts
@@ -580,8 +616,9 @@ export default function QRCards() {
     const seniorCount = nonTempCards.filter(c => c.passengerType === 'Senior Citizen').length || 0;
     const pwdCount = nonTempCards.filter(c => c.passengerType === 'PWD').length || 0;
     const tempCount = tempCards?.length || 0;
+    const claimedCount = claimedCards.length || 0;
     // Total is sum of individual counts to avoid double-counting
-    const totalCount = regularCount + studentCount + seniorCount + pwdCount + tempCount;
+    const totalCount = regularCount + studentCount + seniorCount + pwdCount + tempCount + claimedCount;
 
     return {
       temporary: tempCount,
@@ -589,9 +626,10 @@ export default function QRCards() {
       student: studentCount,
       senior: seniorCount,
       pwd: pwdCount,
+      claimed: claimedCount,
       total: totalCount,
     };
-  }, [cards, tempCards]);
+  }, [cards, tempCards, claimedCards]);
 
   const activateMutation = useMutation({
     mutationFn: apiCalls.activateQR,
@@ -646,6 +684,18 @@ export default function QRCards() {
     navigate('/');  // Navigate to dashboard
   };
 
+  // Reset to page 1 when filter changes
+  const handleFilterChange = (filter: string | null) => {
+    setSelectedFilter(filter);
+    setCurrentPage(1);
+  };
+
+  // Reset to page 1 when search changes
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+    setCurrentPage(1);
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -672,7 +722,7 @@ export default function QRCards() {
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
         {/* Total Cards */}
         <button
-          onClick={() => setSelectedFilter(selectedFilter === 'all' ? null : 'all')}
+          onClick={() => handleFilterChange(selectedFilter === 'all' ? null : 'all')}
           className={`bg-linear-to-br from-gray-600 to-gray-700 rounded-2xl p-4 text-white shadow-soft transition-all hover:scale-105 border border-white/20 ${
             selectedFilter === 'all' ? 'ring-2 ring-white ring-offset-2 ring-offset-gray-700' : ''
           }`}
@@ -686,7 +736,7 @@ export default function QRCards() {
 
         {/* Temporary Cards */}
         <button
-          onClick={() => setSelectedFilter(selectedFilter === 'temporary' ? null : 'temporary')}
+          onClick={() => handleFilterChange(selectedFilter === 'temporary' ? null : 'temporary')}
           className={`bg-linear-to-br from-orange-500 to-orange-600 rounded-2xl p-4 text-white shadow-soft transition-all hover:scale-105 border border-white/20 ${
             selectedFilter === 'temporary' ? 'ring-2 ring-white ring-offset-2 ring-offset-orange-600' : ''
           }`}
@@ -700,7 +750,7 @@ export default function QRCards() {
 
         {/* Regular Cards */}
         <button
-          onClick={() => setSelectedFilter(selectedFilter === 'Regular' ? null : 'Regular')}
+          onClick={() => handleFilterChange(selectedFilter === 'Regular' ? null : 'Regular')}
           className={`bg-linear-to-br from-blue-500 to-blue-600 rounded-2xl p-4 text-white shadow-soft transition-all hover:scale-105 border border-white/20 ${
             selectedFilter === 'Regular' ? 'ring-2 ring-white ring-offset-2 ring-offset-blue-600' : ''
           }`}
@@ -714,7 +764,7 @@ export default function QRCards() {
 
         {/* Student Cards */}
         <button
-          onClick={() => setSelectedFilter(selectedFilter === 'Student' ? null : 'Student')}
+          onClick={() => handleFilterChange(selectedFilter === 'Student' ? null : 'Student')}
           className={`bg-linear-to-br from-green-500 to-green-600 rounded-2xl p-4 text-white shadow-soft transition-all hover:scale-105 border border-white/20 ${
             selectedFilter === 'Student' ? 'ring-2 ring-white ring-offset-2 ring-offset-green-600' : ''
           }`}
@@ -728,7 +778,7 @@ export default function QRCards() {
 
         {/* PWD Cards */}
         <button
-          onClick={() => setSelectedFilter(selectedFilter === 'PWD' ? null : 'PWD')}
+          onClick={() => handleFilterChange(selectedFilter === 'PWD' ? null : 'PWD')}
           className={`bg-linear-to-br from-purple-500 to-purple-600 rounded-2xl p-4 text-white shadow-soft transition-all hover:scale-105 border border-white/20 ${
             selectedFilter === 'PWD' ? 'ring-2 ring-white ring-offset-2 ring-offset-purple-600' : ''
           }`}
@@ -742,7 +792,7 @@ export default function QRCards() {
 
         {/* Senior Citizen Cards */}
         <button
-          onClick={() => setSelectedFilter(selectedFilter === 'Senior Citizen' ? null : 'Senior Citizen')}
+          onClick={() => handleFilterChange(selectedFilter === 'Senior Citizen' ? null : 'Senior Citizen')}
           className={`bg-linear-to-br from-amber-500 to-amber-600 rounded-2xl p-4 text-white shadow-soft transition-all hover:scale-105 border border-white/20 ${
             selectedFilter === 'Senior Citizen' ? 'ring-2 ring-white ring-offset-2 ring-offset-amber-600' : ''
           }`}
@@ -755,6 +805,20 @@ export default function QRCards() {
         </button>
       </div>
 
+      {/* Search bar */}
+      <div className="glass-card p-4 border border-white/20">
+        <div className="relative">
+          <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white/40 w-5 h-5" />
+          <input
+            type="text"
+            placeholder="Search by card ID, passenger name, or contact number..."
+            value={searchTerm}
+            onChange={(e) => handleSearchChange(e.target.value)}
+            className="w-full pl-12 pr-4 py-3 border border-white/20 rounded-2xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white/10 text-white placeholder-white/40"
+          />
+        </div>
+      </div>
+
       {/* Cards list */}
       {(() => {
         let displayCards = cards || [];
@@ -762,7 +826,26 @@ export default function QRCards() {
           displayCards = tempCards || [];
         } else if (selectedFilter && selectedFilter !== 'all') {
           displayCards = cards?.filter(c => c.passengerType === selectedFilter) || [];
+        } else {
+          // Include claimed cards in the default view
+          displayCards = [...(cards || []), ...claimedCards];
         }
+
+        // Apply search filter
+        if (searchTerm) {
+          displayCards = displayCards.filter(card =>
+            card.cardId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            card.passengerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            card.contactNumber.toLowerCase().includes(searchTerm.toLowerCase())
+          );
+        }
+
+        // Pagination
+        const totalPages = Math.ceil(displayCards.length / itemsPerPage);
+        const paginatedCards = displayCards.slice(
+          (currentPage - 1) * itemsPerPage,
+          currentPage * itemsPerPage
+        );
 
         if (displayCards.length === 0) {
           return (
@@ -789,13 +872,16 @@ export default function QRCards() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/10">
-                {displayCards.map((card) => (
+                {paginatedCards.map((card) => (
                   <tr key={card.id} className="hover:bg-white/10 transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         <span className="font-mono text-sm font-medium text-white">{card.cardId}</span>
                         {card.isTemporary && (
                           <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-orange-500/20 text-orange-400">TEMP</span>
+                        )}
+                        {(card as any).isFromReservation && (
+                          <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-emerald-500/20 text-emerald-400">CLAIMED</span>
                         )}
                       </div>
                     </td>
@@ -831,20 +917,24 @@ export default function QRCards() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => setViewCard(card)}
-                          className="p-2 text-white/60 hover:text-primary-400 hover:bg-primary-500/20 rounded-lg transition-colors"
-                          title="View Card"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => setViewCard(card)}
-                          className="p-2 text-white/60 hover:text-emerald-400 hover:bg-emerald-500/20 rounded-lg transition-colors"
-                          title="Download Card"
-                        >
-                          <Download className="w-4 h-4" />
-                        </button>
+                        {! (card as any).isFromReservation && (
+                          <>
+                            <button
+                              onClick={() => setViewCard(card)}
+                              className="p-2 text-white/60 hover:text-primary-400 hover:bg-primary-500/20 rounded-lg transition-colors"
+                              title="View Card"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => setViewCard(card)}
+                              className="p-2 text-white/60 hover:text-emerald-400 hover:bg-emerald-500/20 rounded-lg transition-colors"
+                              title="Download Card"
+                            >
+                              <Download className="w-4 h-4" />
+                            </button>
+                          </>
+                        )}
                         <button
                           onClick={() => setEditCard(card)}
                           className="p-2 text-white/60 hover:text-blue-400 hover:bg-blue-500/20 rounded-lg transition-colors"
@@ -876,19 +966,73 @@ export default function QRCards() {
                         >
                           <RefreshCw className="w-4 h-4" />
                         </button>
-                        <button
-                          onClick={() => setDeleteCard(card)}
-                          className="p-2 text-white/60 hover:text-red-400 hover:bg-red-500/20 rounded-lg transition-colors"
-                          title="Delete Card"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        {! (card as any).isFromReservation && (
+                          <button
+                            onClick={() => setDeleteCard(card)}
+                            className="p-2 text-white/60 hover:text-red-400 hover:bg-red-500/20 rounded-lg transition-colors"
+                            title="Delete Card"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+
+            {displayCards.length > 0 && (
+              <div className="px-6 py-4 border-t border-white/10 flex items-center justify-between">
+                <p className="text-sm text-white/60">
+                  Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, displayCards.length)} of {displayCards.length} cards
+                </p>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="px-3 py-2 border border-white/20 rounded-lg text-sm text-white/60 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Previous
+                  </button>
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let pageNum;
+                      if (totalPages <= 5) {
+                        pageNum = i + 1;
+                      } else if (currentPage <= 3) {
+                        pageNum = i + 1;
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNum = totalPages - 4 + i;
+                      } else {
+                        pageNum = currentPage - 2 + i;
+                      }
+
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => setCurrentPage(pageNum)}
+                          className={`px-3 py-2 border rounded-lg text-sm transition-colors ${
+                            currentPage === pageNum
+                              ? 'bg-primary-500 text-white border-primary-400'
+                              : 'border-white/20 text-white/60 hover:bg-white/10'
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <button
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="px-3 py-2 border border-white/20 rounded-lg text-sm text-white/60 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         );
       })()}

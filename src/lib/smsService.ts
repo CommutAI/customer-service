@@ -22,7 +22,10 @@ async function queueSMS(
   metadata?: Record<string, any>
 ): Promise<SMSSendResult> {
   try {
-    const { error } = await supabase
+    console.log('Attempting to queue SMS:', { phoneNumber, smsType, messageLength: message.length });
+
+    // Try inserting with metadata first (new schema)
+    const { error: error1 } = await supabase
       .from('sms_queue')
       .insert({
         phone_number: phoneNumber,
@@ -30,17 +33,46 @@ async function queueSMS(
         sms_type: smsType,
         status: 'pending',
         metadata: metadata || {},
-        created_at: new Date().toISOString(),
       });
 
-    if (error) {
-      console.error('Failed to queue SMS:', error);
+    // If metadata column doesn't exist, try without it (old schema)
+    if (error1 && error1.message.includes('metadata')) {
+      console.log('Metadata column not found, using old schema...');
+      const { error: error2 } = await supabase
+        .from('sms_queue')
+        .insert({
+          phone_number: phoneNumber,
+          message: message,
+          sms_type: smsType,
+          status: 'pending',
+        });
+
+      if (error2) {
+        console.error('Failed to queue SMS (old schema):', error2);
+        console.error('Error details:', JSON.stringify(error2, null, 2));
+        return {
+          success: false,
+          error: error2.message,
+        };
+      }
+
+      console.log('SMS queued successfully (old schema)');
       return {
-        success: false,
-        error: error.message,
+        success: true,
+        message: 'SMS queued successfully',
       };
     }
 
+    if (error1) {
+      console.error('Failed to queue SMS:', error1);
+      console.error('Error details:', JSON.stringify(error1, null, 2));
+      return {
+        success: false,
+        error: error1.message,
+      };
+    }
+
+    console.log('SMS queued successfully (new schema)');
     return {
       success: true,
       message: 'SMS queued successfully',
