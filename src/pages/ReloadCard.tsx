@@ -60,7 +60,7 @@ export default function ReloadCard() {
     queryKey: ['cardReloads'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('card_reloads')
+        .from('card_reloads' as any)
         .select(`
           *,
           qr_cards (
