@@ -18,7 +18,7 @@ export default function Transactions() {
     queryFn: async () => {
       // Fetch transactions (fares)
       const { data: txData, error: txError } = await supabase
-        .from('transactions')
+        .from('transactions' as any)
         .select('*')
         .order('created_at', { ascending: false });
 
@@ -26,7 +26,7 @@ export default function Transactions() {
 
       // Fetch card reloads (top-ups)
       const { data: reloadsData, error: reloadsError } = await supabase
-        .from('card_reloads')
+        .from('card_reloads' as any)
         .select(`
           *,
           qr_cards (
@@ -39,7 +39,7 @@ export default function Transactions() {
       if (reloadsError) throw reloadsError;
 
       // Convert card_reloads to transaction format
-      const reloadTransactions = (reloadsData || []).map(reload => ({
+      const reloadTransactions = (reloadsData || []).map((reload: any) => ({
         id: reload.id,
         type: 'top_up' as const,
         passengerName: reload.qr_cards?.owner_name || 'Unknown',
@@ -50,7 +50,7 @@ export default function Transactions() {
       }));
 
       // Convert regular transactions
-      const fareTransactions = (txData || []).map(tx => ({
+      const fareTransactions = (txData || []).map((tx: any) => ({
         id: tx.id,
         type: 'fare' as const,
         passengerName: tx.passenger_name || 'Unknown',
