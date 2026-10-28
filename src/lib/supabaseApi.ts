@@ -8,10 +8,9 @@
 // @ts-nocheck - Database types are out of sync with schema, will be regenerated
 import { supabase } from './supabase';
 import {
-  sendTopUpConfirmation,
-  sendCardClaimNotification,
   sendReservationStatusNotification,
 } from './smsService';
+// Note: SMS notifications for card creation/claim/topup are now handled by database triggers
 import type {
   Passenger,
   QRCard,
@@ -293,19 +292,8 @@ export const supabaseApiCalls = {
 
     if (error) throw new Error(error.message);
 
-    // Send SMS notification if phone number is available
-    if (registration.contactNumber) {
-      sendCardClaimNotification(
-        registration.contactNumber,
-        registration.ownerName,
-        uid,
-        initialBalance,
-        registration.passengerType
-      ).catch((error) => {
-        console.error('Failed to send card claim notification:', error);
-        // Don't throw error - SMS failure shouldn't block the card issuance
-      });
-    }
+    // Note: SMS is sent via database trigger (queue_sms_on_card_creation)
+    // No need to queue SMS from application code - trigger handles it automatically
 
     return rowToQRCard(data);
   },
@@ -395,19 +383,8 @@ export const supabaseApiCalls = {
 
     if (error) throw new Error(error.message);
 
-    // Send SMS notification if phone number is available
-    if (old.contact_number) {
-      sendCardClaimNotification(
-        old.contact_number,
-        old.owner_name,
-        newUid,
-        old.balance,
-        passengerType
-      ).catch((error) => {
-        console.error('Failed to send card replacement notification:', error);
-        // Don't throw error - SMS failure shouldn't block the card replacement
-      });
-    }
+    // Note: SMS is sent via database trigger (queue_sms_on_card_creation)
+    // No need to queue SMS from application code - trigger handles it automatically
 
     return rowToQRCard(data);
   },
@@ -486,6 +463,8 @@ export const supabaseApiCalls = {
     amount: number,
     method: 'cash' | 'card'
   ): Promise<Transaction> => {
+    console.log('Top-up - Starting with passengerId:', passengerId);
+
     // 1. Fetch current card by card_uid (the format like "RC—12345678", "SC—12345678", etc.)
     const { data: card, error: cardErr } = await supabase
       .from('qr_cards')
@@ -493,7 +472,17 @@ export const supabaseApiCalls = {
       .eq('card_uid', passengerId)
       .single();
 
-    if (cardErr) throw new Error(cardErr.message);
+    if (cardErr) {
+      console.error('Top-up - Card fetch error:', cardErr);
+      throw new Error(cardErr.message);
+    }
+
+    if (!card) {
+      console.error('Top-up - Card not found for card_uid:', passengerId);
+      throw new Error('Card not found');
+    }
+
+    console.log('Top-up - Card found:', card.id, card.card_uid);
 
     // 2. No discount for reloads/top-ups - full amount is added to balance
     const finalAmount = amount;
@@ -510,44 +499,36 @@ export const supabaseApiCalls = {
     // 5. Get staff session
     const { data: { session } } = await supabase.auth.getSession();
 
-    // 6. Insert transaction record using the card's UUID (id field)
-    const { data: tx, error: txErr } = await supabase
-      .from('transactions')
+    // 6. Insert card reload record
+    console.log('Top-up - Inserting reload with card_id:', card.id);
+    const { data: reload, error: reloadErr } = await supabase
+      .from('card_reloads')
       .insert({
         card_id: card.id,
-        type: 'card_issuance',
         amount: finalAmount,
-        channel: method,
-        staff_id: session?.user?.id ?? null,
-        balance_after: newBalance,
+        reload_method: method,
+        status: 'completed',
       })
       .select()
       .single();
 
-    if (txErr) throw new Error(txErr.message);
-
-    // Send SMS confirmation if phone number is available
-    if (card.contact_number) {
-      sendTopUpConfirmation(
-        card.contact_number,
-        card.owner_name,
-        amount,
-        newBalance,
-        card.card_uid
-      ).catch(() => {
-        // console.error('Failed to send SMS confirmation:', error);
-        // Don't throw error - SMS failure shouldn't block the transaction
-      });
+    if (reloadErr) {
+      console.error('Top-up - Reload insert error:', reloadErr);
+      throw new Error(reloadErr.message);
     }
+    console.log('Top-up - Reload inserted successfully:', reload);
+
+    // Note: SMS is sent via database trigger (queue_sms_on_card_reload)
+    // No need to queue SMS from application code - trigger handles it automatically
 
     return {
-      id: tx.id,
+      id: reload.id,
       passengerId: card.id,
       passengerName: card.owner_name,
       type: 'reload',
       amount,
       balanceAfter: newBalance,
-      timestamp: tx.created_at,
+      timestamp: reload.created_at,
       method,
     };
   },
@@ -581,7 +562,7 @@ export const supabaseApiCalls = {
         card_uid: uid,
         owner_name: 'Temporary Card',
         contact_number: '',
-        balance: 0,
+        balance: 1000,
         status: 'active',
         allowed_routes: ['temporary', `type:${passengerType}`], // Tag to identify temporary cards and type
         issued_by: session?.user?.id ?? null,
@@ -810,9 +791,14 @@ export const supabaseApiCalls = {
 
   updateCardReservationStatus: async (
     id: number,
-    status: 'pending' | 'claimed' | 'expired' | 'cancelled'
+    status: 'pending' | 'approved' | 'expired' | 'cancelled'
   ): Promise<void> => {
     console.log('Updating card reservation status:', { id, status });
+
+    // Validate: 'claimed' status should only be set via claimCardReservation
+    if (status === 'claimed') {
+      throw new Error("Cannot set status to 'claimed' directly. Use claimCardReservation to claim a reservation.");
+    }
 
     // First, check if the reservation exists
     const { data: existing, error: checkError } = await supabase
@@ -866,7 +852,7 @@ export const supabaseApiCalls = {
     }
   },
 
-  approveCardReservation: async (id: number, cardId: string): Promise<void> => {
+  approveCardReservation: async (id: number, cardId: string): Promise<QRCard> => {
     console.log('Approving reservation:', { id, cardId });
 
     // First, get the reservation details
@@ -882,6 +868,12 @@ export const supabaseApiCalls = {
     }
 
     console.log('Reservation found:', reservation);
+
+    // Check if reservation is already approved or claimed
+    if (reservation.status === 'approved' || reservation.status === 'claimed') {
+      console.error('Reservation already processed:', reservation.status);
+      throw new Error(`Reservation is already ${reservation.status}. Cannot approve again.`);
+    }
 
     // Map reservation card_type (VARCHAR) to database enum (lowercase)
     const cardTypeEnumMap: Record<string, 'regular' | 'student' | 'senior_citizen' | 'pwd'> = {
@@ -945,7 +937,7 @@ export const supabaseApiCalls = {
         purchase_price: initialBalance + cardFee,
         expires_at: expiresAt.toISOString(),
       })
-      .select('id')
+      .select('*')
       .single();
 
     if (cardError) {
@@ -969,14 +961,13 @@ export const supabaseApiCalls = {
 
     console.log('Card verified:', verifyCard);
 
-    // Update the reservation status to 'claimed'
-    // Note: card_id is omitted due to foreign key constraint issue in database schema
-    // The constraint references 'cards' table but we're using 'qr_cards' table
+    // Update the reservation status to 'approved' and link to the QR card
     const { error: updateError } = await supabase
       .from('card_reservations')
       .update({
-        status: 'claimed',
-        claimed_at: new Date().toISOString(),
+        status: 'approved',
+        approved_at: new Date().toISOString(),
+        card_id: newCard.id,
       })
       .eq('id', id);
 
@@ -993,20 +984,11 @@ export const supabaseApiCalls = {
 
     console.log('Reservation updated successfully');
 
-    // Send SMS notification to the passenger
-    try {
-      await sendCardClaimNotification(
-        reservation.contact,
-        reservation.name,
-        cardId,
-        initialBalance,
-        passengerType
-      );
-      console.log('SMS notification sent successfully');
-    } catch (smsError) {
-      // Log SMS error but don't fail the entire operation
-      console.error('Failed to send SMS notification:', smsError);
-    }
+    // Note: SMS is now sent via database trigger (queue_sms_on_card_created)
+    // No need to send SMS from application code
+
+    // Return the created card
+    return rowToQRCard(newCard);
   },
 
   deleteCardReservation: async (id: number): Promise<void> => {
@@ -1104,5 +1086,55 @@ export const supabaseApiCalls = {
           console.error(`Failed to queue expiration notification for card ${card.card_uid}:`, error);
         });
     }
+  },
+
+  claimCardReservation: async (id: number): Promise<void> => {
+    console.log('=== CLAIM RESERVATION START ===');
+    console.log('Claiming reservation:', { id });
+
+    // First, get the reservation details
+    const { data: reservation, error: reservationError } = await supabase
+      .from('card_reservations')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (reservationError) {
+      console.error('Error fetching reservation:', reservationError);
+      throw new Error(reservationError.message);
+    }
+
+    console.log('Reservation found:', reservation);
+
+    // Check if reservation is already claimed
+    if (reservation.status === 'claimed') {
+      console.error('Reservation already claimed:', reservation);
+      throw new Error('Reservation is already claimed.');
+    }
+
+    // Check if reservation has a card_id (must be approved first)
+    if (!reservation.card_id) {
+      console.error('Reservation has no card_id:', reservation);
+      throw new Error('Reservation must be approved before it can be claimed. No card has been created yet.');
+    }
+
+    // Update the reservation status to 'claimed'
+    const { error: updateError } = await supabase
+      .from('card_reservations')
+      .update({
+        status: 'claimed',
+        claimed_at: new Date().toISOString(),
+      })
+      .eq('id', id);
+
+    if (updateError) {
+      console.error('Error updating reservation:', updateError);
+      throw new Error(`Failed to claim reservation: ${updateError.message}`);
+    }
+
+    console.log('Reservation claimed successfully');
+
+    // Note: SMS is sent via database trigger (queue_sms_on_reservation_status_change)
+    // No need to queue SMS from application code - trigger handles it automatically
   },
 };

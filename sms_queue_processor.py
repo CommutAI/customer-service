@@ -51,7 +51,8 @@ class SMSQueueProcessor:
         self.baudrate = int(os.getenv('SIM900A_BAUDRATE', '9600'))
         self.supabase_url = os.getenv('SUPABASE_URL')
         self.supabase_key = os.getenv('SUPABASE_KEY')
-        self.poll_interval = int(os.getenv('SMS_POLL_INTERVAL', '30'))  # seconds
+        self.poll_interval = int(os.getenv('SMS_POLL_INTERVAL', '10'))  # seconds - reduced for faster processing
+        self.max_concurrent = int(os.getenv('MAX_CONCURRENT_SMS', '5'))  # increased concurrent SMS
 
         # Initialize
         self._init_supabase()
@@ -144,21 +145,15 @@ class SMSQueueProcessor:
             normalized_phone = self._normalize_phone_number(phone_number)
             logger.info(f"Sending SMS to {normalized_phone}: {message[:50]}...")
 
-            # Check SIM registration
-            reg_check = self._send_at_command('AT+CREG?')
-
-            # Check signal strength
-            csq_check = self._send_at_command('AT+CSQ')
-
-            # Set SMS mode to text
-            self._send_at_command('AT+CMGF=1')
+            # Set SMS mode to text (direct write, no response read)
+            self.serial_connection.write(b'AT+CMGF=1\r')
             time.sleep(0.5)
 
-            # Set recipient
-            self._send_at_command(f'AT+CMGS="{normalized_phone}"')
-            time.sleep(0.5)
+            # Set recipient (direct write, no response read)
+            self.serial_connection.write(f'AT+CMGS="{normalized_phone}"\r'.encode())
+            time.sleep(1)
 
-            # Send message
+            # Send message with Ctrl+Z (direct write)
             self.serial_connection.write(f'{message}\x1A'.encode())
             time.sleep(5)
 
@@ -172,11 +167,17 @@ class SMSQueueProcessor:
             response = response.strip()
             logger.info(f"SIM900A response: {response}")
 
-            if 'OK' in response:
+            # Check for ERROR first (indicates failure)
+            if 'ERROR' in response:
+                logger.error(f"Failed to send SMS to {normalized_phone}: SIM900A returned ERROR")
+                return False
+
+            # Success only if +CMGS: is present (indicates SMS was actually sent)
+            if '+CMGS:' in response:
                 logger.info(f"SMS sent successfully to {normalized_phone}")
                 return True
             else:
-                logger.error(f"Failed to send SMS to {normalized_phone}: {response}")
+                logger.error(f"Failed to send SMS to {normalized_phone}: No +CMGS: confirmation in response")
                 return False
 
         except Exception as e:
@@ -184,18 +185,26 @@ class SMSQueueProcessor:
             return False
 
     def fetch_pending_sms(self) -> List[Dict]:
-        """Fetch pending SMS from Supabase"""
+        """Fetch pending SMS from Supabase that haven't exceeded max retries"""
         if not self.supabase:
             logger.warning("Cannot fetch SMS - Supabase not initialized")
             return []
 
         try:
-            response = self.supabase.table('sms_queue').select('*').eq('status', 'pending').order('created_at').limit(10).execute()
+            # Fetch SMS that are pending or failed with less than 3 attempts
+            # Use max_concurrent for batch processing
+            # Try both column names for backward compatibility
+            try:
+                response = self.supabase.table('sms_queue').select('*').in_('status', ['pending', 'failed']).lt('retry_count', 3).order('created_at').limit(self.max_concurrent).execute()
+            except:
+                # Fallback to 'attempts' column if 'retry_count' doesn't exist
+                response = self.supabase.table('sms_queue').select('*').in_('status', ['pending', 'failed']).lt('attempts', 3).order('created_at').limit(self.max_concurrent).execute()
 
             if response.data:
-                logger.info(f"Fetched {len(response.data)} pending SMS messages")
+                logger.info(f"Fetched {len(response.data)} pending SMS messages (max_concurrent: {self.max_concurrent})")
                 return response.data
             else:
+                logger.debug("No pending SMS messages")
                 return []
 
         except Exception as e:
@@ -208,9 +217,24 @@ class SMSQueueProcessor:
             return
 
         try:
+            # Get current attempts (try both column names for compatibility)
+            try:
+                current_sms = self.supabase.table('sms_queue').select('retry_count').eq('id', sms_id).execute()
+                attempts_col = 'retry_count'
+            except:
+                current_sms = self.supabase.table('sms_queue').select('attempts').eq('id', sms_id).execute()
+                attempts_col = 'attempts'
+
+            if not current_sms.data:
+                logger.error(f"SMS {sms_id} not found")
+                return
+
+            current_attempts = current_sms.data[0].get(attempts_col, 0)
+            new_attempts = current_attempts + 1
+
             update_data = {
                 'status': status,
-                'attempts': self.supabase.table('sms_queue').select('attempts').eq('id', sms_id).execute().data[0]['attempts'] + 1
+                attempts_col: new_attempts
             }
 
             if status == 'sent':
@@ -219,8 +243,13 @@ class SMSQueueProcessor:
             if error_message:
                 update_data['error_message'] = error_message
 
+            # Mark as permanently failed after 3 attempts
+            if status == 'failed' and new_attempts >= 3:
+                update_data['status'] = 'permanently_failed'
+                logger.warning(f"SMS {sms_id} marked as permanently failed after {new_attempts} attempts")
+
             self.supabase.table('sms_queue').update(update_data).eq('id', sms_id).execute()
-            logger.debug(f"Updated SMS {sms_id} status to {status}")
+            logger.debug(f"Updated SMS {sms_id} status to {status} (attempt {new_attempts})")
 
         except Exception as e:
             logger.error(f"Failed to update SMS status: {e}")

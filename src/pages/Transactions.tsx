@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { apiCalls } from '../lib/api';
+import { supabase } from '../lib/supabase';
 import type { Transaction } from '../types';
 import { History, Search, ArrowUp, ArrowDown, CreditCard, DollarSign, Ticket, Calendar } from 'lucide-react';
 import { useState, useMemo } from 'react';
@@ -9,10 +10,62 @@ export default function Transactions() {
   const [dateRange, setDateRange] = useState<'daily' | 'monthly' | 'yearly' | 'custom'>('daily');
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
 
   const { data: transactions, isLoading } = useQuery({
-    queryKey: ['transactions'],
-    queryFn: apiCalls.getTransactions,
+    queryKey: ['allTransactions'],
+    queryFn: async () => {
+      // Fetch transactions (fares)
+      const { data: txData, error: txError } = await supabase
+        .from('transactions')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (txError) throw txError;
+
+      // Fetch card reloads (top-ups)
+      const { data: reloadsData, error: reloadsError } = await supabase
+        .from('card_reloads')
+        .select(`
+          *,
+          qr_cards (
+            card_uid,
+            owner_name
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      if (reloadsError) throw reloadsError;
+
+      // Convert card_reloads to transaction format
+      const reloadTransactions = (reloadsData || []).map(reload => ({
+        id: reload.id,
+        type: 'top_up' as const,
+        passengerName: reload.qr_cards?.owner_name || 'Unknown',
+        amount: reload.amount,
+        balanceAfter: 0, // Need to fetch from card if needed
+        method: reload.reload_method,
+        timestamp: reload.created_at,
+      }));
+
+      // Convert regular transactions
+      const fareTransactions = (txData || []).map(tx => ({
+        id: tx.id,
+        type: 'fare' as const,
+        passengerName: tx.passenger_name || 'Unknown',
+        amount: -tx.final_amount, // Negative for fare deduction
+        balanceAfter: 0,
+        method: tx.payment_method,
+        timestamp: tx.created_at,
+      }));
+
+      // Combine and sort by date
+      const allTransactions = [...reloadTransactions, ...fareTransactions]
+        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+      return allTransactions;
+    },
   });
 
   // Filter transactions based on date range and method
@@ -60,7 +113,25 @@ export default function Transactions() {
     });
   }, [transactions, searchTerm, dateRange, startDate, endDate]);
 
-  const getTransactionIcon = (type: Transaction['type']) => {
+  // Pagination
+  const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
+  const paginatedTransactions = filteredTransactions.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  // Reset to page 1 when search or filter changes
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+    setCurrentPage(1);
+  };
+
+  const handleDateRangeChange = (range: 'daily' | 'monthly' | 'yearly' | 'custom') => {
+    setDateRange(range);
+    setCurrentPage(1);
+  };
+
+  const getTransactionIcon = (type: string) => {
     switch (type) {
       case 'top_up':
         return <DollarSign className="w-5 h-5" />;
@@ -73,7 +144,7 @@ export default function Transactions() {
     }
   };
 
-  const getTransactionColor = (type: Transaction['type']) => {
+  const getTransactionColor = (type: string) => {
     switch (type) {
       case 'top_up':
         return 'bg-green-500/20 text-green-400';
@@ -113,7 +184,7 @@ export default function Transactions() {
                 type="text"
                 placeholder="Search by passenger name or transaction ID..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 className="w-full pl-12 pr-4 py-3 border border-white/20 rounded-2xl focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white/10 text-white placeholder-white/40"
               />
             </div>
@@ -122,7 +193,7 @@ export default function Transactions() {
                 {(['daily', 'monthly', 'yearly', 'custom'] as const).map((range) => (
                   <button
                     key={range}
-                    onClick={() => setDateRange(range)}
+                    onClick={() => handleDateRangeChange(range)}
                     className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all border ${
                       dateRange === range
                         ? 'bg-primary-500 text-white border-primary-400'
@@ -173,7 +244,7 @@ export default function Transactions() {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/10">
-              {filteredTransactions.map((transaction) => (
+              {paginatedTransactions.map((transaction) => (
                 <tr key={transaction.id} className="hover:bg-white/5 transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${getTransactionColor(transaction.type)}`}>
@@ -182,7 +253,7 @@ export default function Transactions() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-white">{transaction.passengerName}</div>
-                    <div className="text-xs text-white/60">{transaction.id}</div>
+                    <div className="text-xs text-white/60">{transaction.id.slice(0, 8)}...</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className={`text-sm font-bold flex items-center ${
@@ -193,7 +264,7 @@ export default function Transactions() {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">
-                    ₱{transaction.balanceAfter.toFixed(2)}
+                    N/A
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="px-3 py-1.5 text-xs font-semibold bg-white/10 text-white/70 rounded-xl capitalize">
@@ -213,6 +284,58 @@ export default function Transactions() {
           <div className="text-center py-12">
             <History className="w-12 h-12 mx-auto text-white/20 mb-4" />
             <p className="text-white/60">No transactions found</p>
+          </div>
+        )}
+
+        {filteredTransactions.length > 0 && (
+          <div className="px-6 py-4 border-t border-white/10 flex items-center justify-between">
+            <p className="text-sm text-white/60">
+              Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredTransactions.length)} of {filteredTransactions.length} transactions
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-2 border border-white/20 rounded-lg text-sm text-white/60 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Previous
+              </button>
+              <div className="flex items-center gap-1">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum;
+                  if (totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (currentPage <= 3) {
+                    pageNum = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    pageNum = currentPage - 2 + i;
+                  }
+
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={`px-3 py-2 border rounded-lg text-sm transition-colors ${
+                        currentPage === pageNum
+                          ? 'bg-primary-500 text-white border-primary-400'
+                          : 'border-white/20 text-white/60 hover:bg-white/10'
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+              </div>
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="px-3 py-2 border border-white/20 rounded-lg text-sm text-white/60 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Next
+              </button>
+            </div>
           </div>
         )}
       </div>

@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiCalls } from '../lib/api';
+import { supabase } from '../lib/supabase';
 import type { Transaction } from '../types';
 import { DollarSign, Receipt, History, Banknote } from 'lucide-react';
 import { useState, useEffect } from 'react';
@@ -55,9 +56,24 @@ export default function ReloadCard() {
     }
   }, [searchParams]);
 
-  const { data: transactions } = useQuery({
-    queryKey: ['transactions'],
-    queryFn: apiCalls.getTransactions,
+  const { data: cardReloads } = useQuery({
+    queryKey: ['cardReloads'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('card_reloads')
+        .select(`
+          *,
+          qr_cards (
+            card_uid,
+            owner_name
+          )
+        `)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+      return data;
+    },
   });
 
   const { data: qrCards } = useQuery({
@@ -91,7 +107,7 @@ export default function ReloadCard() {
     onSuccess: (data) => {
       toast.success(`Card reloaded successfully! Amount: ₱${amount.toFixed(2)}`);
       queryClient.invalidateQueries({ queryKey: ['qrCards'] });
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['cardReloads'] });
       setShowReceipt(data);
       setCardId('');
       setAmount(100);
@@ -260,23 +276,23 @@ export default function ReloadCard() {
             Recent Reloads
           </h2>
           <div className="space-y-3 max-h-96 overflow-y-auto">
-            {transactions
-              ?.filter(t => t.type === 'reload')
-              .slice(0, 10)
-              .map((transaction) => (
-                <div key={transaction.id} className="p-4 bg-white/10 rounded-2xl border border-white/20">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="text-sm font-medium text-white">{transaction.passengerName}</p>
-                      <p className="text-xs text-white/60">{formatRelativeTime(transaction.timestamp)}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-bold text-emerald-400">+₱{transaction.amount.toFixed(2)}</p>
-                      <p className="text-xs text-white/60">{transaction.method}</p>
-                    </div>
+            {cardReloads?.map((reload) => (
+              <div key={reload.id} className="p-4 bg-white/10 rounded-2xl border border-white/20">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="text-sm font-medium text-white">{reload.qr_cards?.owner_name || 'Unknown'}</p>
+                    <p className="text-xs text-white/60">{formatRelativeTime(reload.created_at)}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-bold text-emerald-400">+₱{reload.amount.toFixed(2)}</p>
+                    <p className="text-xs text-white/60 capitalize">{reload.reload_method}</p>
                   </div>
                 </div>
-              ))}
+              </div>
+            ))}
+            {cardReloads?.length === 0 && (
+              <p className="text-center text-white/60 py-8">No recent reloads</p>
+            )}
           </div>
         </div>
       </div>
@@ -293,49 +309,61 @@ export default function ReloadCard() {
 
 function ReceiptModal({ transaction, onClose }: { transaction: Transaction; onClose: () => void }) {
   return (
-    <div className="fixed inset-0 bg-secondary-900/20 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-white/90 backdrop-blur-xl rounded-3xl p-8 w-full max-w-md shadow-soft-xl border border-secondary-100">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold text-secondary-900 flex items-center">
-            <Receipt className="w-6 h-6 mr-2" />
-            Receipt
-          </h2>
-          <button onClick={onClose} className="text-secondary-400 hover:text-secondary-600 p-2 rounded-xl hover:bg-secondary-100 transition-colors">
-            ✕
+    <div className="fixed inset-0 bg-secondary-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl p-5 w-full max-w-sm shadow-2xl border border-gray-100 animate-in fade-in zoom-in duration-300">
+        {/* Header with success indicator */}
+        <div className="text-center mb-4">
+          <div className="inline-flex items-center justify-center w-12 h-12 bg-green-100 rounded-full mb-2">
+            <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-bold text-gray-900 mb-0.5">Reload Successful!</h2>
+          <p className="text-xs text-gray-500">Transaction completed</p>
+        </div>
+
+        {/* Amount highlight */}
+        <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4 mb-4 border border-green-100">
+          <p className="text-xs font-medium text-gray-600 mb-1">Reload Amount</p>
+          <p className="text-3xl font-bold text-green-600">+₱{transaction.amount.toFixed(2)}</p>
+        </div>
+
+        {/* Transaction details */}
+        <div className="space-y-3 mb-4">
+          <div className="flex justify-between items-center py-2 border-b border-gray-100">
+            <span className="text-xs text-gray-500">Passenger</span>
+            <span className="font-medium text-gray-900 text-sm">{transaction.passengerName}</span>
+          </div>
+          <div className="flex justify-between items-center py-2 border-b border-gray-100">
+            <span className="text-xs text-gray-500">New Balance</span>
+            <span className="font-bold text-gray-900 text-sm">₱{transaction.balanceAfter.toFixed(2)}</span>
+          </div>
+          <div className="flex justify-between items-center py-2 border-b border-gray-100">
+            <span className="text-xs text-gray-500">Payment Method</span>
+            <span className="font-medium text-gray-900 text-sm capitalize">{transaction.method}</span>
+          </div>
+          <div className="flex justify-between items-center py-2">
+            <span className="text-xs text-gray-500">Transaction ID</span>
+            <span className="font-mono text-xs text-gray-600">{transaction.id.slice(0, 8)}...</span>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-2">
+          <button
+            onClick={onClose}
+            className="flex-1 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-all duration-200 font-medium text-sm"
+          >
+            Close
+          </button>
+          <button
+            onClick={() => window.print()}
+            className="flex-1 px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-xl transition-all duration-200 font-medium text-sm flex items-center justify-center gap-1.5 shadow-md"
+          >
+            <Receipt className="w-3.5 h-3.5" />
+            Print
           </button>
         </div>
-        <div className="border-t border-b border-secondary-200 py-6 space-y-3">
-          <div className="flex justify-between">
-            <span className="text-secondary-600">Transaction ID</span>
-            <span className="font-medium text-secondary-900">{transaction.id}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-secondary-600">Passenger</span>
-            <span className="font-medium text-secondary-900">{transaction.passengerName}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-secondary-600">Reload Amount</span>
-            <span className="font-bold text-emerald-600">+₱{transaction.amount.toFixed(2)}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-secondary-600">New Balance</span>
-            <span className="font-bold text-secondary-900">₱{transaction.balanceAfter.toFixed(2)}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-secondary-600">Method</span>
-            <span className="font-medium capitalize text-secondary-900">{transaction.method}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-secondary-600">Date</span>
-            <span className="font-medium text-secondary-900">{formatRelativeTime(transaction.timestamp)}</span>
-          </div>
-        </div>
-        <button
-          onClick={() => window.print()}
-          className="w-full mt-6 px-6 py-3 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-2xl hover:from-primary-600 hover:to-primary-700 transition-all duration-200 font-medium shadow-soft"
-        >
-          Print Receipt
-        </button>
       </div>
     </div>
   );
