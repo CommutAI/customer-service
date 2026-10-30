@@ -613,6 +613,8 @@ export default function CardReservations() {
       toast.success('Reservation approved and card created');
       queryClient.invalidateQueries({ queryKey: ['cardReservations'] });
       queryClient.invalidateQueries({ queryKey: ['qrCards'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
       setStatusConfirm(null);
       // Automatically open card preview with the actual card data
       setViewCard(card);
@@ -631,6 +633,8 @@ export default function CardReservations() {
       toast.success('Reservation claimed successfully');
       queryClient.invalidateQueries({ queryKey: ['cardReservations'] });
       queryClient.invalidateQueries({ queryKey: ['qrCards'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
     },
     onError: (err: Error) => {
       toast.error(`Failed to claim reservation: ${err.message}`);

@@ -108,6 +108,8 @@ export default function ReloadCard() {
       toast.success(`Card reloaded successfully! Amount: ₱${amount.toFixed(2)}`);
       queryClient.invalidateQueries({ queryKey: ['qrCards'] });
       queryClient.invalidateQueries({ queryKey: ['cardReloads'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
       setShowReceipt(data);
       setCardId('');
       setAmount(100);
