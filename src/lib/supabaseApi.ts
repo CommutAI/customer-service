@@ -1138,6 +1138,28 @@ export const supabaseApiCalls = {
 
     console.log('Reservation claimed successfully');
 
+    // Insert transaction record for card claim
+    const { data: cardData } = await supabase
+      .from('qr_cards')
+      .select('card_uid, balance, owner_name')
+      .eq('id', reservation.card_id)
+      .single();
+
+    if (cardData) {
+      await supabase
+        .from('transactions' as any)
+        .insert({
+          card_id: reservation.card_id,
+          passenger_name: reservation.name,
+          fare_amount: 0,
+          discount_amount: 0,
+          final_amount: 0,
+          payment_method: 'claim',
+          transaction_type: 'card_issuance',
+          status: 'completed',
+        });
+    }
+
     // Note: SMS is sent via database trigger (queue_sms_on_reservation_status_change)
     // No need to queue SMS from application code - trigger handles it automatically
   },
