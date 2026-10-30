@@ -713,7 +713,7 @@ export const supabaseApiCalls = {
   getCardReservations: async (): Promise<CardReservation[]> => {
     const { data, error } = await supabase
       .from('card_reservations')
-      .select('*')
+      .select('*, qr_cards!inner(card_uid)')
       .order('created_at', { ascending: false })
       .limit(500); // Hard cap for reservations
 
@@ -735,7 +735,7 @@ export const supabaseApiCalls = {
       cardType: cardTypeMap[row.card_type] ?? 'Regular',
       pickupTerminal: row.pickup_terminal,
       status: row.status as CardReservation['status'],
-      cardId: row.card_id ?? undefined,
+      cardId: row.qr_cards?.card_uid ?? undefined,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
       idFile: row.id_file ?? undefined,
