@@ -31,6 +31,9 @@ const STATUS_CHANGE_OPTIONS = STATUS_OPTIONS.filter(opt => opt.value !== 'approv
 function QRCardPrint({ reservations, onClose }: { reservations: CardReservation[]; onClose: () => void }) {
   const printRef = useRef<HTMLDivElement>(null);
 
+  // Filter out claimed reservations
+  const printReservations = reservations.filter(r => r.status !== 'claimed');
+
   const handlePrint = () => {
     const printContent = printRef.current;
     if (!printContent) return;
@@ -151,10 +154,10 @@ function QRCardPrint({ reservations, onClose }: { reservations: CardReservation[
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/20 sticky top-0 bg-gradient-to-br from-primary-50 via-white to-accent-50 backdrop-blur-sm">
           <div>
             <h2 className="text-base font-bold text-white">
-              Print QR Cards ({reservations.length})
+              Print QR Cards ({printReservations.length})
             </h2>
             <p className="text-xs text-white/60 mt-1">
-              {reservations.length === 1 ? '1 card selected' : `${reservations.length} cards selected`}
+              {printReservations.length === 1 ? '1 card selected' : `${printReservations.length} cards selected`}
             </p>
           </div>
           <button onClick={onClose} className="p-2 rounded-xl hover:bg-white/10 text-white/60 border border-white/20">
@@ -164,7 +167,7 @@ function QRCardPrint({ reservations, onClose }: { reservations: CardReservation[
         <div className="p-6">
           <div ref={printRef} className="hidden">
             <div className="cards-container">
-              {reservations.map((reservation) => (
+              {printReservations.map((reservation) => (
                 <div key={reservation.id} className="card">
                   <div className="header">
                     <h1>OMFTS QR Card</h1>
@@ -206,7 +209,7 @@ function QRCardPrint({ reservations, onClose }: { reservations: CardReservation[
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            {reservations.map((reservation) => (
+            {printReservations.map((reservation) => (
               <div key={reservation.id} className="bg-white rounded-2xl p-4">
                 <div className="text-center mb-3">
                   <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">Preview</p>
@@ -255,7 +258,7 @@ function QRCardPrint({ reservations, onClose }: { reservations: CardReservation[
               className="flex-1 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-2xl text-sm font-semibold transition-colors shadow-soft disabled:opacity-60 border border-primary-400 flex items-center justify-center gap-2"
             >
               <Printer className="w-4 h-4" />
-              Print {reservations.length === 1 ? 'Card' : `${reservations.length} Cards`}
+              Print {printReservations.length === 1 ? 'Card' : `${printReservations.length} Cards`}
             </button>
           </div>
         </div>
@@ -656,14 +659,17 @@ export default function CardReservations() {
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      const allWithCardIds = paginatedReservations.filter(r => r.cardId).map(r => r.id);
+      const allWithCardIds = paginatedReservations.filter(r => r.cardId && r.status !== 'claimed').map(r => r.id);
       setSelectedReservations(new Set(allWithCardIds));
     } else {
       setSelectedReservations(new Set());
     }
   };
 
-  const handleSelectOne = (id: number, checked: boolean) => {
+  const handleSelectOne = (id: number, checked: boolean, status: CardReservation['status']) => {
+    // Prevent selecting claimed reservations
+    if (status === 'claimed') return;
+
     const newSelected = new Set(selectedReservations);
     if (checked) {
       newSelected.add(id);
@@ -706,10 +712,10 @@ export default function CardReservations() {
   };
 
   const isAllSelected = paginatedReservations.length > 0 &&
-    paginatedReservations.filter(r => r.cardId).length === selectedReservations.size &&
-    paginatedReservations.filter(r => r.cardId).every(r => selectedReservations.has(r.id));
+    paginatedReservations.filter(r => r.cardId && r.status !== 'claimed').length === selectedReservations.size &&
+    paginatedReservations.filter(r => r.cardId && r.status !== 'claimed').every(r => selectedReservations.has(r.id));
 
-  const selectedReservationsData = filteredReservations.filter(r => selectedReservations.has(r.id));
+  const selectedReservationsData = filteredReservations.filter(r => selectedReservations.has(r.id) && r.status !== 'claimed');
 
   const getStatusIcon = (status: CardReservation['status']) => {
     switch (status) {
