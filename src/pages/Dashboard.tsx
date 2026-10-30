@@ -70,7 +70,7 @@ export default function Dashboard() {
 
   // Calculate weekly data from actual transactions
   const weeklyData = useMemo(() => {
-    if (!transactions) return [];
+    if (!transactions || transactions.length === 0) return [];
 
     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const oneWeekAgo = new Date();
@@ -90,6 +90,7 @@ export default function Dashboard() {
         const dayName = days[date.getDay()];
         if (groupedData[dayName]) {
           groupedData[dayName].transactions += 1;
+          // For top-ups, add positive amount; for fares, add absolute value
           groupedData[dayName].revenue += Math.abs(t.amount);
         }
       }
@@ -114,11 +115,21 @@ export default function Dashboard() {
     );
   }
 
+  // Calculate today's stats from actual data
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const todayRegistrations = cards?.filter(c => new Date(c.issuedAt) >= today).length || 0;
+  const todayTopUps = transactions?.filter(t => t.type === 'top_up' && new Date(t.timestamp) >= today).length || 0;
+  const todayFareTransactions = transactions?.filter(t => t.type === 'fare' && new Date(t.timestamp) >= today).length || 0;
+  const todayRevenue = transactions?.filter(t => new Date(t.timestamp) >= today)
+    .reduce((sum, t) => sum + Math.abs(t.amount), 0) || 0;
+
   const kpis = [
-    { title: "Today's Registrations", value: stats?.todayRegistrations || 0, change: '', icon: Users, color: 'bg-blue-500' },
-    { title: "Today's Top Ups", value: stats?.todayTopUps || 0, change: '', icon: DollarSign, color: 'bg-green-500' },
-    { title: "Today's Transactions", value: stats?.todayTransactions || 0, change: '', icon: CreditCard, color: 'bg-purple-500' },
-    { title: "Today's Revenue", value: `₱${stats?.totalRevenue?.toFixed(2) || '0.00'}`, change: '', icon: TrendingUp, color: 'bg-orange-500' },
+    { title: "Today's Registrations", value: todayRegistrations, change: '', icon: Users, color: 'bg-blue-500' },
+    { title: "Today's Top Ups", value: todayTopUps, change: '', icon: DollarSign, color: 'bg-green-500' },
+    { title: "Today's Transactions", value: todayFareTransactions, change: '', icon: CreditCard, color: 'bg-purple-500' },
+    { title: "Today's Revenue", value: `₱${todayRevenue.toFixed(2)}`, change: '', icon: TrendingUp, color: 'bg-orange-500' },
   ];
 
   return (

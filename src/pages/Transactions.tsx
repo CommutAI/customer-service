@@ -27,38 +27,50 @@ export default function Transactions() {
       // Fetch card reloads (top-ups)
       const { data: reloadsData, error: reloadsError } = await supabase
         .from('card_reloads' as any)
-        .select(`
-          *,
-          qr_cards (
-            card_uid,
-            owner_name
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (reloadsError) throw reloadsError;
 
+      // Fetch all cards for mapping
+      const { data: cardsData, error: cardsError } = await supabase
+        .from('qr_cards')
+        .select('id, card_uid, owner_name, balance');
+
+      if (cardsError) throw cardsError;
+
+      // Create a map of card_id to card info
+      const cardMap = new Map((cardsData || []).map((card: any) => [card.id, card]));
+
       // Convert card_reloads to transaction format
-      const reloadTransactions = (reloadsData || []).map((reload: any) => ({
-        id: reload.id,
-        type: 'top_up' as const,
-        passengerName: reload.qr_cards?.owner_name || 'Unknown',
-        amount: reload.amount,
-        balanceAfter: 0, // Need to fetch from card if needed
-        method: reload.reload_method,
-        timestamp: reload.created_at,
-      }));
+      const reloadTransactions = (reloadsData || []).map((reload: any) => {
+        const card = cardMap.get(reload.card_id);
+        return {
+          id: reload.id,
+          type: 'top_up' as const,
+          passengerName: card?.owner_name || 'Unknown',
+          cardId: card?.card_uid || 'N/A',
+          amount: reload.amount,
+          balanceAfter: card?.balance || 0,
+          method: reload.reload_method,
+          timestamp: reload.created_at,
+        };
+      });
 
       // Convert regular transactions
-      const fareTransactions = (txData || []).map((tx: any) => ({
-        id: tx.id,
-        type: 'fare' as const,
-        passengerName: tx.passenger_name || 'Unknown',
-        amount: -tx.final_amount, // Negative for fare deduction
-        balanceAfter: 0,
-        method: tx.payment_method,
-        timestamp: tx.created_at,
-      }));
+      const fareTransactions = (txData || []).map((tx: any) => {
+        const card = cardMap.get(tx.card_id);
+        return {
+          id: tx.id,
+          type: tx.type === 'card_issuance' ? 'card_issuance' : 'fare' as const,
+          passengerName: card?.owner_name || 'Unknown',
+          cardId: card?.card_uid || 'N/A',
+          amount: tx.type === 'card_issuance' ? 0 : -tx.final_amount, // Negative for fare deduction
+          balanceAfter: card?.balance || 0,
+          method: tx.payment_method || tx.channel || 'N/A',
+          timestamp: tx.created_at,
+        };
+      });
 
       // Combine and sort by date
       const allTransactions = [...reloadTransactions, ...fareTransactions]
@@ -91,12 +103,12 @@ export default function Transactions() {
           end.setHours(23, 59, 59, 999);
           return transactions.filter(t => {
             const transactionDate = new Date(t.timestamp);
-            const matchesSearch = 
+            const matchesSearch =
               t.passengerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-              t.id.toLowerCase().includes(searchTerm.toLowerCase());
-            const matchesMethod = t.method === 'cash';
+              t.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              t.cardId.toLowerCase().includes(searchTerm.toLowerCase());
             const matchesDate = transactionDate >= start && transactionDate <= end;
-            return matchesSearch && matchesMethod && matchesDate;
+            return matchesSearch && matchesDate;
           });
         }
         return transactions;
@@ -104,12 +116,12 @@ export default function Transactions() {
     
     return transactions.filter(t => {
       const transactionDate = new Date(t.timestamp);
-      const matchesSearch = 
+      const matchesSearch =
         t.passengerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        t.id.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesMethod = t.method === 'cash';
+        t.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        t.cardId.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesDate = transactionDate >= cutoffDate;
-      return matchesSearch && matchesMethod && matchesDate;
+      return matchesSearch && matchesDate;
     });
   }, [transactions, searchTerm, dateRange, startDate, endDate]);
 
@@ -137,6 +149,8 @@ export default function Transactions() {
         return <DollarSign className="w-5 h-5" />;
       case 'fare':
         return <CreditCard className="w-5 h-5" />;
+      case 'card_issuance':
+        return <CreditCard className="w-5 h-5" />;
       case 'ticket_purchase':
         return <Ticket className="w-5 h-5" />;
       default:
@@ -150,6 +164,8 @@ export default function Transactions() {
         return 'bg-green-500/20 text-green-400';
       case 'fare':
         return 'bg-red-500/20 text-red-400';
+      case 'card_issuance':
+        return 'bg-blue-500/20 text-blue-400';
       case 'ticket_purchase':
         return 'bg-blue-500/20 text-blue-400';
       default:
@@ -182,7 +198,7 @@ export default function Transactions() {
               <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white/40 w-5 h-5" />
               <input
                 type="text"
-                placeholder="Search by passenger name or transaction ID..."
+                placeholder="Search by passenger name, card ID, or transaction ID..."
                 value={searchTerm}
                 onChange={(e) => handleSearchChange(e.target.value)}
                 className="w-full pl-12 pr-4 py-3 border border-white/20 rounded-2xl focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white/10 text-white placeholder-white/40"
@@ -237,6 +253,7 @@ export default function Transactions() {
               <tr>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Type</th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Passenger</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Card ID</th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Amount</th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Balance After</th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Method</th>
@@ -256,6 +273,9 @@ export default function Transactions() {
                     <div className="text-xs text-white/60">{transaction.id.slice(0, 8)}...</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-mono text-white/90">{transaction.cardId}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
                     <div className={`text-sm font-bold flex items-center ${
                       transaction.amount > 0 ? 'text-emerald-400' : 'text-red-400'
                     }`}>
@@ -264,7 +284,7 @@ export default function Transactions() {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">
-                    N/A
+                    ₱{transaction.balanceAfter.toFixed(2)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="px-3 py-1.5 text-xs font-semibold bg-white/10 text-white/70 rounded-xl capitalize">

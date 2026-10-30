@@ -636,6 +636,7 @@ export default function QRCards() {
     onSuccess: () => {
       toast.success('Card activated successfully!');
       queryClient.invalidateQueries({ queryKey: ['qrCards'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
     },
     onError: (err: Error) => {
       toast.error(`Failed to activate card: ${err.message}`);
@@ -647,6 +648,7 @@ export default function QRCards() {
     onSuccess: () => {
       toast.success('Card disabled successfully!');
       queryClient.invalidateQueries({ queryKey: ['qrCards'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
     },
     onError: (err: Error) => {
       toast.error(`Failed to disable card: ${err.message}`);
@@ -658,6 +660,7 @@ export default function QRCards() {
     onSuccess: () => {
       toast.success('Card replaced successfully!');
       queryClient.invalidateQueries({ queryKey: ['qrCards'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
       setReplaceTarget(null);
     },
     onError: (err: Error) => {
@@ -670,6 +673,7 @@ export default function QRCards() {
     onSuccess: () => {
       toast.success('Card deleted successfully!');
       queryClient.invalidateQueries({ queryKey: ['qrCards'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
       setDeleteCard(null);
     },
     onError: (err: Error) => {

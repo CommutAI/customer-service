@@ -34,6 +34,7 @@ export default function TemporaryQRCards() {
       toast.success('Temporary QR Card generated successfully!');
       queryClient.invalidateQueries({ queryKey: ['temporaryQRCards'] });
       queryClient.invalidateQueries({ queryKey: ['qrCards'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
       setShowGenerateModal(false);
     },
     onError: (err: Error) => {
@@ -47,6 +48,7 @@ export default function TemporaryQRCards() {
       toast.success('Temporary card deactivated successfully!');
       queryClient.invalidateQueries({ queryKey: ['temporaryQRCards'] });
       queryClient.invalidateQueries({ queryKey: ['qrCards'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
       setSelectedCard(null);
     },
     onError: (err: Error) => {
@@ -60,6 +62,7 @@ export default function TemporaryQRCards() {
       toast.success('Temporary card reactivated successfully!');
       queryClient.invalidateQueries({ queryKey: ['temporaryQRCards'] });
       queryClient.invalidateQueries({ queryKey: ['qrCards'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
       setSelectedCard(null);
     },
     onError: (err: Error) => {
@@ -74,6 +77,7 @@ export default function TemporaryQRCards() {
       queryClient.invalidateQueries({ queryKey: ['temporaryQRCards'] });
       queryClient.invalidateQueries({ queryKey: ['qrCards'] });
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboardStats'] });
       setShowTopUpModal(false);
       setTopUpAmount('');
       setSelectedCard(null);

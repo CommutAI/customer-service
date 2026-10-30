@@ -404,35 +404,73 @@ export const supabaseApiCalls = {
 
   // ── Transactions ───────────────────────────────────────────────────────
   getTransactions: async (): Promise<Transaction[]> => {
-    const { data, error } = await supabase
-      .from('transactions')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(200);
+    try {
+      // Fetch transactions (fares) and card_reloads (top-ups) separately
+      const [txResult, reloadsResult] = await Promise.all([
+        supabase
+          .from('transactions')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(200),
+        supabase
+          .from('card_reloads')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(200),
+      ]);
 
-    if (error) throw new Error(error.message);
+      if (txResult.error) throw new Error(txResult.error.message);
+      if (reloadsResult.error) throw new Error(reloadsResult.error.message);
 
-    // Fetch card details for transactions that have a card_id
-    const cardIds = [...new Set((data ?? []).map((t: any) => t.card_id).filter(Boolean))];
-    const cardDetails: Record<string, { owner_name: string; balance: number }> = {};
+      // Collect all card IDs from both transactions and reloads
+      const cardIds = [
+        ...new Set((txResult.data ?? []).map((t: any) => t.card_id).filter(Boolean)),
+        ...new Set((reloadsResult.data ?? []).map((r: any) => r.card_id).filter(Boolean))
+      ];
 
-    if (cardIds.length > 0) {
-      const { data: cards, error: cardsError } = await supabase
-        .from('qr_cards')
-        .select('id, owner_name, balance')
-        .in('id', cardIds);
+      // Fetch card details for all cards
+      const cardDetails: Record<string, { owner_name: string; balance: number; card_uid: string }> = {};
+      if (cardIds.length > 0) {
+        const { data: cards, error: cardsError } = await supabase
+          .from('qr_cards')
+          .select('id, owner_name, balance, card_uid')
+          .in('id', cardIds);
 
-      if (!cardsError && cards) {
-        cards.forEach((card: any) => {
-          cardDetails[card.id] = { owner_name: card.owner_name, balance: card.balance };
-        });
+        if (!cardsError && cards) {
+          cards.forEach((card: any) => {
+            cardDetails[card.id] = { owner_name: card.owner_name, balance: card.balance, card_uid: card.card_uid };
+          });
+        }
       }
-    }
 
-    return (data ?? []).map((row: any) => {
-      const cardInfo = cardDetails[row.card_id] || { owner_name: 'Unknown', balance: 0 };
-      return rowToTransaction(row, cardInfo.owner_name, cardInfo.balance);
-    });
+      // Convert transactions to app format
+      const transactions = (txResult.data ?? []).map((row: any) => {
+        const cardInfo = cardDetails[row.card_id] || { owner_name: 'Unknown', balance: 0, card_uid: 'N/A' };
+        return rowToTransaction(row, cardInfo.owner_name, cardInfo.balance);
+      });
+
+      // Convert reloads to transaction format
+      const reloads = (reloadsResult.data ?? []).map((row: any) => {
+        const cardInfo = cardDetails[row.card_id] || { owner_name: 'Unknown', balance: 0, card_uid: 'N/A' };
+        return {
+          id: row.id,
+          passengerId: cardInfo.card_uid,
+          passengerName: cardInfo.owner_name,
+          type: 'top_up' as const,
+          amount: Number(row.amount),
+          balanceAfter: cardInfo.balance,
+          timestamp: row.created_at,
+          method: row.reload_method === 'cash' ? 'cash' : 'card',
+        };
+      });
+
+      // Combine and sort by date
+      return [...transactions, ...reloads]
+        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    } catch (error) {
+      console.error('Error fetching transactions:', error);
+      return [];
+    }
   },
 
   getCardTransactions: async (cardId: string): Promise<Transaction[]> => {
@@ -713,7 +751,7 @@ export const supabaseApiCalls = {
   getCardReservations: async (): Promise<CardReservation[]> => {
     const { data, error } = await supabase
       .from('card_reservations')
-      .select('*')
+      .select('*, qr_cards!inner(card_uid)')
       .order('created_at', { ascending: false })
       .limit(500); // Hard cap for reservations
 
@@ -735,7 +773,7 @@ export const supabaseApiCalls = {
       cardType: cardTypeMap[row.card_type] ?? 'Regular',
       pickupTerminal: row.pickup_terminal,
       status: row.status as CardReservation['status'],
-      cardId: row.card_id ?? undefined,
+      cardId: row.qr_cards?.card_uid ?? undefined,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
       idFile: row.id_file ?? undefined,
@@ -1137,6 +1175,28 @@ export const supabaseApiCalls = {
     }
 
     console.log('Reservation claimed successfully');
+
+    // Insert transaction record for card claim
+    const { data: cardData } = await supabase
+      .from('qr_cards')
+      .select('card_uid, balance, owner_name')
+      .eq('id', reservation.card_id)
+      .single();
+
+    if (cardData) {
+      await supabase
+        .from('transactions' as any)
+        .insert({
+          card_id: reservation.card_id,
+          type: 'card_issuance',
+          amount: 0,
+          channel: 'customer_service',
+          fare_amount: 0,
+          discount_amount: 0,
+          final_amount: 0,
+          payment_method: 'claim',
+        });
+    }
 
     // Note: SMS is sent via database trigger (queue_sms_on_reservation_status_change)
     // No need to queue SMS from application code - trigger handles it automatically
