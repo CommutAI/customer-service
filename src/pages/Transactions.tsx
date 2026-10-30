@@ -16,59 +16,61 @@ export default function Transactions() {
   const { data: transactions, isLoading } = useQuery({
     queryKey: ['allTransactions'],
     queryFn: async () => {
-      // Fetch transactions (fares) with card info
+      // Fetch transactions (fares)
       const { data: txData, error: txError } = await supabase
         .from('transactions' as any)
-        .select(`
-          *,
-          qr_cards (
-            card_uid,
-            owner_name,
-            balance
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (txError) throw txError;
 
-      // Fetch card reloads (top-ups) with card info
+      // Fetch card reloads (top-ups)
       const { data: reloadsData, error: reloadsError } = await supabase
         .from('card_reloads' as any)
-        .select(`
-          *,
-          qr_cards (
-            card_uid,
-            owner_name,
-            balance
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (reloadsError) throw reloadsError;
 
+      // Fetch all cards for mapping
+      const { data: cardsData, error: cardsError } = await supabase
+        .from('qr_cards')
+        .select('id, card_uid, owner_name, balance');
+
+      if (cardsError) throw cardsError;
+
+      // Create a map of card_id to card info
+      const cardMap = new Map((cardsData || []).map((card: any) => [card.id, card]));
+
       // Convert card_reloads to transaction format
-      const reloadTransactions = (reloadsData || []).map((reload: any) => ({
-        id: reload.id,
-        type: 'top_up' as const,
-        passengerName: reload.qr_cards?.owner_name || 'Unknown',
-        cardId: reload.qr_cards?.card_uid || 'N/A',
-        amount: reload.amount,
-        balanceAfter: reload.qr_cards?.balance || 0,
-        method: reload.reload_method,
-        timestamp: reload.created_at,
-      }));
+      const reloadTransactions = (reloadsData || []).map((reload: any) => {
+        const card = cardMap.get(reload.card_id);
+        return {
+          id: reload.id,
+          type: 'top_up' as const,
+          passengerName: card?.owner_name || 'Unknown',
+          cardId: card?.card_uid || 'N/A',
+          amount: reload.amount,
+          balanceAfter: card?.balance || 0,
+          method: reload.reload_method,
+          timestamp: reload.created_at,
+        };
+      });
 
       // Convert regular transactions
-      const fareTransactions = (txData || []).map((tx: any) => ({
-        id: tx.id,
-        type: tx.type === 'card_issuance' ? 'card_issuance' : 'fare' as const,
-        passengerName: tx.qr_cards?.owner_name || 'Unknown',
-        cardId: tx.qr_cards?.card_uid || 'N/A',
-        amount: tx.type === 'card_issuance' ? 0 : -tx.final_amount, // Negative for fare deduction
-        balanceAfter: tx.qr_cards?.balance || 0,
-        method: tx.payment_method || tx.channel || 'N/A',
-        timestamp: tx.created_at,
-      }));
+      const fareTransactions = (txData || []).map((tx: any) => {
+        const card = cardMap.get(tx.card_id);
+        return {
+          id: tx.id,
+          type: tx.type === 'card_issuance' ? 'card_issuance' : 'fare' as const,
+          passengerName: card?.owner_name || 'Unknown',
+          cardId: card?.card_uid || 'N/A',
+          amount: tx.type === 'card_issuance' ? 0 : -tx.final_amount, // Negative for fare deduction
+          balanceAfter: card?.balance || 0,
+          method: tx.payment_method || tx.channel || 'N/A',
+          timestamp: tx.created_at,
+        };
+      });
 
       // Combine and sort by date
       const allTransactions = [...reloadTransactions, ...fareTransactions]

@@ -31,8 +31,8 @@ const STATUS_CHANGE_OPTIONS = STATUS_OPTIONS.filter(opt => opt.value !== 'approv
 function QRCardPrint({ reservations, onClose }: { reservations: CardReservation[]; onClose: () => void }) {
   const printRef = useRef<HTMLDivElement>(null);
 
-  // Filter out claimed reservations
-  const printReservations = reservations.filter(r => r.status !== 'claimed');
+  // Keep all reservations with card IDs (including claimed ones for printing approved cards)
+  const printReservations = reservations.filter(r => r.cardId);
 
   const handlePrint = () => {
     const printContent = printRef.current;
@@ -157,7 +157,7 @@ function QRCardPrint({ reservations, onClose }: { reservations: CardReservation[
               Print QR Cards ({printReservations.length})
             </h2>
             <p className="text-xs text-white/60 mt-1">
-              {printReservations.length === 1 ? '1 card selected' : `${printReservations.length} cards selected`}
+              {printReservations.length === 1 ? '1 approved card selected' : `${printReservations.length} approved cards selected`}
             </p>
           </div>
           <button onClick={onClose} className="p-2 rounded-xl hover:bg-white/10 text-white/60 border border-white/20">
@@ -551,6 +551,7 @@ export default function CardReservations() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   const [viewCard, setViewCard] = useState<QRCard | null>(null);
+  const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'approved' | 'claimed'>('all');
   const queryClient = useQueryClient();
 
   const { data: reservations, isLoading } = useQuery({
@@ -641,12 +642,19 @@ export default function CardReservations() {
     },
   });
 
-  const filteredReservations = reservations?.filter(r =>
-    r.status !== 'claimed' && // Hide claimed reservations
-    (r.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    r.reservationId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    r.contact.toLowerCase().includes(searchTerm.toLowerCase()))
-  ) || [];
+  const filteredReservations = reservations?.filter(r => {
+    // Filter by tab
+    if (activeTab === 'pending' && r.status !== 'pending') return false;
+    if (activeTab === 'approved' && r.status !== 'approved') return false;
+    if (activeTab === 'claimed' && r.status !== 'claimed') return false;
+
+    // Filter by search term
+    return (
+      r.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      r.reservationId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      r.contact.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }) || [];
 
   // Pagination
   const totalPages = Math.ceil(filteredReservations.length / itemsPerPage);
@@ -661,9 +669,20 @@ export default function CardReservations() {
     setCurrentPage(1);
   };
 
+  // Reset to page 1 when tab changes
+  const handleTabChange = (tab: 'all' | 'pending' | 'approved' | 'claimed') => {
+    setActiveTab(tab);
+    setCurrentPage(1);
+    setSelectedReservations(new Set());
+  };
+
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      const allWithCardIds = paginatedReservations.filter(r => r.cardId && r.status !== 'claimed').map(r => r.id);
+      // In claimed tab, select all with card IDs
+      // In other tabs, select all with card IDs that are not claimed
+      const allWithCardIds = paginatedReservations
+        .filter(r => r.cardId && (activeTab === 'claimed' ? r.status === 'claimed' : r.status !== 'claimed'))
+        .map(r => r.id);
       setSelectedReservations(new Set(allWithCardIds));
     } else {
       setSelectedReservations(new Set());
@@ -671,8 +690,8 @@ export default function CardReservations() {
   };
 
   const handleSelectOne = (id: number, checked: boolean, status: CardReservation['status']) => {
-    // Prevent selecting claimed reservations
-    if (status === 'claimed') return;
+    // In non-claimed tabs, prevent selecting claimed reservations
+    if (activeTab !== 'claimed' && status === 'claimed') return;
 
     const newSelected = new Set(selectedReservations);
     if (checked) {
@@ -716,10 +735,18 @@ export default function CardReservations() {
   };
 
   const isAllSelected = paginatedReservations.length > 0 &&
-    paginatedReservations.filter(r => r.cardId && r.status !== 'claimed').length === selectedReservations.size &&
-    paginatedReservations.filter(r => r.cardId && r.status !== 'claimed').every(r => selectedReservations.has(r.id));
+    paginatedReservations
+      .filter(r => r.cardId && (activeTab === 'claimed' ? r.status === 'claimed' : r.status !== 'claimed'))
+      .length === selectedReservations.size &&
+    paginatedReservations
+      .filter(r => r.cardId && (activeTab === 'claimed' ? r.status === 'claimed' : r.status !== 'claimed'))
+      .every(r => selectedReservations.has(r.id));
 
-  const selectedReservationsData = filteredReservations.filter(r => selectedReservations.has(r.id) && r.status !== 'claimed');
+  const selectedReservationsData = filteredReservations.filter(r => {
+    const hasCardId = !!r.cardId;
+    const canSelect = activeTab === 'claimed' ? r.status === 'claimed' : r.status !== 'claimed';
+    return selectedReservations.has(r.id) && hasCardId && canSelect;
+  });
 
   const getStatusIcon = (status: CardReservation['status']) => {
     switch (status) {
@@ -791,6 +818,26 @@ export default function CardReservations() {
 
       <div className="glass-card">
         <div className="p-6 border-b border-white/10">
+          <div className="flex items-center gap-2 mb-4">
+            {[
+              { value: 'all' as const, label: 'All Reservations' },
+              { value: 'pending' as const, label: 'Pending' },
+              { value: 'approved' as const, label: 'Approved' },
+              { value: 'claimed' as const, label: 'Claimed' },
+            ].map((tab) => (
+              <button
+                key={tab.value}
+                onClick={() => handleTabChange(tab.value)}
+                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all border ${
+                  activeTab === tab.value
+                    ? 'bg-primary-500 text-white border-primary-400'
+                    : 'text-white/60 hover:bg-white/10 border-transparent'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
           <div className="relative">
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white/40 w-5 h-5" />
             <input
@@ -807,6 +854,14 @@ export default function CardReservations() {
           <table className="w-full">
             <thead className="bg-white/5">
               <tr>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider w-12">
+                  <input
+                    type="checkbox"
+                    checked={isAllSelected}
+                    onChange={(e) => handleSelectAll(e.target.checked)}
+                    className="w-4 h-4 rounded border-white/20 bg-white/10 text-primary-500 focus:ring-primary-500"
+                  />
+                </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Status</th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Reservation ID</th>
                 <th className="px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Name</th>
@@ -820,6 +875,15 @@ export default function CardReservations() {
             <tbody className="divide-y divide-white/10">
               {paginatedReservations.map((reservation) => (
                 <tr key={reservation.id} className="hover:bg-white/5 transition-colors">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <input
+                      type="checkbox"
+                      checked={selectedReservations.has(reservation.id)}
+                      onChange={(e) => handleSelectOne(reservation.id, e.target.checked, reservation.status)}
+                      disabled={!reservation.cardId || (activeTab !== 'claimed' && reservation.status === 'claimed')}
+                      className="w-4 h-4 rounded border-white/20 bg-white/10 text-primary-500 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    />
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className={`w-12 h-12 rounded-2xl flex items-center justify-center border ${getStatusColor(reservation.status)}`}>
                       {getStatusIcon(reservation.status)}
