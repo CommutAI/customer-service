@@ -1150,13 +1150,13 @@ export const supabaseApiCalls = {
         .from('transactions' as any)
         .insert({
           card_id: reservation.card_id,
-          passenger_name: reservation.name,
+          type: 'card_issuance',
+          amount: 0,
+          channel: 'customer_service',
           fare_amount: 0,
           discount_amount: 0,
           final_amount: 0,
           payment_method: 'claim',
-          transaction_type: 'card_issuance',
-          status: 'completed',
         });
     }
 
