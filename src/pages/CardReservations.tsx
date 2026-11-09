@@ -66,42 +66,37 @@ function QRCardPrint({ reservations, onClose }: { reservations: CardReservation[
             }
             .card {
               background: white;
-              border-radius: 16px;
-              padding: 20px;
-              box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-              border: 2px solid #e5e7eb;
+              border-radius: 12px;
+              padding: 12px;
+              border: 2px dashed #d1d5db;
               page-break-inside: avoid;
             }
             .header {
               text-align: center;
-              margin-bottom: 16px;
-              padding-bottom: 12px;
-              border-bottom: 2px solid #f97316;
+              margin-bottom: 8px;
             }
             .header h1 {
-              font-size: 16px;
+              font-size: 14px;
               font-weight: bold;
               color: #1f2937;
               margin-bottom: 2px;
             }
             .header p {
-              font-size: 11px;
+              font-size: 10px;
               color: #6b7280;
             }
             .qr-container {
               display: flex;
               justify-content: center;
-              margin: 16px 0;
+              margin: 8px 0;
             }
             .info {
-              margin-top: 16px;
-              padding-top: 12px;
-              border-top: 1px solid #e5e7eb;
+              margin-top: 8px;
             }
             .info-row {
               display: flex;
               justify-content: space-between;
-              margin-bottom: 6px;
+              margin-bottom: 2px;
               font-size: 12px;
             }
             .info-label {
@@ -112,22 +107,13 @@ function QRCardPrint({ reservations, onClose }: { reservations: CardReservation[
               color: #1f2937;
               font-weight: 600;
             }
-            .footer {
-              text-align: center;
-              margin-top: 16px;
-              padding-top: 12px;
-              border-top: 1px solid #e5e7eb;
-              font-size: 10px;
-              color: #9ca3af;
-            }
             @media print {
               body {
                 background: white;
                 padding: 10px;
               }
               .card {
-                box-shadow: none;
-                border: 2px solid #000;
+                border: 2px dashed #000;
               }
               .cards-container {
                 gap: 10px;
@@ -176,7 +162,7 @@ function QRCardPrint({ reservations, onClose }: { reservations: CardReservation[
                   <div className="qr-container">
                     <QRCodeSVG
                       value={reservation.cardId || reservation.reservationId}
-                      size={120}
+                      size={80}
                       level="H"
                       includeMargin={false}
                     />
@@ -194,14 +180,6 @@ function QRCardPrint({ reservations, onClose }: { reservations: CardReservation[
                       <span className="info-label">Card Type:</span>
                       <span className="info-value">{reservation.cardType}</span>
                     </div>
-                    <div className="info-row">
-                      <span className="info-label">Contact:</span>
-                      <span className="info-value">{reservation.contact}</span>
-                    </div>
-                  </div>
-                  <div className="footer">
-                    <p>Valid for all OMFTS routes</p>
-                    <p>Keep this card safe at all times</p>
                   </div>
                 </div>
               ))}
@@ -246,16 +224,16 @@ function QRCardPrint({ reservations, onClose }: { reservations: CardReservation[
             ))}
           </div>
 
-          <div className="flex gap-3 sticky bottom-0 bg-gradient-to-br from-primary-50 via-white to-accent-50 backdrop-blur-sm py-4">
+          <div className="flex gap-3 sticky bottom-0 bg-white py-4 border-t border-gray-200">
             <button
               onClick={onClose}
-              className="flex-1 py-2.5 border border-white/20 rounded-2xl text-sm font-medium text-white/60 hover:bg-white/10 transition-colors"
+              className="flex-1 py-2.5 border border-gray-300 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
             >
               Cancel
             </button>
             <button
               onClick={handlePrint}
-              className="flex-1 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-2xl text-sm font-semibold transition-colors shadow-soft disabled:opacity-60 border border-primary-400 flex items-center justify-center gap-2"
+              className="flex-1 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-2"
             >
               <Printer className="w-4 h-4" />
               Print {printReservations.length === 1 ? 'Card' : `${printReservations.length} Cards`}
