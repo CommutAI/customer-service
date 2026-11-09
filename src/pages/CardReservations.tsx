@@ -12,6 +12,7 @@ import regularCard from '../assets/REGULAR.png';
 import studentCard from '../assets/STUDENT.png';
 import seniorCard  from '../assets/SENIOR-CITIZIEN.png';
 import pwdCard     from '../assets/PWD.png';
+import backCard    from '../assets/back.png';
 
 const TEMPLATES: Record<CardReservation['cardType'], string> = {
   Regular: regularCard,
@@ -197,7 +198,16 @@ function QRCardPrint({ reservations, onClose }: { reservations: CardReservation[
       return `
         <div class="card-section">
           <h2>${reservation.name} - ${reservation.cardType}</h2>
-          <img src="${imageData}" alt="QR Card - ${reservation.cardId}" class="card-image" />
+          <div class="card-images">
+            <div class="card-image-wrapper">
+              <h3>Front</h3>
+              <img src="${imageData}" alt="QR Card Front - ${reservation.cardId}" class="card-image" />
+            </div>
+            <div class="card-image-wrapper">
+              <h3>Back</h3>
+              <img src="${backCard}" alt="QR Card Back" class="card-image" />
+            </div>
+          </div>
         </div>
       `;
     }).join('');
@@ -213,24 +223,39 @@ function QRCardPrint({ reservations, onClose }: { reservations: CardReservation[
               padding: 20px;
             }
             .card-section {
-              margin-bottom: 40px;
+              margin-bottom: 60px;
               page-break-inside: avoid;
             }
             .card-section h2 {
-              margin-bottom: 15px;
+              margin-bottom: 20px;
               color: #333;
               border-bottom: 2px solid #333;
               padding-bottom: 5px;
             }
+            .card-images {
+              display: flex;
+              gap: 20px;
+              justify-content: center;
+            }
+            .card-image-wrapper {
+              text-align: center;
+            }
+            .card-image-wrapper h3 {
+              margin-bottom: 10px;
+              font-size: 14px;
+              color: #666;
+            }
             .card-image {
-              max-width: 400px;
+              max-width: 350px;
               height: auto;
               display: block;
-              margin: 0 auto;
             }
             @media print {
               body {
                 padding: 10px;
+              }
+              .card-section {
+                page-break-after: always;
               }
             }
           </style>
@@ -250,24 +275,24 @@ function QRCardPrint({ reservations, onClose }: { reservations: CardReservation[
 
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="glass-card w-full max-w-4xl border border-white/20 overflow-hidden max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/20 sticky top-0 bg-gradient-to-br from-primary-50 via-white to-accent-50 backdrop-blur-sm">
+      <div className="bg-white w-full max-w-4xl border border-gray-200 rounded-2xl overflow-hidden max-h-[90vh] overflow-y-auto shadow-xl">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 sticky top-0 bg-white">
           <div>
-            <h2 className="text-base font-bold text-white">
+            <h2 className="text-base font-bold text-gray-900">
               Print QR Cards ({printReservations.length})
             </h2>
-            <p className="text-xs text-white/60 mt-1">
+            <p className="text-xs text-gray-600 mt-1">
               {printReservations.length === 1 ? '1 approved card selected' : `${printReservations.length} approved cards selected`}
             </p>
           </div>
-          <button onClick={onClose} className="p-2 rounded-xl hover:bg-white/10 text-white/60 border border-white/20">
+          <button onClick={onClose} className="p-2 rounded-xl hover:bg-gray-100 text-gray-600 border border-gray-200">
             <XCircle className="w-4 h-4" />
           </button>
         </div>
         <div className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             {printReservations.map((reservation) => (
-              <div key={reservation.id} className="bg-white rounded-2xl p-4">
+              <div key={reservation.id} className="bg-gray-50 rounded-2xl p-4">
                 <div className="text-center mb-3">
                   <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">Preview</p>
                   <div className="border-2 border-dashed border-gray-300 rounded-xl p-3">
@@ -275,8 +300,11 @@ function QRCardPrint({ reservations, onClose }: { reservations: CardReservation[
                       <h3 className="text-sm font-bold text-gray-800">{reservation.name}</h3>
                       <p className="text-[10px] text-gray-500">{reservation.cardType}</p>
                     </div>
-                    <div className="relative">
+                    <div className="relative mb-3">
                       <CardCanvas reservation={reservation} />
+                    </div>
+                    <div className="relative">
+                      <img src={backCard} alt="Card Back" className="w-full rounded-2xl shadow-lg" />
                     </div>
                   </div>
                 </div>
@@ -284,7 +312,7 @@ function QRCardPrint({ reservations, onClose }: { reservations: CardReservation[
             ))}
           </div>
 
-          <div className="flex gap-3 sticky bottom-0 bg-white py-4 border-t border-gray-200">
+          <div className="flex gap-3 pt-4">
             <button
               onClick={onClose}
               className="flex-1 py-2.5 border border-gray-300 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
