@@ -76,6 +76,18 @@ function CardCanvas({ reservation }: { reservation: CardReservation }) {
           Math.round(H * 0.52)
         );
 
+        // 2.5. Draw Card Type value (optional - uncomment to override template text)
+        // ctx.font          = `700 ${Math.round(W * 0.035)}px 'Telegraf', sans-serif`;
+        // ctx.fillStyle     = '#ffffff';
+        // ctx.shadowColor   = 'rgba(0,0,0,0.5)';
+        // ctx.shadowBlur    = 4;
+        // ctx.shadowOffsetY = 1;
+        // ctx.fillText(
+        //   reservation.cardType.toUpperCase(),
+        //   Math.round(W * 0.10),
+        //   Math.round(H * 0.68)
+        // );
+
         // 3. Draw QR code on the right panel
         const qrBoxX = Math.round(W * 0.52);
         const qrBoxY = Math.round(H * 0.17);
@@ -155,6 +167,18 @@ function QRCardPrint({ reservations, onClose }: { reservations: CardReservation[
               Math.round(W * 0.10),
               Math.round(H * 0.52)
             );
+
+            // Draw Card Type value (optional - uncomment to override template text)
+            // ctx.font          = `700 ${Math.round(W * 0.035)}px 'Telegraf', sans-serif`;
+            // ctx.fillStyle     = '#ffffff';
+            // ctx.shadowColor   = 'rgba(0,0,0,0.5)';
+            // ctx.shadowBlur    = 4;
+            // ctx.shadowOffsetY = 1;
+            // ctx.fillText(
+            //   reservation.cardType.toUpperCase(),
+            //   Math.round(W * 0.10),
+            //   Math.round(H * 0.68)
+            // );
 
             // Generate QR code using API
             const qrSize = 512;
