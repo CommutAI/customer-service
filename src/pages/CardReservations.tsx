@@ -20,18 +20,6 @@ const TEMPLATES: Record<CardReservation['cardType'], string> = {
   PWD: pwdCard,
 };
 
-import regularCard from '../assets/REGULAR.png';
-import studentCard from '../assets/STUDENT.png';
-import seniorCard  from '../assets/SENIOR-CITIZIEN.png';
-import pwdCard     from '../assets/PWD.png';
-
-const TEMPLATES: Record<CardReservation['cardType'], string> = {
-  Regular: regularCard,
-  Student: studentCard,
-  'Senior Citizen': seniorCard,
-  PWD: pwdCard,
-};
-
 type PassengerType = 'Regular' | 'Student' | 'Senior Citizen' | 'PWD';
 
 const TYPE_OPTIONS: { value: PassengerType; label: string }[] = [
