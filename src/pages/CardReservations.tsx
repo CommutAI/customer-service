@@ -312,16 +312,16 @@ function QRCardPrint({ reservations, onClose }: { reservations: CardReservation[
             ))}
           </div>
 
-          <div className="flex gap-3 pt-4">
+          <div className="flex gap-3 pt-4 border-t border-gray-200">
             <button
               onClick={onClose}
-              className="flex-1 py-2.5 border border-gray-300 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              className="flex-1 py-2.5 bg-gray-100 border border-gray-300 rounded-xl text-sm font-medium text-gray-900 hover:bg-gray-200 transition-colors"
             >
               Cancel
             </button>
             <button
               onClick={handlePrint}
-              className="flex-1 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-2"
+              className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-2"
             >
               <Printer className="w-4 h-4" />
               Print {printReservations.length === 1 ? 'Card' : `${printReservations.length} Cards`}
