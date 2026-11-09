@@ -223,8 +223,7 @@ function QRCardPrint({ reservations, onClose }: { reservations: CardReservation[
               padding: 20px;
             }
             .card-section {
-              margin-bottom: 60px;
-              page-break-inside: avoid;
+              margin-bottom: 30px;
             }
             .card-section h2 {
               margin-bottom: 20px;
@@ -253,9 +252,6 @@ function QRCardPrint({ reservations, onClose }: { reservations: CardReservation[
             @media print {
               body {
                 padding: 10px;
-              }
-              .card-section {
-                page-break-after: always;
               }
             }
           </style>
