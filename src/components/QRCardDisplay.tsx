@@ -71,6 +71,18 @@ function useCardCanvas(card: QRCard, qrRef: React.RefObject<HTMLDivElement | nul
           Math.round(H * 0.52)   // Moved card ID down (was 0.44)
         );
 
+        // 2.5. Draw Passenger Type value (optional - uncomment to override template text)
+        // ctx.font          = `700 ${Math.round(W * 0.035)}px 'Telegraf', sans-serif`;
+        // ctx.fillStyle     = '#ffffff';
+        // ctx.shadowColor   = 'rgba(0,0,0,0.5)';
+        // ctx.shadowBlur    = 4;
+        // ctx.shadowOffsetY = 1;
+        // ctx.fillText(
+        //   card.passengerType.toUpperCase(),
+        //   Math.round(W * 0.10),
+        //   Math.round(H * 0.68)
+        // );
+
         // 3. Draw QR code on the right panel (no glass style, same size as box)
         const qrBoxX = Math.round(W * 0.52); // Moved left (was 0.56)
         const qrBoxY = Math.round(H * 0.17);

@@ -2,11 +2,24 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiCalls } from '../lib/api';
 import type { CardReservation } from '../types';
 import { Search, Plus, User, Phone, MapPin, CheckCircle, XCircle, Clock, Trash2, Calendar, Printer, Check, X, RotateCcw, Eye } from 'lucide-react';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import { QRCodeSVG } from 'qrcode.react';
+import { QRCodeCanvas } from 'qrcode.react';
 import QRCardDisplay from '../components/QRCardDisplay';
 import type { QRCard } from '../types';
+
+import regularCard from '../assets/REGULAR.png';
+import studentCard from '../assets/STUDENT.png';
+import seniorCard  from '../assets/SENIOR-CITIZIEN.png';
+import pwdCard     from '../assets/PWD.png';
+import backCard    from '../assets/back.png';
+
+const TEMPLATES: Record<CardReservation['cardType'], string> = {
+  Regular: regularCard,
+  Student: studentCard,
+  'Senior Citizen': seniorCard,
+  PWD: pwdCard,
+};
 
 type PassengerType = 'Regular' | 'Student' | 'Senior Citizen' | 'PWD';
 
@@ -28,18 +41,200 @@ const STATUS_OPTIONS = [
 // Status options that can be changed via dropdown
 const STATUS_CHANGE_OPTIONS = STATUS_OPTIONS.filter(opt => opt.value !== 'approved' && opt.value !== 'claimed');
 
+// ── Canvas-based card rendering component ─────────────────────────────────────
+function CardCanvas({ reservation }: { reservation: CardReservation }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const qrRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const timer = setTimeout(() => {
+      const img = new Image();
+      img.src = TEMPLATES[reservation.cardType];
+      img.onload = () => {
+        canvas.width  = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        const W = canvas.width;
+        const H = canvas.height;
+
+        // 1. Draw card template background
+        ctx.drawImage(img, 0, 0);
+
+        // 2. Draw Card ID value
+        ctx.font          = `700 ${Math.round(W * 0.04)}px 'Telegraf', sans-serif`;
+        ctx.fillStyle     = '#ffffff';
+        ctx.shadowColor   = 'rgba(0,0,0,0.5)';
+        ctx.shadowBlur    = 4;
+        ctx.shadowOffsetY = 1;
+        ctx.fillText(
+          reservation.cardId || reservation.reservationId,
+          Math.round(W * 0.10),
+          Math.round(H * 0.52)
+        );
+
+        // 2.5. Draw Card Type value (optional - uncomment to override template text)
+        // ctx.font          = `700 ${Math.round(W * 0.035)}px 'Telegraf', sans-serif`;
+        // ctx.fillStyle     = '#ffffff';
+        // ctx.shadowColor   = 'rgba(0,0,0,0.5)';
+        // ctx.shadowBlur    = 4;
+        // ctx.shadowOffsetY = 1;
+        // ctx.fillText(
+        //   reservation.cardType.toUpperCase(),
+        //   Math.round(W * 0.10),
+        //   Math.round(H * 0.68)
+        // );
+
+        // 3. Draw QR code on the right panel
+        const qrBoxX = Math.round(W * 0.52);
+        const qrBoxY = Math.round(H * 0.17);
+        const qrBoxSize = Math.round(W * 0.38);
+
+        // Draw white background
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(qrBoxX, qrBoxY, qrBoxSize, qrBoxSize);
+
+        // Draw QR code
+        const qrCanvas = qrRef.current?.querySelector('canvas') as HTMLCanvasElement | null;
+        if (qrCanvas) {
+          ctx.shadowBlur = 0;
+          ctx.drawImage(qrCanvas, qrBoxX, qrBoxY, qrBoxSize, qrBoxSize);
+        }
+
+        ctx.shadowBlur    = 0;
+        ctx.shadowOffsetY = 0;
+      };
+    }, 120);
+
+    return () => clearTimeout(timer);
+  }, [reservation]);
+
+  return (
+    <>
+      <div ref={qrRef} className="absolute opacity-0 pointer-events-none">
+        <QRCodeCanvas value={reservation.cardId || reservation.reservationId} size={512} level="H" includeMargin={true} />
+      </div>
+      <canvas
+        ref={canvasRef}
+        className="w-full rounded-2xl shadow-lg"
+        style={{ imageRendering: 'crisp-edges' }}
+      />
+    </>
+  );
+}
+
 function QRCardPrint({ reservations, onClose }: { reservations: CardReservation[]; onClose: () => void }) {
   const printRef = useRef<HTMLDivElement>(null);
+  const [printImages, setPrintImages] = useState<Record<number, string>>({});
 
   // Keep all reservations with card IDs (including claimed ones for printing approved cards)
   const printReservations = reservations.filter(r => r.cardId);
 
-  const handlePrint = () => {
-    const printContent = printRef.current;
-    if (!printContent) return;
+  // Generate canvas images for all cards
+  useEffect(() => {
+    const generateImages = async () => {
+      const images: Record<number, string> = {};
 
-    const printWindow = window.open('', '', 'width=800,height=600');
+      for (const reservation of printReservations) {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        if (!ctx) continue;
+
+        const img = new Image();
+        img.src = TEMPLATES[reservation.cardType];
+
+        await new Promise<void>((resolve) => {
+          img.onload = () => {
+            canvas.width  = img.naturalWidth;
+            canvas.height = img.naturalHeight;
+            const W = canvas.width;
+            const H = canvas.height;
+
+            // Draw card template background
+            ctx.drawImage(img, 0, 0);
+
+            // Draw Card ID value
+            ctx.font          = `700 ${Math.round(W * 0.04)}px 'Telegraf', sans-serif`;
+            ctx.fillStyle     = '#ffffff';
+            ctx.shadowColor   = 'rgba(0,0,0,0.5)';
+            ctx.shadowBlur    = 4;
+            ctx.shadowOffsetY = 1;
+            ctx.fillText(
+              reservation.cardId || reservation.reservationId,
+              Math.round(W * 0.10),
+              Math.round(H * 0.52)
+            );
+
+            // Draw Card Type value (optional - uncomment to override template text)
+            // ctx.font          = `700 ${Math.round(W * 0.035)}px 'Telegraf', sans-serif`;
+            // ctx.fillStyle     = '#ffffff';
+            // ctx.shadowColor   = 'rgba(0,0,0,0.5)';
+            // ctx.shadowBlur    = 4;
+            // ctx.shadowOffsetY = 1;
+            // ctx.fillText(
+            //   reservation.cardType.toUpperCase(),
+            //   Math.round(W * 0.10),
+            //   Math.round(H * 0.68)
+            // );
+
+            // Generate QR code using API
+            const qrSize = 512;
+            const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${qrSize}x${qrSize}&data=${encodeURIComponent(reservation.cardId || reservation.reservationId)}`;
+            const qrImg = new Image();
+            qrImg.crossOrigin = 'anonymous';
+            qrImg.onload = () => {
+              // Draw QR code on card
+              const qrBoxX = Math.round(W * 0.52);
+              const qrBoxY = Math.round(H * 0.17);
+              const qrBoxSize = Math.round(W * 0.38);
+
+              ctx.fillStyle = '#ffffff';
+              ctx.fillRect(qrBoxX, qrBoxY, qrBoxSize, qrBoxSize);
+              ctx.shadowBlur = 0;
+              ctx.drawImage(qrImg, qrBoxX, qrBoxY, qrBoxSize, qrBoxSize);
+
+              images[reservation.id] = canvas.toDataURL('image/png');
+              setPrintImages({ ...images });
+              resolve();
+            };
+            qrImg.onerror = () => resolve();
+            qrImg.src = qrCodeUrl;
+          };
+          img.onerror = () => resolve();
+        });
+      }
+    };
+
+    generateImages();
+  }, [printReservations]);
+
+  const handlePrint = () => {
+    const printWindow = window.open('', '', 'width=800,height=1000');
     if (!printWindow) return;
+
+    const cardsHtml = printReservations.map((reservation) => {
+      const imageData = printImages[reservation.id];
+      if (!imageData) return '';
+
+      return `
+        <div class="card-section">
+          <h2>${reservation.name} - ${reservation.cardType}</h2>
+          <div class="card-images">
+            <div class="card-image-wrapper">
+              <h3>Front</h3>
+              <img src="${imageData}" alt="QR Card Front - ${reservation.cardId}" class="card-image" />
+            </div>
+            <div class="card-image-wrapper">
+              <h3>Back</h3>
+              <img src="${backCard}" alt="QR Card Back" class="card-image" />
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
 
     printWindow.document.write(`
       <!DOCTYPE html>
@@ -47,96 +242,46 @@ function QRCardPrint({ reservations, onClose }: { reservations: CardReservation[
         <head>
           <title>QR Cards - Batch Print</title>
           <style>
-            * {
-              margin: 0;
-              padding: 0;
-              box-sizing: border-box;
-            }
             body {
               font-family: Arial, sans-serif;
               padding: 20px;
-              background: #f5f5f5;
             }
-            .cards-container {
-              display: grid;
-              grid-template-columns: repeat(2, 1fr);
+            .card-section {
+              margin-bottom: 30px;
+            }
+            .card-section h2 {
+              margin-bottom: 20px;
+              color: #333;
+              border-bottom: 2px solid #333;
+              padding-bottom: 5px;
+            }
+            .card-images {
+              display: flex;
               gap: 20px;
-              max-width: 800px;
-              margin: 0 auto;
-            }
-            .card {
-              background: white;
-              border-radius: 16px;
-              padding: 20px;
-              box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-              border: 2px solid #e5e7eb;
-              page-break-inside: avoid;
-            }
-            .header {
-              text-align: center;
-              margin-bottom: 16px;
-              padding-bottom: 12px;
-              border-bottom: 2px solid #f97316;
-            }
-            .header h1 {
-              font-size: 16px;
-              font-weight: bold;
-              color: #1f2937;
-              margin-bottom: 2px;
-            }
-            .header p {
-              font-size: 11px;
-              color: #6b7280;
-            }
-            .qr-container {
-              display: flex;
               justify-content: center;
-              margin: 16px 0;
             }
-            .info {
-              margin-top: 16px;
-              padding-top: 12px;
-              border-top: 1px solid #e5e7eb;
-            }
-            .info-row {
-              display: flex;
-              justify-content: space-between;
-              margin-bottom: 6px;
-              font-size: 12px;
-            }
-            .info-label {
-              color: #6b7280;
-              font-weight: 500;
-            }
-            .info-value {
-              color: #1f2937;
-              font-weight: 600;
-            }
-            .footer {
+            .card-image-wrapper {
               text-align: center;
-              margin-top: 16px;
-              padding-top: 12px;
-              border-top: 1px solid #e5e7eb;
-              font-size: 10px;
-              color: #9ca3af;
+            }
+            .card-image-wrapper h3 {
+              margin-bottom: 10px;
+              font-size: 14px;
+              color: #666;
+            }
+            .card-image {
+              max-width: 350px;
+              height: auto;
+              display: block;
             }
             @media print {
               body {
-                background: white;
                 padding: 10px;
-              }
-              .card {
-                box-shadow: none;
-                border: 2px solid #000;
-              }
-              .cards-container {
-                gap: 10px;
               }
             }
           </style>
         </head>
         <body>
-          ${printContent.innerHTML}
+          ${cardsHtml}
         </body>
       </html>
     `);
@@ -145,100 +290,41 @@ function QRCardPrint({ reservations, onClose }: { reservations: CardReservation[
     setTimeout(() => {
       printWindow.print();
       printWindow.close();
-    }, 250);
+    }, 500);
   };
 
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="glass-card w-full max-w-4xl border border-white/20 overflow-hidden max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/20 sticky top-0 bg-gradient-to-br from-primary-50 via-white to-accent-50 backdrop-blur-sm">
+      <div className="bg-white w-full max-w-4xl border border-gray-200 rounded-2xl overflow-hidden max-h-[90vh] overflow-y-auto shadow-xl">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 sticky top-0 bg-white">
           <div>
-            <h2 className="text-base font-bold text-white">
+            <h2 className="text-base font-bold text-gray-900">
               Print QR Cards ({printReservations.length})
             </h2>
-            <p className="text-xs text-white/60 mt-1">
+            <p className="text-xs text-gray-600 mt-1">
               {printReservations.length === 1 ? '1 approved card selected' : `${printReservations.length} approved cards selected`}
             </p>
           </div>
-          <button onClick={onClose} className="p-2 rounded-xl hover:bg-white/10 text-white/60 border border-white/20">
+          <button onClick={onClose} className="p-2 rounded-xl hover:bg-gray-100 text-gray-600 border border-gray-200">
             <XCircle className="w-4 h-4" />
           </button>
         </div>
         <div className="p-6">
-          <div ref={printRef} className="hidden">
-            <div className="cards-container">
-              {printReservations.map((reservation) => (
-                <div key={reservation.id} className="card">
-                  <div className="header">
-                    <h1>OMFTS QR Card</h1>
-                    <p>One Manolo Fortich Transport System</p>
-                  </div>
-                  <div className="qr-container">
-                    <QRCodeSVG
-                      value={reservation.cardId || reservation.reservationId}
-                      size={120}
-                      level="H"
-                      includeMargin={false}
-                    />
-                  </div>
-                  <div className="info">
-                    <div className="info-row">
-                      <span className="info-label">Card ID:</span>
-                      <span className="info-value">{reservation.cardId || reservation.reservationId}</span>
-                    </div>
-                    <div className="info-row">
-                      <span className="info-label">Name:</span>
-                      <span className="info-value">{reservation.name}</span>
-                    </div>
-                    <div className="info-row">
-                      <span className="info-label">Card Type:</span>
-                      <span className="info-value">{reservation.cardType}</span>
-                    </div>
-                    <div className="info-row">
-                      <span className="info-label">Contact:</span>
-                      <span className="info-value">{reservation.contact}</span>
-                    </div>
-                  </div>
-                  <div className="footer">
-                    <p>Valid for all OMFTS routes</p>
-                    <p>Keep this card safe at all times</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             {printReservations.map((reservation) => (
-              <div key={reservation.id} className="bg-white rounded-2xl p-4">
+              <div key={reservation.id} className="bg-gray-50 rounded-2xl p-4">
                 <div className="text-center mb-3">
                   <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">Preview</p>
                   <div className="border-2 border-dashed border-gray-300 rounded-xl p-3">
                     <div className="text-center mb-2">
-                      <h3 className="text-sm font-bold text-gray-800">OMFTS QR Card</h3>
-                      <p className="text-[10px] text-gray-500">One Manolo Fortich Transport System</p>
+                      <h3 className="text-sm font-bold text-gray-800">{reservation.name}</h3>
+                      <p className="text-[10px] text-gray-500">{reservation.cardType}</p>
                     </div>
-                    <div className="flex justify-center mb-2">
-                      <QRCodeSVG
-                        value={reservation.cardId || reservation.reservationId}
-                        size={80}
-                        level="H"
-                        includeMargin={false}
-                      />
+                    <div className="relative mb-3">
+                      <CardCanvas reservation={reservation} />
                     </div>
-                    <div className="space-y-0.5 text-xs">
-                      <div className="flex justify-between">
-                        <span className="text-gray-500">Card ID:</span>
-                        <span className="font-semibold text-gray-800">{reservation.cardId || reservation.reservationId}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-500">Name:</span>
-                        <span className="font-semibold text-gray-800">{reservation.name}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-500">Card Type:</span>
-                        <span className="font-semibold text-gray-800">{reservation.cardType}</span>
-                      </div>
+                    <div className="relative">
+                      <img src={backCard} alt="Card Back" className="w-full rounded-2xl shadow-lg" />
                     </div>
                   </div>
                 </div>
@@ -246,16 +332,16 @@ function QRCardPrint({ reservations, onClose }: { reservations: CardReservation[
             ))}
           </div>
 
-          <div className="flex gap-3 sticky bottom-0 bg-gradient-to-br from-primary-50 via-white to-accent-50 backdrop-blur-sm py-4">
+          <div className="flex gap-3 pt-4 border-t border-gray-200">
             <button
               onClick={onClose}
-              className="flex-1 py-2.5 border border-white/20 rounded-2xl text-sm font-medium text-white/60 hover:bg-white/10 transition-colors"
+              className="flex-1 py-2.5 bg-gray-100 border border-gray-300 rounded-xl text-sm font-medium text-gray-900 hover:bg-gray-200 transition-colors"
             >
               Cancel
             </button>
             <button
               onClick={handlePrint}
-              className="flex-1 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-2xl text-sm font-semibold transition-colors shadow-soft disabled:opacity-60 border border-primary-400 flex items-center justify-center gap-2"
+              className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition-colors flex items-center justify-center gap-2"
             >
               <Printer className="w-4 h-4" />
               Print {printReservations.length === 1 ? 'Card' : `${printReservations.length} Cards`}
