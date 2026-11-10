@@ -185,32 +185,32 @@ export default function Transactions() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div>
-        <h1 className="text-white text-3xl font-bold mb-2">Transaction History</h1>
-        <p className="text-white/60">View all transaction records</p>
+        <h1 className="text-white text-xl sm:text-2xl lg:text-3xl font-bold mb-2">Transaction History</h1>
+        <p className="text-sm text-white/60">View all transaction records</p>
       </div>
 
       <div className="glass-card">
-        <div className="p-6 border-b border-white/10">
+        <div className="p-4 sm:p-6 border-b border-white/10">
           <div className="flex flex-col lg:flex-row gap-4">
             <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white/40 w-5 h-5" />
+              <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-white/40 w-4 h-4 sm:w-5 sm:h-5" />
               <input
                 type="text"
                 placeholder="Search by passenger name, card ID, or transaction ID..."
                 value={searchTerm}
                 onChange={(e) => handleSearchChange(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 border border-white/20 rounded-2xl focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white/10 text-white placeholder-white/40"
+                className="w-full pl-10 sm:pl-12 pr-3 sm:pr-4 py-2.5 sm:py-3 border border-white/20 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white/10 text-sm text-white placeholder-white/40"
               />
             </div>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 bg-white/10 rounded-lg border border-white/20 p-1">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+              <div className="flex items-center gap-2 bg-white/10 rounded-lg border border-white/20 p-1 overflow-x-auto">
                 {(['daily', 'monthly', 'yearly', 'custom'] as const).map((range) => (
                   <button
                     key={range}
                     onClick={() => handleDateRangeChange(range)}
-                    className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all border ${
+                    className={`px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all border whitespace-nowrap ${
                       dateRange === range
                         ? 'bg-primary-500 text-white border-primary-400'
                         : 'text-white/60 hover:bg-white/10 border-transparent'
@@ -221,24 +221,24 @@ export default function Transactions() {
                 ))}
               </div>
               {dateRange === 'custom' && (
-                <div className="flex items-center gap-2 bg-white/10 rounded-lg border border-white/20 p-2">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 bg-white/10 rounded-lg border border-white/20 p-2">
                   <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-white/60" />
+                    <Calendar className="w-4 h-4 text-white/60 flex-shrink-0" />
                     <input
                       type="date"
                       value={startDate}
                       onChange={(e) => setStartDate(e.target.value)}
-                      className="text-sm border border-white/20 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white/10 text-white"
+                      className="text-xs sm:text-sm border border-white/20 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white/10 text-white flex-1 min-w-0"
                     />
                   </div>
-                  <span className="text-white/60">to</span>
+                  <span className="text-white/60 text-xs sm:text-sm text-center">to</span>
                   <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-white/60" />
+                    <Calendar className="w-4 h-4 text-white/60 flex-shrink-0" />
                     <input
                       type="date"
                       value={endDate}
                       onChange={(e) => setEndDate(e.target.value)}
-                      className="text-sm border border-white/20 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white/10 text-white"
+                      className="text-xs sm:text-sm border border-white/20 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white/10 text-white flex-1 min-w-0"
                     />
                   </div>
                 </div>
@@ -248,34 +248,34 @@ export default function Transactions() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full min-w-[800px]">
             <thead className="bg-white/5">
               <tr>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Type</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Passenger</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Card ID</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Amount</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Balance After</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Method</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Date</th>
+                <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Type</th>
+                <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Passenger</th>
+                <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Card ID</th>
+                <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Amount</th>
+                <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Balance After</th>
+                <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Method</th>
+                <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Date</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/10">
               {paginatedTransactions.map((transaction) => (
                 <tr key={transaction.id} className="hover:bg-white/5 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${getTransactionColor(transaction.type)}`}>
+                  <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
+                    <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center ${getTransactionColor(transaction.type)}`}>
                       {getTransactionIcon(transaction.type)}
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-white">{transaction.passengerName}</div>
                     <div className="text-xs text-white/60">{transaction.id.slice(0, 8)}...</div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-mono text-white/90">{transaction.cardId}</div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
                     <div className={`text-sm font-bold flex items-center ${
                       transaction.amount > 0 ? 'text-emerald-400' : 'text-red-400'
                     }`}>
@@ -283,7 +283,7 @@ export default function Transactions() {
                       ₱{Math.abs(transaction.amount).toFixed(2)}
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">
+                  <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-medium text-white">
                     ₱{transaction.balanceAfter.toFixed(2)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -308,15 +308,15 @@ export default function Transactions() {
         )}
 
         {filteredTransactions.length > 0 && (
-          <div className="px-6 py-4 border-t border-white/10 flex items-center justify-between">
-            <p className="text-sm text-white/60">
+          <div className="px-4 sm:px-6 py-4 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-0">
+            <p className="text-xs sm:text-sm text-white/60">
               Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredTransactions.length)} of {filteredTransactions.length} transactions
             </p>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="px-3 py-2 border border-white/20 rounded-lg text-sm text-white/60 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="px-3 py-2 border border-white/20 rounded-lg text-xs sm:text-sm text-white/60 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Previous
               </button>
@@ -337,7 +337,7 @@ export default function Transactions() {
                     <button
                       key={pageNum}
                       onClick={() => setCurrentPage(pageNum)}
-                      className={`px-3 py-2 border rounded-lg text-sm transition-colors ${
+                      className={`px-3 py-2 border rounded-lg text-xs sm:text-sm transition-colors ${
                         currentPage === pageNum
                           ? 'bg-primary-500 text-white border-primary-400'
                           : 'border-white/20 text-white/60 hover:bg-white/10'
@@ -351,7 +351,7 @@ export default function Transactions() {
               <button
                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
-                className="px-3 py-2 border border-white/20 rounded-lg text-sm text-white/60 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="px-3 py-2 border border-white/20 rounded-lg text-xs sm:text-sm text-white/60 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Next
               </button>

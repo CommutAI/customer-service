@@ -255,22 +255,22 @@ export default function Reports() {
   };
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-xl font-bold text-white">Reports & Analytics</h1>
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl sm:text-2xl font-bold text-white">Reports & Analytics</h1>
       </div>
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
         {statCards.map((stat) => (
-          <div key={stat.title} className="glass-card p-6">
+          <div key={stat.title} className="glass-card p-4 sm:p-6">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-white/60">{stat.title}</p>
-                <p className="text-3xl font-bold text-white mt-2">{stat.value}</p>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs sm:text-sm font-medium text-white/60 truncate">{stat.title}</p>
+                <p className="text-2xl sm:text-3xl font-bold text-white mt-2">{stat.value}</p>
               </div>
-              <div className={`bg-linear-to-br ${stat.gradient} p-4 rounded-2xl shadow-soft`}>
-                <stat.icon className="w-7 h-7 text-white" />
+              <div className={`bg-linear-to-br ${stat.gradient} p-3 sm:p-4 rounded-xl sm:rounded-2xl shadow-soft flex-shrink-0`}>
+                <stat.icon className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
               </div>
             </div>
           </div>
@@ -278,10 +278,10 @@ export default function Reports() {
       </div>
 
       {/* Charts Row 1 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <div className="glass-card p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-white">Transactions</h2>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        <div className="glass-card p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 sm:mb-6">
+            <h2 className="text-lg sm:text-xl font-semibold text-white">Transactions</h2>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setTransactionsView('list')}
@@ -309,11 +309,11 @@ export default function Reports() {
           {transactionsView === 'list' ? (
             <>
               <div className="overflow-x-auto">
-                <table className="w-full">
+                <table className="w-full min-w-[400px]">
                   <thead className="bg-white/5">
                     <tr>
                       <th
-                        className="px-4 py-3 text-left text-xs font-semibold text-white/60 uppercase cursor-pointer hover:text-white"
+                        className="px-3 sm:px-4 py-3 text-left text-xs font-semibold text-white/60 uppercase cursor-pointer hover:text-white"
                         onClick={() => setTransactionsSort(prev => ({
                           key: 'date',
                           order: prev.key === 'date' && prev.order === 'asc' ? 'desc' : 'asc'
@@ -327,7 +327,7 @@ export default function Reports() {
                         </div>
                       </th>
                       <th
-                        className="px-4 py-3 text-left text-xs font-semibold text-white/60 uppercase cursor-pointer hover:text-white"
+                        className="px-3 sm:px-4 py-3 text-left text-xs font-semibold text-white/60 uppercase cursor-pointer hover:text-white"
                         onClick={() => setTransactionsSort(prev => ({
                           key: 'transactions',
                           order: prev.key === 'transactions' && prev.order === 'asc' ? 'desc' : 'asc'
@@ -341,7 +341,7 @@ export default function Reports() {
                         </div>
                       </th>
                       <th
-                        className="px-4 py-3 text-left text-xs font-semibold text-white/60 uppercase cursor-pointer hover:text-white"
+                        className="px-3 sm:px-4 py-3 text-left text-xs font-semibold text-white/60 uppercase cursor-pointer hover:text-white"
                         onClick={() => setTransactionsSort(prev => ({
                           key: 'revenue',
                           order: prev.key === 'revenue' && prev.order === 'asc' ? 'desc' : 'asc'
@@ -359,20 +359,20 @@ export default function Reports() {
                   <tbody className="divide-y divide-white/10">
                     {paginatedTransactions.map((item, index) => (
                       <tr key={index} className="hover:bg-white/5">
-                        <td className="px-4 py-3 text-sm text-white">{item.date}</td>
-                        <td className="px-4 py-3 text-sm text-white">{item.transactions}</td>
-                        <td className="px-4 py-3 text-sm text-white">₱{item.revenue.toFixed(2)}</td>
+                        <td className="px-3 sm:px-4 py-3 text-xs sm:text-sm text-white">{item.date}</td>
+                        <td className="px-3 sm:px-4 py-3 text-xs sm:text-sm text-white">{item.transactions}</td>
+                        <td className="px-3 sm:px-4 py-3 text-xs sm:text-sm text-white">₱{item.revenue.toFixed(2)}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
                 {paginatedTransactions.length === 0 && (
-                  <div className="text-center py-8 text-white/60">No data available</div>
+                  <div className="text-center py-8 text-sm text-white/60">No data available</div>
                 )}
               </div>
               {transactionsTotalPages > 1 && (
-                <div className="flex items-center justify-between mt-4">
-                  <span className="text-sm text-white/60">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-2 mt-4">
+                  <span className="text-xs sm:text-sm text-white/60">
                     Page {transactionsPage} of {transactionsTotalPages} ({sortedTransactions.length} total)
                   </span>
                   <div className="flex items-center gap-2">
@@ -395,11 +395,11 @@ export default function Reports() {
               )}
             </>
           ) : (
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={250} className="sm:h-[300px]">
               <AreaChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                <XAxis dataKey="date" stroke="rgba(255,255,255,0.6)" fontSize={12} />
-                <YAxis stroke="rgba(255,255,255,0.6)" fontSize={12} />
+                <XAxis dataKey="date" stroke="rgba(255,255,255,0.6)" fontSize={10} className="sm:text-xs" />
+                <YAxis stroke="rgba(255,255,255,0.6)" fontSize={10} className="sm:text-xs" />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: 'rgba(0,0,0,0.8)',
@@ -415,9 +415,9 @@ export default function Reports() {
           )}
         </div>
 
-        <div className="glass-card p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-white">Revenue</h2>
+        <div className="glass-card p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 sm:mb-6">
+            <h2 className="text-lg sm:text-xl font-semibold text-white">Revenue</h2>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setRevenueView('list')}
@@ -445,11 +445,11 @@ export default function Reports() {
           {revenueView === 'list' ? (
             <>
               <div className="overflow-x-auto">
-                <table className="w-full">
+                <table className="w-full min-w-[400px]">
                   <thead className="bg-white/5">
                     <tr>
                       <th
-                        className="px-4 py-3 text-left text-xs font-semibold text-white/60 uppercase cursor-pointer hover:text-white"
+                        className="px-3 sm:px-4 py-3 text-left text-xs font-semibold text-white/60 uppercase cursor-pointer hover:text-white"
                         onClick={() => setRevenueSort(prev => ({
                           key: 'date',
                           order: prev.key === 'date' && prev.order === 'asc' ? 'desc' : 'asc'
@@ -463,7 +463,7 @@ export default function Reports() {
                         </div>
                       </th>
                       <th
-                        className="px-4 py-3 text-left text-xs font-semibold text-white/60 uppercase cursor-pointer hover:text-white"
+                        className="px-3 sm:px-4 py-3 text-left text-xs font-semibold text-white/60 uppercase cursor-pointer hover:text-white"
                         onClick={() => setRevenueSort(prev => ({
                           key: 'revenue',
                           order: prev.key === 'revenue' && prev.order === 'asc' ? 'desc' : 'asc'
@@ -481,8 +481,8 @@ export default function Reports() {
                   <tbody className="divide-y divide-white/10">
                     {paginatedRevenue.map((item, index) => (
                       <tr key={index} className="hover:bg-white/5">
-                        <td className="px-4 py-3 text-sm text-white">{item.date}</td>
-                        <td className="px-4 py-3 text-sm text-white">₱{item.revenue.toFixed(2)}</td>
+                        <td className="px-3 sm:px-4 py-3 text-xs sm:text-sm text-white">{item.date}</td>
+                        <td className="px-3 sm:px-4 py-3 text-xs sm:text-sm text-white">₱{item.revenue.toFixed(2)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -492,8 +492,8 @@ export default function Reports() {
                 )}
               </div>
               {revenueTotalPages > 1 && (
-                <div className="flex items-center justify-between mt-4">
-                  <span className="text-sm text-white/60">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-2 mt-4">
+                  <span className="text-xs sm:text-sm text-white/60">
                     Page {revenuePage} of {revenueTotalPages} ({sortedRevenue.length} total)
                   </span>
                   <div className="flex items-center gap-2">
@@ -516,17 +516,18 @@ export default function Reports() {
               )}
             </>
           ) : (
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={250} className="sm:h-[300px]">
               <LineChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                <XAxis dataKey="date" stroke="rgba(255,255,255,0.6)" fontSize={12} />
-                <YAxis stroke="rgba(255,255,255,0.6)" fontSize={12} />
+                <XAxis dataKey="date" stroke="rgba(255,255,255,0.6)" fontSize={10} className="sm:text-xs" />
+                <YAxis stroke="rgba(255,255,255,0.6)" fontSize={10} className="sm:text-xs" />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: 'rgba(0,0,0,0.8)',
                     borderRadius: '12px',
                     border: '1px solid rgba(255,255,255,0.2)',
-                    color: 'white'
+                    color: 'white',
+                    fontSize: '12px'
                   }}
                   formatter={(value) => [`₱${value}`, 'Revenue']}
                 />
@@ -538,10 +539,10 @@ export default function Reports() {
       </div>
 
       {/* Charts Row 2 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <div className="glass-card p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-white">Card Type Distribution</h2>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        <div className="glass-card p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 sm:mb-6">
+            <h2 className="text-lg sm:text-xl font-semibold text-white">Card Type Distribution</h2>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setCardTypeView('list')}
@@ -682,9 +683,9 @@ export default function Reports() {
           )}
         </div>
 
-        <div className="glass-card p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-white">Transaction Types</h2>
+        <div className="glass-card p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 sm:mb-6">
+            <h2 className="text-lg sm:text-xl font-semibold text-white">Transaction Types</h2>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setTransactionTypeView('list')}
@@ -823,9 +824,9 @@ export default function Reports() {
       </div>
 
       {/* Card Status Chart */}
-      <div className="glass-card p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-white">Card Status Distribution</h2>
+      <div className="glass-card p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 sm:mb-6">
+          <h2 className="text-lg sm:text-xl font-semibold text-white">Card Status Distribution</h2>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setCardStatusView('list')}
