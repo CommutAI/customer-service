@@ -168,18 +168,6 @@ function QRCardPrint({ reservations, onClose }: { reservations: CardReservation[
               Math.round(H * 0.52)
             );
 
-            // Draw Card Type value (optional - uncomment to override template text)
-            // ctx.font          = `700 ${Math.round(W * 0.035)}px 'Telegraf', sans-serif`;
-            // ctx.fillStyle     = '#ffffff';
-            // ctx.shadowColor   = 'rgba(0,0,0,0.5)';
-            // ctx.shadowBlur    = 4;
-            // ctx.shadowOffsetY = 1;
-            // ctx.fillText(
-            //   reservation.cardType.toUpperCase(),
-            //   Math.round(W * 0.10),
-            //   Math.round(H * 0.68)
-            // );
-
             // Generate QR code using API
             const qrSize = 512;
             const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${qrSize}x${qrSize}&data=${encodeURIComponent(reservation.cardId || reservation.reservationId)}`;
@@ -197,7 +185,6 @@ function QRCardPrint({ reservations, onClose }: { reservations: CardReservation[
               ctx.drawImage(qrImg, qrBoxX, qrBoxY, qrBoxSize, qrBoxSize);
 
               images[reservation.id] = canvas.toDataURL('image/png');
-              setPrintImages({ ...images });
               resolve();
             };
             qrImg.onerror = () => resolve();
@@ -206,22 +193,39 @@ function QRCardPrint({ reservations, onClose }: { reservations: CardReservation[
           img.onerror = () => resolve();
         });
       }
+
+      // Set all images at once after the loop completes
+      setPrintImages(images);
+      console.log('Generated images for', Object.keys(images).length, 'cards');
     };
 
-    generateImages();
+    if (printReservations.length > 0) {
+      generateImages();
+    }
   }, [printReservations]);
 
   const handlePrint = () => {
+    // Check if all images are ready
+    const missingImages = printReservations.filter(r => !printImages[r.id]);
+    if (missingImages.length > 0) {
+      console.warn('Not all card images are ready yet. Missing:', missingImages.length);
+      alert('Please wait, card images are still loading...');
+      return;
+    }
+
     const printWindow = window.open('', '', 'width=800,height=1000');
     if (!printWindow) return;
 
     const cardsHtml = printReservations.map((reservation) => {
       const imageData = printImages[reservation.id];
-      if (!imageData) return '';
+      if (!imageData) {
+        console.error('Missing image for reservation:', reservation.id, reservation.name);
+        return '';
+      }
 
       return `
         <div class="card-section">
-          <h2>${reservation.name} - ${reservation.cardType}</h2>
+          <div class="card-title">${reservation.name} - ${reservation.cardType}</div>
           <div class="card-images">
             <div class="card-image-wrapper">
               <h3>Front</h3>
@@ -236,47 +240,60 @@ function QRCardPrint({ reservations, onClose }: { reservations: CardReservation[
       `;
     }).join('');
 
+    console.log('Printing', printReservations.length, 'cards. HTML length:', cardsHtml.length);
+
     printWindow.document.write(`
       <!DOCTYPE html>
       <html>
         <head>
           <title>QR Cards - Batch Print</title>
           <style>
+            * { box-sizing: border-box; margin: 0; padding: 0; }
             body {
               font-family: Arial, sans-serif;
               padding: 20px;
             }
             .card-section {
-              margin-bottom: 30px;
+              margin-bottom: 40px;
+              padding: 20px 0;
+              border-bottom: 2px dashed #ddd;
+              page-break-inside: avoid;
             }
-            .card-section h2 {
-              margin-bottom: 20px;
+            .card-section:last-child {
+              border-bottom: none;
+            }
+            .card-title {
+              font-size: 15px;
+              font-weight: bold;
               color: #333;
               border-bottom: 2px solid #333;
-              padding-bottom: 5px;
+              padding-bottom: 6px;
+              margin-bottom: 20px;
             }
             .card-images {
               display: flex;
               gap: 20px;
               justify-content: center;
+              flex-wrap: wrap;
             }
             .card-image-wrapper {
               text-align: center;
+              flex: 0 0 auto;
             }
             .card-image-wrapper h3 {
               margin-bottom: 10px;
-              font-size: 14px;
+              font-size: 13px;
               color: #666;
             }
             .card-image {
-              max-width: 350px;
+              max-width: 300px;
+              width: 100%;
               height: auto;
               display: block;
             }
             @media print {
-              body {
-                padding: 10px;
-              }
+              body { padding: 10px; }
+              .card-section { border-bottom-style: solid; }
             }
           </style>
         </head>
@@ -289,7 +306,6 @@ function QRCardPrint({ reservations, onClose }: { reservations: CardReservation[
     printWindow.focus();
     setTimeout(() => {
       printWindow.print();
-      printWindow.close();
     }, 500);
   };
 

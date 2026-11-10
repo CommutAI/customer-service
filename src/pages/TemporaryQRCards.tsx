@@ -661,7 +661,10 @@ function CardDetailModal({ card, onClose }: { card: QRCard; onClose: () => void 
           </html>
         `);
         printWindow.document.close();
-        printWindow.print();
+        setTimeout(() => {
+          printWindow.print();
+          printWindow.close();
+        }, 300);
       }
     }
   };

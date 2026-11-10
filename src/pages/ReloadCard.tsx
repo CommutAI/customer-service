@@ -310,6 +310,78 @@ export default function ReloadCard() {
 }
 
 function ReceiptModal({ transaction, onClose }: { transaction: Transaction; onClose: () => void }) {
+  const handlePrint = () => {
+    const printWindow = window.open('', '', 'width=400,height=600');
+    if (!printWindow) return;
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Receipt - ${transaction.id.slice(0, 8)}</title>
+          <style>
+            * { box-sizing: border-box; margin: 0; padding: 0; }
+            body { font-family: Arial, sans-serif; padding: 24px; max-width: 320px; margin: 0 auto; }
+            .header { text-align: center; margin-bottom: 20px; }
+            .check { width: 48px; height: 48px; background: #dcfce7; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; }
+            .check svg { width: 24px; height: 24px; stroke: #16a34a; }
+            .title { font-size: 20px; font-weight: bold; color: #111; margin-bottom: 4px; }
+            .subtitle { font-size: 12px; color: #6b7280; }
+            .amount-box { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 16px; margin-bottom: 20px; }
+            .amount-label { font-size: 11px; font-weight: 600; color: #4b5563; margin-bottom: 4px; }
+            .amount-value { font-size: 28px; font-weight: bold; color: #16a34a; }
+            .detail-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f3f4f6; }
+            .detail-row:last-child { border-bottom: none; }
+            .detail-label { font-size: 11px; color: #6b7280; }
+            .detail-value { font-size: 13px; font-weight: 500; color: #111; }
+            .detail-value.mono { font-family: monospace; font-size: 11px; color: #4b5563; }
+            @media print { body { padding: 12px; } }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div class="check">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <div class="title">Reload Successful!</div>
+            <div class="subtitle">Transaction completed</div>
+          </div>
+
+          <div class="amount-box">
+            <div class="amount-label">Reload Amount</div>
+            <div class="amount-value">+&#8369;${transaction.amount.toFixed(2)}</div>
+          </div>
+
+          <div>
+            <div class="detail-row">
+              <span class="detail-label">Passenger</span>
+              <span class="detail-value">${transaction.passengerName}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">New Balance</span>
+              <span class="detail-value">&#8369;${transaction.balanceAfter.toFixed(2)}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Payment Method</span>
+              <span class="detail-value" style="text-transform:capitalize">${transaction.method}</span>
+            </div>
+            <div class="detail-row">
+              <span class="detail-label">Transaction ID</span>
+              <span class="detail-value mono">${transaction.id.slice(0, 8)}...</span>
+            </div>
+          </div>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+    setTimeout(() => {
+      printWindow.print();
+      printWindow.close();
+    }, 300);
+  };
+
   return (
     <div className="fixed inset-0 bg-secondary-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-2xl p-5 w-full max-w-sm shadow-2xl border border-gray-100 animate-in fade-in zoom-in duration-300">
@@ -359,7 +431,7 @@ function ReceiptModal({ transaction, onClose }: { transaction: Transaction; onCl
             Close
           </button>
           <button
-            onClick={() => window.print()}
+            onClick={handlePrint}
             className="flex-1 px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-xl transition-all duration-200 font-medium text-sm flex items-center justify-center gap-1.5 shadow-md"
           >
             <Receipt className="w-3.5 h-3.5" />

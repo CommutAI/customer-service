@@ -48,7 +48,7 @@ const Sidebar = ({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (value: bo
   };
 
   return (
-    <aside className={`glass-sidebar fixed left-0 top-0 h-full z-50 transition-all duration-300 ${isOpen ? 'w-64' : 'w-20'}`}>
+    <aside className={`glass-sidebar fixed left-0 top-0 h-full z-50 transition-all duration-300 flex flex-col ${isOpen ? 'w-64' : 'w-20'}`}>
       <div className="p-4 flex items-center justify-between border-b border-white/10">
         {isOpen && (
           <div className="flex items-center gap-2">
