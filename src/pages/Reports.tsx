@@ -396,6 +396,7 @@ export default function Reports() {
                   </div>
                 </div>
               )}
+              </div>
             </>
           ) : (
             <ResponsiveContainer width="100%" height={250} className="sm:h-[300px]">
@@ -520,6 +521,7 @@ export default function Reports() {
                   </div>
                 </div>
               )}
+              </div>
             </>
           ) : (
             <ResponsiveContainer width="100%" height={250} className="sm:h-[300px]">
@@ -652,6 +654,7 @@ export default function Reports() {
                   </div>
                 </div>
               )}
+              </div>
             </>
           ) : (
             <>
@@ -794,6 +797,7 @@ export default function Reports() {
                   </div>
                 </div>
               )}
+              </div>
             </>
           ) : (
             <>
@@ -942,6 +946,7 @@ export default function Reports() {
                 </div>
               </div>
             )}
+            </div>
           </>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
