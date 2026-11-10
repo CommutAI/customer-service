@@ -53,7 +53,7 @@ export default function Login() {
           <div>
             <label className="text-white/60 text-sm mb-2 block">Email</label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/40" size={20} />
+              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-orange-400" size={20} />
               <input
                 type="email"
                 value={email}
@@ -68,7 +68,7 @@ export default function Login() {
           <div>
             <label className="text-white/60 text-sm mb-2 block">Password</label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/40" size={20} />
+              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-orange-400" size={20} />
               <input
                 type={showPassword ? 'text' : 'password'}
                 value={password}
@@ -80,7 +80,7 @@ export default function Login() {
               <button
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-white transition-colors"
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-orange-400 hover:text-orange-300 transition-colors"
                 aria-label={showPassword ? 'Hide password' : 'Show password'}
               >
                 {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}

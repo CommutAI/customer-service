@@ -6,36 +6,36 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { useMemo } from 'react';
 
 const KPICard = ({ title, value, change, icon: Icon, color }: { title: string; value: string | number; change: string; icon: LucideIcon; color: string }) => (
-  <div className="glass-card p-6 hover:scale-105 transition-transform duration-300">
-    <div className="flex items-center justify-between mb-4">
-      <div className={`w-12 h-12 rounded-xl ${color} flex items-center justify-center`}>
-        <Icon className="w-6 h-6 text-white" />
+  <div className="glass-card p-4 sm:p-6 hover:scale-105 transition-transform duration-300">
+    <div className="flex items-center justify-between mb-3 sm:mb-4">
+      <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl ${color} flex items-center justify-center`}>
+        <Icon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
       </div>
       {change && (
-        <span className={`text-sm ${change.startsWith('+') ? 'text-green-400' : 'text-red-400'}`}>
+        <span className={`text-xs sm:text-sm ${change.startsWith('+') ? 'text-green-400' : 'text-red-400'}`}>
           {change}
         </span>
       )}
     </div>
-    <h3 className="text-white/60 text-sm mb-1">{title}</h3>
-    <p className="text-white text-3xl font-bold">{value}</p>
+    <h3 className="text-white/60 text-xs sm:text-sm mb-1">{title}</h3>
+    <p className="text-white text-xl sm:text-2xl lg:text-3xl font-bold">{value}</p>
   </div>
 );
 
 const ShortcutCard = ({ title, value, icon: Icon, color, link, onClick }: { title: string; value: string; icon: LucideIcon; color: string; link: string; onClick: (link: string) => void }) => (
   <button 
     onClick={() => onClick(link)}
-    className="block border border-white/20 rounded-2xl hover:border-white/30 transition-colors"
+    className="block border border-white/20 rounded-xl sm:rounded-2xl hover:border-white/30 transition-colors w-full"
   >
-    <div className="glass-card p-4 hover:scale-105 transition-transform duration-300 cursor-pointer">
+    <div className="glass-card p-3 sm:p-4 hover:scale-105 transition-transform duration-300 cursor-pointer">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className={`w-10 h-10 rounded-lg ${color} flex items-center justify-center`}>
-            <Icon className="w-5 h-5 text-white" />
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className={`w-8 h-8 sm:w-10 sm:h-10 rounded-lg ${color} flex items-center justify-center flex-shrink-0`}>
+            <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
           </div>
-          <div>
-            <p className="text-white/60 text-xs">{title}</p>
-            <p className="text-white font-bold">{value}</p>
+          <div className="text-left">
+            <p className="text-white/60 text-[10px] sm:text-xs">{title}</p>
+            <p className="text-white font-bold text-sm sm:text-base">{value}</p>
           </div>
         </div>
       </div>
@@ -133,32 +133,35 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <div>
-        <h1 className="text-white text-3xl font-bold mb-2">Dashboard</h1>
-        <p className="text-white/60">Welcome back! Here's what's happening today.</p>
+        <h1 className="text-white text-2xl sm:text-3xl font-bold mb-2">Dashboard</h1>
+        <p className="text-white/60 text-sm sm:text-base">Welcome back! Here's what's happening today.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
         {kpis.map((kpi, index) => (
           <KPICard key={index} {...kpi} />
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="glass-card p-6">
-          <h2 className="text-white text-xl font-bold mb-6">Weekly Transactions</h2>
-          <ResponsiveContainer width="100%" height={250}>
+      {/* Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        <div className="glass-card p-4 sm:p-6">
+          <h2 className="text-white text-lg sm:text-xl font-bold mb-4 sm:mb-6">Weekly Transactions</h2>
+          <ResponsiveContainer width="100%" height={200} className="sm:h-[250px]">
             <BarChart data={weeklyData}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-              <XAxis dataKey="day" stroke="rgba(255,255,255,0.6)" fontSize={12} />
-              <YAxis stroke="rgba(255,255,255,0.6)" fontSize={12} />
+              <XAxis dataKey="day" stroke="rgba(255,255,255,0.6)" fontSize={11} />
+              <YAxis stroke="rgba(255,255,255,0.6)" fontSize={11} />
               <Tooltip 
                 contentStyle={{ 
                   backgroundColor: 'rgba(0,0,0,0.8)', 
                   borderRadius: '12px', 
                   border: '1px solid rgba(255,255,255,0.2)',
-                  color: 'white'
+                  color: 'white',
+                  fontSize: '12px'
                 }}
               />
               <Bar dataKey="transactions" fill="#3b82f6" radius={[8, 8, 0, 0]} />
@@ -166,19 +169,20 @@ export default function Dashboard() {
           </ResponsiveContainer>
         </div>
 
-        <div className="glass-card p-6">
-          <h2 className="text-white text-xl font-bold mb-6">Weekly Revenue</h2>
-          <ResponsiveContainer width="100%" height={250}>
+        <div className="glass-card p-4 sm:p-6">
+          <h2 className="text-white text-lg sm:text-xl font-bold mb-4 sm:mb-6">Weekly Revenue</h2>
+          <ResponsiveContainer width="100%" height={200} className="sm:h-[250px]">
             <LineChart data={weeklyData}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-              <XAxis dataKey="day" stroke="rgba(255,255,255,0.6)" fontSize={12} />
-              <YAxis stroke="rgba(255,255,255,0.6)" fontSize={12} />
+              <XAxis dataKey="day" stroke="rgba(255,255,255,0.6)" fontSize={11} />
+              <YAxis stroke="rgba(255,255,255,0.6)" fontSize={11} />
               <Tooltip 
                 contentStyle={{ 
                   backgroundColor: 'rgba(0,0,0,0.8)', 
                   borderRadius: '12px', 
                   border: '1px solid rgba(255,255,255,0.2)',
-                  color: 'white'
+                  color: 'white',
+                  fontSize: '12px'
                 }}
                 formatter={(value) => [`₱${value}`, 'Revenue']}
               />
@@ -188,17 +192,18 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="glass-card p-6">
-          <h2 className="text-white text-xl font-bold mb-6">Card Type Distribution</h2>
-          <ResponsiveContainer width="100%" height={250}>
+      {/* Card Distribution and Quick Actions */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+        <div className="glass-card p-4 sm:p-6">
+          <h2 className="text-white text-lg sm:text-xl font-bold mb-4 sm:mb-6">Card Type Distribution</h2>
+          <ResponsiveContainer width="100%" height={200} className="sm:h-[250px]">
             <PieChart>
               <Pie
                 data={cardTypeData}
                 cx="50%"
                 cy="50%"
-                innerRadius={60}
-                outerRadius={80}
+                innerRadius={50}
+                outerRadius={70}
                 paddingAngle={5}
                 dataKey="value"
               >
@@ -211,7 +216,8 @@ export default function Dashboard() {
                   backgroundColor: 'rgba(0,0,0,0.8)', 
                   borderRadius: '12px', 
                   border: '1px solid rgba(255,255,255,0.2)',
-                  color: 'white'
+                  color: 'white',
+                  fontSize: '12px'
                 }}
               />
             </PieChart>
@@ -219,16 +225,16 @@ export default function Dashboard() {
           <div className="grid grid-cols-2 gap-2 mt-4">
             {cardTypeData.map((item) => (
               <div key={item.name} className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
-                <span className="text-xs text-white/60">{item.name}: {item.value}</span>
+                <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }} />
+                <span className="text-xs text-white/60 truncate">{item.name}: {item.value}</span>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="lg:col-span-2 glass-card p-6">
-          <h2 className="text-white text-xl font-bold mb-6">Quick Actions</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <div className="lg:col-span-2 glass-card p-4 sm:p-6">
+          <h2 className="text-white text-lg sm:text-xl font-bold mb-4 sm:mb-6">Quick Actions</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
             <ShortcutCard
               title="Reload Card"
               value="Go"

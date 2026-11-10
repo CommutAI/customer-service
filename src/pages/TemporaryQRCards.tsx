@@ -110,15 +110,15 @@ export default function TemporaryQRCards() {
   );
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
         <div>
-          <h1 className="text-xl font-bold text-white">Temporary QR Cards</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-white">Temporary QR Cards</h1>
           <p className="text-sm text-white">Manage temporary cards</p>
         </div>
         <button
           onClick={() => setShowGenerateModal(true)}
-          className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-2xl text-sm font-semibold flex items-center gap-2 transition-colors border border-green-400"
+          className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-2xl text-sm font-semibold flex items-center justify-center gap-2 transition-colors border border-green-400"
         >
           <Plus className="w-4 h-4" />
           Generate Card
@@ -128,24 +128,24 @@ export default function TemporaryQRCards() {
       {isLoading ? (
         <div className="text-center py-12 text-white/60">Loading...</div>
       ) : cards && cards.length === 0 ? (
-        <div className="text-center py-12 glass-card rounded-3xl border border-dashed border-white/20">
+        <div className="text-center py-12 glass-card rounded-2xl sm:rounded-3xl border border-dashed border-white/20">
           <QrCode className="w-12 h-12 mx-auto text-white/30 mb-3" />
           <p className="text-white/50">No temporary QR cards generated yet</p>
           <p className="text-sm text-white/40 mt-1">Click "Generate Card" to create one</p>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6">
           {/* Summary Card */}
-          <div className="glass-card p-6 border border-white/20 rounded-2xl">
-            <h3 className="text-lg font-bold text-white mb-4">Summary</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="p-4 bg-green-500/20 border border-green-500/30 rounded-xl">
+          <div className="glass-card p-4 sm:p-6 border border-white/20 rounded-xl sm:rounded-2xl">
+            <h3 className="text-base sm:text-lg font-bold text-white mb-3 sm:mb-4">Summary</h3>
+            <div className="grid grid-cols-2 gap-3 sm:gap-4">
+              <div className="p-3 sm:p-4 bg-green-500/20 border border-green-500/30 rounded-xl">
                 <p className="text-xs text-white/60 mb-1">Active Cards</p>
-                <p className="text-2xl font-bold text-green-400">{activeCards.length}</p>
+                <p className="text-xl sm:text-2xl font-bold text-green-400">{activeCards.length}</p>
               </div>
-              <div className="p-4 bg-white/10 border border-white/20 rounded-xl">
+              <div className="p-3 sm:p-4 bg-white/10 border border-white/20 rounded-xl">
                 <p className="text-xs text-white/60 mb-1">Total Cards</p>
-                <p className="text-2xl font-bold text-white">{cards?.length || 0}</p>
+                <p className="text-xl sm:text-2xl font-bold text-white">{cards?.length || 0}</p>
               </div>
             </div>
           </div>
@@ -157,7 +157,7 @@ export default function TemporaryQRCards() {
                 <Clock className="w-4 h-4" />
                 Active Cards ({activeCards.length})
               </h2>
-              <div className="space-y-3">
+              <div className="space-y-2 sm:space-y-3">
                 {paginatedActiveCards.map((card) => (
                   <CardListItem
                     key={card.id}
@@ -172,15 +172,15 @@ export default function TemporaryQRCards() {
                 ))}
               </div>
               {activeTotalPages > 1 && (
-                <div className="flex items-center justify-between mt-4 pt-4 border-t border-white/10">
-                  <p className="text-sm text-white/60">
+                <div className="flex flex-col sm:flex-row items-center justify-between mt-4 pt-4 border-t border-white/10 gap-3 sm:gap-0">
+                  <p className="text-xs sm:text-sm text-white/60">
                     Showing {((activePage - 1) * itemsPerPage) + 1} to {Math.min(activePage * itemsPerPage, activeCards.length)} of {activeCards.length} active cards
                   </p>
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => setActivePage(p => Math.max(1, p - 1))}
                       disabled={activePage === 1}
-                      className="px-3 py-2 border border-white/20 rounded-lg text-sm text-white/60 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      className="px-3 py-2 border border-white/20 rounded-lg text-xs sm:text-sm text-white/60 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
                       Previous
                     </button>
@@ -201,7 +201,7 @@ export default function TemporaryQRCards() {
                           <button
                             key={pageNum}
                             onClick={() => setActivePage(pageNum)}
-                            className={`px-3 py-2 border rounded-lg text-sm transition-colors ${
+                            className={`px-3 py-2 border rounded-lg text-xs sm:text-sm transition-colors ${
                               activePage === pageNum
                                 ? 'bg-primary-500 text-white border-primary-400'
                                 : 'border-white/20 text-white/60 hover:bg-white/10'
@@ -215,7 +215,7 @@ export default function TemporaryQRCards() {
                     <button
                       onClick={() => setActivePage(p => Math.min(activeTotalPages, p + 1))}
                       disabled={activePage === activeTotalPages}
-                      className="px-3 py-2 border border-white/20 rounded-lg text-sm text-white/60 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      className="px-3 py-2 border border-white/20 rounded-lg text-xs sm:text-sm text-white/60 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
                       Next
                     </button>
@@ -232,7 +232,7 @@ export default function TemporaryQRCards() {
                 <XCircle className="w-4 h-4" />
                 Inactive Cards ({inactiveCards.length})
               </h2>
-              <div className="space-y-3">
+              <div className="space-y-2 sm:space-y-3">
                 {paginatedInactiveCards.map((card) => (
                   <CardListItem
                     key={card.id}
@@ -247,15 +247,15 @@ export default function TemporaryQRCards() {
                 ))}
               </div>
               {inactiveTotalPages > 1 && (
-                <div className="flex items-center justify-between mt-4 pt-4 border-t border-white/10">
-                  <p className="text-sm text-white/60">
+                <div className="flex flex-col sm:flex-row items-center justify-between mt-4 pt-4 border-t border-white/10 gap-3 sm:gap-0">
+                  <p className="text-xs sm:text-sm text-white/60">
                     Showing {((inactivePage - 1) * itemsPerPage) + 1} to {Math.min(inactivePage * itemsPerPage, inactiveCards.length)} of {inactiveCards.length} inactive cards
                   </p>
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => setInactivePage(p => Math.max(1, p - 1))}
                       disabled={inactivePage === 1}
-                      className="px-3 py-2 border border-white/20 rounded-lg text-sm text-white/60 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      className="px-3 py-2 border border-white/20 rounded-lg text-xs sm:text-sm text-white/60 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
                       Previous
                     </button>
@@ -276,7 +276,7 @@ export default function TemporaryQRCards() {
                           <button
                             key={pageNum}
                             onClick={() => setInactivePage(pageNum)}
-                            className={`px-3 py-2 border rounded-lg text-sm transition-colors ${
+                            className={`px-3 py-2 border rounded-lg text-xs sm:text-sm transition-colors ${
                               inactivePage === pageNum
                                 ? 'bg-primary-500 text-white border-primary-400'
                                 : 'border-white/20 text-white/60 hover:bg-white/10'
@@ -290,7 +290,7 @@ export default function TemporaryQRCards() {
                     <button
                       onClick={() => setInactivePage(p => Math.min(inactiveTotalPages, p + 1))}
                       disabled={inactivePage === inactiveTotalPages}
-                      className="px-3 py-2 border border-white/20 rounded-lg text-sm text-white/60 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      className="px-3 py-2 border border-white/20 rounded-lg text-xs sm:text-sm text-white/60 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
                       Next
                     </button>
@@ -363,23 +363,32 @@ function CardListItem({
   };
 
   return (
-    <div className={`glass-card p-4 border ${
+    <div className={`glass-card p-3 sm:p-4 border ${
       isActive ? 'border-green-500/30' : 'border-white/20'
     }`}>
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4 flex-1">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-green-500/20">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-3">
+        <div className="flex items-center gap-3 sm:gap-4 flex-1 w-full sm:w-auto">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-green-500/20 flex-shrink-0">
             <QrCode className="w-5 h-5 text-green-400" />
           </div>
-          <div className="flex-1">
-            <p className="font-mono font-bold text-white text-sm">{card.cardId}</p>
+          <div className="flex-1 min-w-0">
+            <p className="font-mono font-bold text-white text-sm truncate">{card.cardId}</p>
             <p className="text-xs text-white/60">
               {card.passengerType} · Issued {new Date(card.issuedAt).toLocaleDateString()}
             </p>
           </div>
+          <div className="sm:hidden">
+            <span className={`px-2 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${
+              isActive
+                ? 'bg-green-500/20 text-green-400'
+                : 'bg-white/10 text-white/60'
+            }`}>
+              {isActive ? 'Active' : 'Inactive'}
+            </span>
+          </div>
         </div>
-        <div className="flex items-center gap-4">
-          <div className="text-right">
+        <div className="flex items-center gap-2 sm:gap-4 w-full sm:w-auto">
+          <div className="hidden sm:block text-right">
             <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
               isActive
                 ? 'bg-green-500/20 text-green-400'
@@ -388,7 +397,7 @@ function CardListItem({
               {isActive ? 'Active' : 'Inactive'}
             </span>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <button
               onClick={onView}
               className="px-3 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-semibold transition-colors border border-white/20"
@@ -426,7 +435,7 @@ function CardListItem({
                 title="Reactivate Card"
               >
                 <RotateCcw className="w-3 h-3" />
-                Activate
+                <span className="hidden sm:inline">Activate</span>
               </button>
             )}
           </div>

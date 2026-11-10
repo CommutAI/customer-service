@@ -240,114 +240,31 @@ export default function QRCardDisplay({ card, onClose }: Props) {
             <head>
               <title>QR Card - ${card.cardId}</title>
               <style>
-                body { font-family: Arial, sans-serif; padding: 20px; }
-                .page { page-break-after: always; }
-                .card-image { max-width: 400px; height: auto; display: block; margin: 0 auto; }
-                .card-section { margin-bottom: 30px; }
-                .card-section h2 { margin-bottom: 15px; color: #333; border-bottom: 2px solid #333; padding-bottom: 5px; }
-                .info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px; }
-                .info-item { }
-                .info-label { font-weight: bold; color: #666; font-size: 12px; }
-                .info-value { font-size: 14px; color: #333; }
-                table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-                th { background: #f5f5f5; padding: 10px; text-align: left; font-weight: bold; }
-                td { padding: 8px; }
-                .header { text-align: center; margin-bottom: 20px; }
-                .header h1 { margin: 0; color: #333; }
-                .header p { margin: 5px 0; color: #666; }
+                * { box-sizing: border-box; }
+                body { font-family: Arial, sans-serif; padding: 20px; margin: 0; }
+                .card-container { max-width: 100%; margin: 0 auto; }
+                .card-image { max-width: 100%; height: auto; display: block; margin: 0 auto; }
+                .card-section { margin-bottom: 30px; text-align: center; }
+                .card-section h2 { margin-bottom: 10px; color: #333; font-size: 14px; }
+                @media print {
+                  body { padding: 10px; }
+                  .card-container { max-width: 400px; }
+                  .card-image { max-width: 100%; }
+                  .card-section { page-break-inside: avoid; }
+                }
               </style>
             </head>
             <body>
-              <!-- Page 1: Card Front and Back -->
-              <div class="page">
-                <div class="header">
-                  <h1>QR Card</h1>
-                  <p>${card.cardId}</p>
-                </div>
-
+              <div class="card-container">
                 <div class="card-section">
-                  <h2>Front of Card</h2>
+                  <h2>Front</h2>
                   <img src="${canvasDataUrl}" alt="QR Card Front" class="card-image" />
                 </div>
 
                 <div class="card-section">
-                  <h2>Back of Card</h2>
+                  <h2>Back</h2>
                   <img src="${backCard}" alt="QR Card Back" class="card-image" />
                 </div>
-              </div>
-
-              <!-- Page 2: Card Details and Transactions -->
-              <div class="page">
-                <div class="header">
-                  <h1>Card Details</h1>
-                  <p>${card.cardId}</p>
-                </div>
-
-                <div class="card-section">
-                  <h2>Cardholder Information</h2>
-                  <div class="info-grid">
-                    <div class="info-item">
-                      <div class="info-label">Cardholder Name</div>
-                      <div class="info-value">${card.passengerName}</div>
-                    </div>
-                    <div class="info-item">
-                      <div class="info-label">Contact Number</div>
-                      <div class="info-value">${card.contactNumber || 'N/A'}</div>
-                    </div>
-                    <div class="info-item">
-                      <div class="info-label">Card ID</div>
-                      <div class="info-value">${card.cardId}</div>
-                    </div>
-                    <div class="info-item">
-                      <div class="info-label">Passenger Type</div>
-                      <div class="info-value">${card.passengerType}</div>
-                    </div>
-                    <div class="info-item">
-                      <div class="info-label">Status</div>
-                      <div class="info-value">${card.status}</div>
-                    </div>
-                    ${!isFromReservation ? `
-                    <div class="info-item">
-                      <div class="info-label">Current Balance</div>
-                      <div class="info-value">₱${(card.balance ?? 0).toFixed(2)}</div>
-                    </div>
-                    ` : ''}
-                    <div class="info-item">
-                      <div class="info-label">Issued Date</div>
-                      <div class="info-value">${new Date(card.issuedAt).toLocaleDateString()}</div>
-                    </div>
-                    ${!isFromReservation && card.expiresAt ? `
-                    <div class="info-item">
-                      <div class="info-label">Expiration Date</div>
-                      <div class="info-value">${new Date(card.expiresAt).toLocaleDateString()}</div>
-                    </div>
-                    ` : ''}
-                    ${isFromReservation ? `
-                    <div class="info-item" style="grid-column: span 2;">
-                      <div class="info-label">Note</div>
-                      <div class="info-value" style="color: #16a34a;">Card from reservation - activate to enable top-up</div>
-                    </div>
-                    ` : ''}
-                  </div>
-                </div>
-                ${!isFromReservation ? `
-                <div class="card-section">
-                  <h2>Transaction History</h2>
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Date</th>
-                        <th>Type</th>
-                        <th style="text-align: right;">Amount</th>
-                        <th style="text-align: right;">Balance After</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      ${transactionsHtml}
-                    </tbody>
-                  </table>
-                </div>
-                ` : ''}
               </div>
             </body>
           </html>
@@ -384,13 +301,13 @@ export default function QRCardDisplay({ card, onClose }: Props) {
               <QRCodeCanvas value={card.cardId} size={512} level="H" includeMargin={true} />
             </div>
 
-            <div className="px-5 pt-4 pb-3">
+            <div className="px-4 sm:px-5 pt-4 pb-3">
               {showBack ? (
-                <img src={backCard} alt="Card back" className="w-full rounded-2xl shadow-lg" />
+                <img src={backCard} alt="Card back" className="w-full max-w-md mx-auto rounded-2xl shadow-lg" />
               ) : (
                 <canvas
                   ref={canvasRef}
-                  className="w-full rounded-2xl shadow-lg"
+                  className="w-full max-w-md mx-auto rounded-2xl shadow-lg"
                   style={{ imageRendering: 'crisp-edges' }}
                 />
               )}
@@ -486,7 +403,7 @@ export default function QRCardDisplay({ card, onClose }: Props) {
               </button>
             </div>
             <div className="px-5 py-4">
-              <img src={combinedImage} alt="Card Preview" className="w-full rounded-2xl shadow-lg" />
+              <img src={combinedImage} alt="Card Preview" className="w-full max-w-4xl mx-auto rounded-2xl shadow-lg" />
             </div>
             <div className="px-5 pb-5">
               <div className="flex gap-3">
@@ -529,23 +446,23 @@ export default function QRCardDisplay({ card, onClose }: Props) {
                   <p className="text-gray-600">{card.cardId}</p>
                 </div>
 
-                <div className="mb-6">
+                <div className="mb-8">
                   <h2 className="text-lg font-bold mb-3 border-b-2 border-gray-900 pb-2">Front of Card</h2>
                   {canvasRef.current && canvasRef.current.width > 0 ? (
-                    <img src={canvasRef.current.toDataURL()} alt="QR Card Front" className="mx-auto max-w-sm" />
+                    <img src={canvasRef.current.toDataURL()} alt="QR Card Front" className="mx-auto w-full max-w-md" />
                   ) : (
                     <div className="text-center text-gray-500 py-8">Loading card preview...</div>
                   )}
                 </div>
 
-                <div className="mb-6">
+                <div className="mb-8">
                   <h2 className="text-lg font-bold mb-3 border-b-2 border-gray-900 pb-2">Back of Card</h2>
-                  <img src={backCard} alt="QR Card Back" className="mx-auto max-w-sm" />
+                  <img src={backCard} alt="QR Card Back" className="mx-auto w-full max-w-md" />
                 </div>
 
-                <div className="border-t-2 border-gray-300 pt-6">
+                <div className="border-t-2 border-gray-300 pt-8">
                   <h2 className="text-lg font-bold mb-3 border-b-2 border-gray-900 pb-2">Cardholder Information</h2>
-                  <div className="grid grid-cols-2 gap-4 mb-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                     <div className="bg-gray-50 p-3 rounded">
                       <div className="font-bold text-gray-600 text-xs">Cardholder Name</div>
                       <div className="text-sm">{card.passengerName}</div>
@@ -583,7 +500,8 @@ export default function QRCardDisplay({ card, onClose }: Props) {
                   </div>
 
                   <h2 className="text-lg font-bold mb-3 border-b-2 border-gray-900 pb-2">Transaction History</h2>
-                  <table className="w-full border-collapse">
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse min-w-full">
                     <thead>
                       <tr>
                         <th className="bg-gray-100 p-2 text-left font-bold">Date</th>
@@ -609,6 +527,7 @@ export default function QRCardDisplay({ card, onClose }: Props) {
                       )}
                     </tbody>
                   </table>
+                  </div>
                 </div>
               </div>
             </div>

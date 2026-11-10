@@ -98,21 +98,21 @@ export default function Passengers() {
   }
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-3">
-        <h1 className="text-xl font-bold text-white">Card Management</h1>
+    <div className="space-y-3 sm:space-y-4">
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl sm:text-2xl font-bold text-white">Card Management</h1>
       </div>
 
       <div className="glass-card">
-        <div className="p-6 border-b border-white/20">
+        <div className="p-4 sm:p-6 border-b border-white/20">
           <div className="relative mb-4">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white/40 w-5 h-5" />
+            <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-white/40 w-4 h-4 sm:w-5 sm:h-5" />
             <input
               type="text"
               placeholder="Search passengers by name, phone, or card ID..."
               value={searchTerm}
               onChange={(e) => handleSearchChange(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 border border-white/20 rounded-2xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white/10 text-white placeholder-white/40"
+              className="w-full pl-10 sm:pl-12 pr-3 sm:pr-4 py-2.5 sm:py-3 border border-white/20 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white/10 text-sm text-white placeholder-white/40"
             />
           </div>
           <div className="flex flex-wrap gap-2">
@@ -120,7 +120,7 @@ export default function Passengers() {
               <button
                 key={type}
                 onClick={() => handleFilterChange(type)}
-                className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors border ${
+                className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium transition-colors border ${
                   cardTypeFilter === type
                     ? 'bg-primary-500 text-white shadow-soft border-primary-400'
                     : 'bg-white/10 text-white/60 hover:bg-white/20 border-white/20'
@@ -132,26 +132,28 @@ export default function Passengers() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-white/10">
-              <tr>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Name</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Phone</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Card ID</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Card Type</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Balance</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-4 text-right text-xs font-semibold text-white/60 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
+          <div className="inline-block min-w-full align-middle">
+            <div className="overflow-hidden">
+              <table className="min-w-full w-full">
+                <thead className="bg-white/10">
+                  <tr>
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Name</th>
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Phone</th>
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Card ID</th>
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Card Type</th>
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Balance</th>
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Status</th>
+                    <th className="px-4 sm:px-6 py-4 text-right text-xs font-semibold text-white/60 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
             <tbody className="divide-y divide-white/10">
               {paginatedPassengers.map((passenger) => {
                 const passengerCard = cards?.find(c => c.cardId === passenger.cardId);
                 return (
                   <tr key={passenger.id} className="hover:bg-white/10 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        <div className="w-10 h-10 bg-linear-to-br from-primary-500/20 to-primary-600/20 rounded-2xl flex items-center justify-center">
+                        <div className="w-10 h-10 bg-linear-to-br from-primary-500/20 to-primary-600/20 rounded-2xl flex items-center justify-center flex-shrink-0">
                           <UserPlus className="w-5 h-5 text-primary-400" />
                         </div>
                         <div className="ml-4">
@@ -160,9 +162,9 @@ export default function Passengers() {
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-white">{passenger.phone}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-white">{passenger.cardId || 'N/A'}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-white">{passenger.phone}</td>
+                    <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-white">{passenger.cardId || 'N/A'}</td>
+                    <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
                       <span className={`px-3 py-1.5 text-xs font-semibold rounded-full ${
                         passengerCard?.isTemporary
                           ? 'bg-orange-500/20 text-orange-400'
@@ -171,10 +173,10 @@ export default function Passengers() {
                         {passengerCard?.isTemporary ? 'Temporary' : passengerCard?.passengerType || 'N/A'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">
+                    <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm font-medium text-white">
                       ₱{passenger.balance.toFixed(2)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
                       <span className={`px-3 py-1.5 text-xs font-semibold rounded-full ${
                         passenger.status === 'active' 
                           ? 'bg-emerald-500/20 text-emerald-400' 
@@ -183,7 +185,7 @@ export default function Passengers() {
                         {passenger.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       {passengerCard && (
                         <button
                           onClick={() => setReplaceCard(passengerCard)}
@@ -206,6 +208,8 @@ export default function Passengers() {
               })}
             </tbody>
           </table>
+            </div>
+          </div>
         </div>
 
         {filteredPassengers.length === 0 && (
@@ -215,15 +219,15 @@ export default function Passengers() {
         )}
 
         {filteredPassengers.length > 0 && (
-          <div className="px-6 py-4 border-t border-white/10 flex items-center justify-between">
-            <p className="text-sm text-white/60">
+          <div className="px-4 sm:px-6 py-4 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-0">
+            <p className="text-xs sm:text-sm text-white/60">
               Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredPassengers.length)} of {filteredPassengers.length} passengers
             </p>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="px-3 py-2 border border-white/20 rounded-lg text-sm text-white/60 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="px-3 py-2 border border-white/20 rounded-lg text-xs sm:text-sm text-white/60 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Previous
               </button>
@@ -244,7 +248,7 @@ export default function Passengers() {
                     <button
                       key={pageNum}
                       onClick={() => setCurrentPage(pageNum)}
-                      className={`px-3 py-2 border rounded-lg text-sm transition-colors ${
+                      className={`px-3 py-2 border rounded-lg text-xs sm:text-sm transition-colors ${
                         currentPage === pageNum
                           ? 'bg-primary-500 text-white border-primary-400'
                           : 'border-white/20 text-white/60 hover:bg-white/10'
@@ -258,7 +262,7 @@ export default function Passengers() {
               <button
                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
-                className="px-3 py-2 border border-white/20 rounded-lg text-sm text-white/60 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="px-3 py-2 border border-white/20 rounded-lg text-xs sm:text-sm text-white/60 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Next
               </button>

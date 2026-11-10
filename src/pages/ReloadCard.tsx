@@ -141,19 +141,19 @@ export default function ReloadCard() {
   };
 
   return (
-    <div>
-      <h1 className="text-xl font-bold text-white mb-4">Reload Card</h1>
+    <div className="space-y-4 sm:space-y-6">
+      <h1 className="text-xl sm:text-2xl font-bold text-white">Reload Card</h1>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="glass-card p-6">
-          <h2 className="text-xl font-semibold text-white mb-6 flex items-center">
-            <DollarSign className="w-6 h-6 mr-2" />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        <div className="glass-card p-4 sm:p-6">
+          <h2 className="text-lg sm:text-xl font-semibold text-white mb-4 sm:mb-6 flex items-center">
+            <DollarSign className="w-5 h-5 sm:w-6 sm:h-6 mr-2" />
             Process Reload
           </h2>
-          <form onSubmit={handleReload} className="space-y-5">
+          <form onSubmit={handleReload} className="space-y-4 sm:space-y-5">
             {/* Card ID input */}
             <div className="relative">
-              <label className="block text-sm font-semibold text-white/60 mb-2">Card ID</label>
+              <label className="block text-xs sm:text-sm font-semibold text-white/60 mb-2">Card ID</label>
               <input
                 type="text"
                 placeholder="Enter card ID"
@@ -164,7 +164,7 @@ export default function ReloadCard() {
                 }}
                 onFocus={() => setShowSuggestions(true)}
                 onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                className={`w-full px-4 py-3 border rounded-2xl focus:ring-2 focus:border-transparent bg-white/10 font-mono text-white ${
+                className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 border rounded-xl sm:rounded-2xl focus:ring-2 focus:border-transparent bg-white/10 font-mono text-sm text-white ${
                   cardError ? 'border-red-300 focus:ring-red-500 focus:border-red-500' : 'border-white/20 focus:ring-primary-500 focus:border-transparent'
                 }`}
                 required
@@ -173,7 +173,7 @@ export default function ReloadCard() {
                 <p className="mt-1 text-xs text-red-400 font-medium">{cardError}</p>
               )}
               {showSuggestions && cardSuggestions.length > 0 && (
-                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-2xl shadow-lg max-h-48 overflow-y-auto">
+                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-xl sm:rounded-2xl shadow-lg max-h-48 overflow-y-auto">
                   {cardSuggestions.map((card) => (
                     <button
                       key={card.id}
@@ -182,11 +182,11 @@ export default function ReloadCard() {
                         setCardId(card.cardId);
                         setShowSuggestions(false);
                       }}
-                      className="w-full px-4 py-3 text-left hover:bg-gray-100 transition-colors border-b border-gray-100 last:border-b-0"
+                      className="w-full px-3 sm:px-4 py-2.5 sm:py-3 text-left hover:bg-gray-100 transition-colors border-b border-gray-100 last:border-b-0"
                     >
-                      <div className="flex justify-between items-center">
-                        <span className="font-mono text-sm font-medium text-gray-900">{card.cardId}</span>
-                        <span className="text-xs text-gray-600">{card.passengerName}</span>
+                      <div className="flex justify-between items-center gap-2">
+                        <span className="font-mono text-xs sm:text-sm font-medium text-gray-900 truncate">{card.cardId}</span>
+                        <span className="text-xs text-gray-600 flex-shrink-0">{card.passengerName}</span>
                       </div>
                     </button>
                   ))}
@@ -196,19 +196,19 @@ export default function ReloadCard() {
 
             {/* Passenger type display */}
             {cardData && (
-              <div className={`p-4 rounded-2xl border ${
+              <div className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl border ${
                 hasDiscount 
                   ? 'bg-purple-500/20 border-purple-500/30' 
                   : 'bg-white/10 border-white/20'
               }`}>
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                   <div>
-                    <p className="text-sm font-semibold text-white/60">Passenger Type</p>
-                    <p className="text-lg font-bold text-white">{currentPassengerType}</p>
+                    <p className="text-xs sm:text-sm font-semibold text-white/60">Passenger Type</p>
+                    <p className="text-base sm:text-lg font-bold text-white">{currentPassengerType}</p>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-semibold text-white/60">Current Balance</p>
-                    <p className="text-lg font-bold text-emerald-400">₱{(cardData.balance ?? 0).toFixed(2)}</p>
+                  <div className="text-left sm:text-right">
+                    <p className="text-xs sm:text-sm font-semibold text-white/60">Current Balance</p>
+                    <p className="text-base sm:text-lg font-bold text-emerald-400">₱{(cardData.balance ?? 0).toFixed(2)}</p>
                   </div>
                 </div>
               </div>
@@ -216,14 +216,14 @@ export default function ReloadCard() {
 
             {/* Amount selection */}
             <div>
-              <label className="block text-sm font-semibold text-white/60 mb-2">Reload Amount</label>
-              <div className="grid grid-cols-5 gap-2 mb-3">
+              <label className="block text-xs sm:text-sm font-semibold text-white/60 mb-2">Reload Amount</label>
+              <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 mb-3">
                 {RELOAD_AMOUNTS.map((amt) => (
                   <button
                     key={amt}
                     type="button"
                     onClick={() => handleAmountChange(amt)}
-                    className={`px-3 py-3 rounded-xl font-medium transition-all border ${
+                    className={`px-2 sm:px-3 py-2.5 sm:py-3 rounded-lg sm:rounded-xl text-sm font-medium transition-all border ${
                       amount === amt && !customAmount
                         ? 'bg-primary-500 text-white shadow-soft border-2 border-primary-400'
                         : 'bg-white/10 text-white/70 hover:bg-white/20 border border-white/20'
@@ -241,23 +241,23 @@ export default function ReloadCard() {
                   onChange={handleCustomAmountChange}
                   min="1"
                   step="1"
-                  className="w-full px-4 py-3 border border-white/20 rounded-2xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white/10 text-white"
+                  className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-white/20 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white/10 text-sm text-white"
                 />
               </div>
             </div>
 
             {/* Amount summary */}
-            <div className="p-5 bg-green-500/20 border border-green-500/30 rounded-2xl">
+            <div className="p-4 sm:p-5 bg-green-500/20 border border-green-500/30 rounded-xl sm:rounded-2xl">
               <div className="text-center">
                 <span className="text-xs font-semibold text-white/60 block">Reload Amount</span>
-                <span className="text-3xl font-bold text-green-400">₱{amount.toFixed(2)}</span>
+                <span className="text-2xl sm:text-3xl font-bold text-green-400">₱{amount.toFixed(2)}</span>
               </div>
             </div>
 
             {/* Cash instruction */}
-            <div className="p-4 bg-amber-500/20 border border-amber-500/30 rounded-2xl flex flex-col items-center justify-center gap-2">
-              <Banknote className="w-5 h-5 text-amber-400" />
-              <p className="text-sm text-amber-200 text-center">
+            <div className="p-3 sm:p-4 bg-amber-500/20 border border-amber-500/30 rounded-xl sm:rounded-2xl flex flex-col items-center justify-center gap-2">
+              <Banknote className="w-4 h-4 sm:w-5 sm:h-5 text-amber-400" />
+              <p className="text-xs sm:text-sm text-amber-200 text-center">
                 Collect ₱{amount.toFixed(2)} cash from the passenger before confirming the reload.
               </p>
             </div>
@@ -265,28 +265,28 @@ export default function ReloadCard() {
             <button
               type="submit"
               disabled={reloadMutation.isPending || !cardId}
-              className="w-full px-6 py-3 bg-green-500 hover:bg-green-600 text-white rounded-2xl transition-all duration-200 font-medium shadow-soft disabled:bg-secondary-300 border border-green-400"
+              className="w-full px-6 py-2.5 sm:py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl sm:rounded-2xl transition-all duration-200 text-sm sm:text-base font-medium shadow-soft disabled:bg-secondary-300 border border-green-400"
             >
               {reloadMutation.isPending ? 'Processing...' : 'Process Reload'}
             </button>
           </form>
         </div>
 
-        <div className="glass-card p-6">
-          <h2 className="text-xl font-semibold text-white mb-6 flex items-center">
-            <History className="w-6 h-6 mr-2" />
+        <div className="glass-card p-4 sm:p-6">
+          <h2 className="text-lg sm:text-xl font-semibold text-white mb-4 sm:mb-6 flex items-center">
+            <History className="w-5 h-5 sm:w-6 sm:h-6 mr-2" />
             Recent Reloads
           </h2>
-          <div className="space-y-3 max-h-96 overflow-y-auto">
+          <div className="space-y-2 sm:space-y-3 max-h-96 overflow-y-auto">
             {cardReloads?.map((reload) => (
-              <div key={reload.id} className="p-4 bg-white/10 rounded-2xl border border-white/20">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-sm font-medium text-white">{reload.qr_cards?.owner_name || 'Unknown'}</p>
+              <div key={reload.id} className="p-3 sm:p-4 bg-white/10 rounded-xl sm:rounded-2xl border border-white/20">
+                <div className="flex justify-between items-start gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs sm:text-sm font-medium text-white truncate">{reload.qr_cards?.owner_name || 'Unknown'}</p>
                     <p className="text-xs text-white/60">{formatRelativeTime(reload.created_at)}</p>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-bold text-emerald-400">+₱{reload.amount.toFixed(2)}</p>
+                  <div className="text-right flex-shrink-0">
+                    <p className="text-xs sm:text-sm font-bold text-emerald-400">+₱{reload.amount.toFixed(2)}</p>
                     <p className="text-xs text-white/60 capitalize">{reload.reload_method}</p>
                   </div>
                 </div>

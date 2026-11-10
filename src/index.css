@@ -10,6 +10,7 @@ body {
   min-height: 100vh;
 }
 
+/* Glass effects */
 .glass {
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(12px);
@@ -29,4 +30,83 @@ body {
   background: rgba(0, 0, 0, 0.3);
   backdrop-filter: blur(24px);
   border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Responsive utilities */
+@media (max-width: 640px) {
+  /* Mobile-specific adjustments */
+  .glass-card {
+    border-radius: 0.75rem;
+  }
+  
+  /* Ensure modals don't overflow on small screens */
+  .modal-content {
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+}
+
+/* Smooth scrolling for modal content */
+.modal-content {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.3) transparent;
+}
+
+.modal-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
+}
+
+/* Responsive table scrolling */
+@media (max-width: 768px) {
+  .overflow-x-auto {
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .overflow-x-auto::-webkit-scrollbar {
+    height: 4px;
+  }
+  
+  .overflow-x-auto::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+  }
+  
+  .overflow-x-auto::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 2px;
+  }
+}
+
+/* Touch-friendly tap targets */
+@media (max-width: 768px) {
+  button, a {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  input, select, textarea {
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+}
+
+/* Responsive text sizing */
+@media (max-width: 640px) {
+  h1 {
+    font-size: 1.5rem;
+    line-height: 2rem;
+  }
+  
+  h2 {
+    font-size: 1.25rem;
+    line-height: 1.75rem;
+  }
 }

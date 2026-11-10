@@ -709,116 +709,116 @@ export default function QRCards() {
   }
 
   return (
-    <div>
+    <div className="space-y-4 sm:space-y-6">
       {/* Page header */}
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-xl font-bold text-white">QR Card Management</h1>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <h1 className="text-xl sm:text-2xl font-bold text-white">QR Card Management</h1>
         <button
           onClick={() => setShowRegister(true)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-2xl text-sm font-semibold transition-colors shadow-soft border border-primary-400"
+          className="flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-2xl text-sm font-semibold transition-colors shadow-soft border border-primary-400"
         >
           <Plus className="w-4 h-4" />
-          Register New Card
+          <span className="sm:inline">Register New Card</span>
         </button>
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
         {/* Total Cards */}
         <button
           onClick={() => handleFilterChange(selectedFilter === 'all' ? null : 'all')}
-          className={`bg-linear-to-br from-gray-600 to-gray-700 rounded-2xl p-4 text-white shadow-soft transition-all hover:scale-105 border border-white/20 ${
+          className={`bg-linear-to-br from-gray-600 to-gray-700 rounded-xl sm:rounded-2xl p-3 sm:p-4 text-white shadow-soft transition-all hover:scale-105 border border-white/20 ${
             selectedFilter === 'all' ? 'ring-2 ring-white ring-offset-2 ring-offset-gray-700' : ''
           }`}
         >
-          <div className="flex items-center justify-between mb-2">
-            <CreditCard className="w-5 h-5 opacity-80" />
-            <span className="text-2xl font-bold">{cardCounts.total}</span>
+          <div className="flex items-center justify-between mb-1 sm:mb-2">
+            <CreditCard className="w-4 h-4 sm:w-5 sm:h-5 opacity-80" />
+            <span className="text-xl sm:text-2xl font-bold">{cardCounts.total}</span>
           </div>
-          <p className="text-xs font-medium opacity-90">Total Cards</p>
+          <p className="text-[10px] sm:text-xs font-medium opacity-90">Total Cards</p>
         </button>
 
         {/* Temporary Cards */}
         <button
           onClick={() => handleFilterChange(selectedFilter === 'temporary' ? null : 'temporary')}
-          className={`bg-linear-to-br from-orange-500 to-orange-600 rounded-2xl p-4 text-white shadow-soft transition-all hover:scale-105 border border-white/20 ${
+          className={`bg-linear-to-br from-orange-500 to-orange-600 rounded-xl sm:rounded-2xl p-3 sm:p-4 text-white shadow-soft transition-all hover:scale-105 border border-white/20 ${
             selectedFilter === 'temporary' ? 'ring-2 ring-white ring-offset-2 ring-offset-orange-600' : ''
           }`}
         >
-          <div className="flex items-center justify-between mb-2">
-            <Ticket className="w-5 h-5 opacity-80" />
-            <span className="text-2xl font-bold">{cardCounts.temporary}</span>
+          <div className="flex items-center justify-between mb-1 sm:mb-2">
+            <Ticket className="w-4 h-4 sm:w-5 sm:h-5 opacity-80" />
+            <span className="text-xl sm:text-2xl font-bold">{cardCounts.temporary}</span>
           </div>
-          <p className="text-xs font-medium opacity-90">Temporary Cards</p>
+          <p className="text-[10px] sm:text-xs font-medium opacity-90">Temporary Cards</p>
         </button>
 
         {/* Regular Cards */}
         <button
           onClick={() => handleFilterChange(selectedFilter === 'Regular' ? null : 'Regular')}
-          className={`bg-linear-to-br from-blue-500 to-blue-600 rounded-2xl p-4 text-white shadow-soft transition-all hover:scale-105 border border-white/20 ${
+          className={`bg-linear-to-br from-blue-500 to-blue-600 rounded-xl sm:rounded-2xl p-3 sm:p-4 text-white shadow-soft transition-all hover:scale-105 border border-white/20 ${
             selectedFilter === 'Regular' ? 'ring-2 ring-white ring-offset-2 ring-offset-blue-600' : ''
           }`}
         >
-          <div className="flex items-center justify-between mb-2">
-            <CreditCard className="w-5 h-5 opacity-80" />
-            <span className="text-2xl font-bold">{cardCounts.regular}</span>
+          <div className="flex items-center justify-between mb-1 sm:mb-2">
+            <CreditCard className="w-4 h-4 sm:w-5 sm:h-5 opacity-80" />
+            <span className="text-xl sm:text-2xl font-bold">{cardCounts.regular}</span>
  </div>
-          <p className="text-xs font-medium opacity-90">Regular Cards</p>
+          <p className="text-[10px] sm:text-xs font-medium opacity-90">Regular Cards</p>
         </button>
 
         {/* Student Cards */}
         <button
           onClick={() => handleFilterChange(selectedFilter === 'Student' ? null : 'Student')}
-          className={`bg-linear-to-br from-green-500 to-green-600 rounded-2xl p-4 text-white shadow-soft transition-all hover:scale-105 border border-white/20 ${
+          className={`bg-linear-to-br from-green-500 to-green-600 rounded-xl sm:rounded-2xl p-3 sm:p-4 text-white shadow-soft transition-all hover:scale-105 border border-white/20 ${
             selectedFilter === 'Student' ? 'ring-2 ring-white ring-offset-2 ring-offset-green-600' : ''
           }`}
         >
-          <div className="flex items-center justify-between mb-2">
-            <CreditCard className="w-5 h-5 opacity-80" />
-            <span className="text-2xl font-bold">{cardCounts.student}</span>
+          <div className="flex items-center justify-between mb-1 sm:mb-2">
+            <CreditCard className="w-4 h-4 sm:w-5 sm:h-5 opacity-80" />
+            <span className="text-xl sm:text-2xl font-bold">{cardCounts.student}</span>
           </div>
-          <p className="text-xs font-medium opacity-90">Student Cards</p>
+          <p className="text-[10px] sm:text-xs font-medium opacity-90">Student Cards</p>
         </button>
 
         {/* PWD Cards */}
         <button
           onClick={() => handleFilterChange(selectedFilter === 'PWD' ? null : 'PWD')}
-          className={`bg-linear-to-br from-purple-500 to-purple-600 rounded-2xl p-4 text-white shadow-soft transition-all hover:scale-105 border border-white/20 ${
+          className={`bg-linear-to-br from-purple-500 to-purple-600 rounded-xl sm:rounded-2xl p-3 sm:p-4 text-white shadow-soft transition-all hover:scale-105 border border-white/20 ${
             selectedFilter === 'PWD' ? 'ring-2 ring-white ring-offset-2 ring-offset-purple-600' : ''
           }`}
         >
-          <div className="flex items-center justify-between mb-2">
-            <CreditCard className="w-5 h-5 opacity-80" />
-            <span className="text-2xl font-bold">{cardCounts.pwd}</span>
+          <div className="flex items-center justify-between mb-1 sm:mb-2">
+            <CreditCard className="w-4 h-4 sm:w-5 sm:h-5 opacity-80" />
+            <span className="text-xl sm:text-2xl font-bold">{cardCounts.pwd}</span>
           </div>
-          <p className="text-xs font-medium opacity-90">PWD Cards</p>
+          <p className="text-[10px] sm:text-xs font-medium opacity-90">PWD Cards</p>
         </button>
 
         {/* Senior Citizen Cards */}
         <button
           onClick={() => handleFilterChange(selectedFilter === 'Senior Citizen' ? null : 'Senior Citizen')}
-          className={`bg-linear-to-br from-amber-500 to-amber-600 rounded-2xl p-4 text-white shadow-soft transition-all hover:scale-105 border border-white/20 ${
+          className={`bg-linear-to-br from-amber-500 to-amber-600 rounded-xl sm:rounded-2xl p-3 sm:p-4 text-white shadow-soft transition-all hover:scale-105 border border-white/20 ${
             selectedFilter === 'Senior Citizen' ? 'ring-2 ring-white ring-offset-2 ring-offset-amber-600' : ''
           }`}
         >
-          <div className="flex items-center justify-between mb-2">
-            <CreditCard className="w-5 h-5 opacity-80" />
-            <span className="text-2xl font-bold">{cardCounts.senior}</span>
+          <div className="flex items-center justify-between mb-1 sm:mb-2">
+            <CreditCard className="w-4 h-4 sm:w-5 sm:h-5 opacity-80" />
+            <span className="text-xl sm:text-2xl font-bold">{cardCounts.senior}</span>
           </div>
-          <p className="text-xs font-medium opacity-90">Senior Citizen Cards</p>
+          <p className="text-[10px] sm:text-xs font-medium opacity-90">Senior Citizen Cards</p>
         </button>
       </div>
 
       {/* Search bar */}
-      <div className="glass-card p-4 border border-white/20">
+      <div className="glass-card p-3 sm:p-4 border border-white/20">
         <div className="relative">
-          <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white/40 w-5 h-5" />
+          <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-white/40 w-4 h-4 sm:w-5 sm:h-5" />
           <input
             type="text"
             placeholder="Search by card ID, passenger name, or contact number..."
             value={searchTerm}
             onChange={(e) => handleSearchChange(e.target.value)}
-            className="w-full pl-12 pr-4 py-3 border border-white/20 rounded-2xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white/10 text-white placeholder-white/40"
+            className="w-full pl-10 sm:pl-12 pr-3 sm:pr-4 py-2.5 sm:py-3 border border-white/20 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white/10 text-sm text-white placeholder-white/40"
           />
         </div>
       </div>
@@ -863,139 +863,149 @@ export default function QRCards() {
 
         return (
           <div className="glass-card overflow-hidden">
-            <table className="w-full">
-              <thead className="bg-white/10 border-b border-white/20">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Card ID</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Passenger Name</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Type</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Balance</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Issued Date</th>
-                  <th className="px-6 py-3 text-right text-xs font-semibold text-white/60 uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/10">
-                {paginatedCards.map((card) => (
-                  <tr key={card.id} className="hover:bg-white/10 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-sm font-medium text-white">{card.cardId}</span>
-                        {card.isTemporary && (
-                          <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-orange-500/20 text-orange-400">TEMP</span>
-                        )}
-                        {(card as any).isFromReservation && (
-                          <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-emerald-500/20 text-emerald-400">CLAIMED</span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="text-sm font-medium text-white">{card.passengerName}</p>
-                      <p className="text-xs text-white/60">{card.contactNumber}</p>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-block px-2 py-1 rounded-lg text-xs font-medium ${
-                        card.passengerType === 'Regular' ? 'bg-blue-500/20 text-blue-400' :
-                        card.passengerType === 'Student' ? 'bg-green-500/20 text-green-400' :
-                        card.passengerType === 'Senior Citizen' ? 'bg-orange-500/20 text-orange-400' :
-                        'bg-purple-500/20 text-purple-400'
-                      }`}>
-                        {card.passengerType}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="text-sm font-medium text-emerald-400">₱{(card.balance ?? 0).toFixed(2)}</p>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        card.status === 'active' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'
-                      }`}>
-                        <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
-                          card.status === 'active' ? 'bg-emerald-400' : 'bg-red-400'
-                        }`} />
-                        {card.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="text-sm text-white/60">{new Date(card.issuedAt).toLocaleDateString()}</p>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center justify-end gap-2">
-                        {! (card as any).isFromReservation && (
-                          <>
-                            <button
-                              onClick={() => setViewCard(card)}
-                              className="p-2 text-white/60 hover:text-primary-400 hover:bg-primary-500/20 rounded-lg transition-colors"
-                              title="View Card"
-                            >
-                              <Eye className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => setViewCard(card)}
-                              className="p-2 text-white/60 hover:text-emerald-400 hover:bg-emerald-500/20 rounded-lg transition-colors"
-                              title="Download Card"
-                            >
-                              <Download className="w-4 h-4" />
-                            </button>
-                          </>
-                        )}
-                        <button
-                          onClick={() => setEditCard(card)}
-                          className="p-2 text-white/60 hover:text-blue-400 hover:bg-blue-500/20 rounded-lg transition-colors"
-                          title="Edit Card"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        {card.status === 'active' ? (
-                          <button
-                            onClick={() => disableMutation.mutate(card.cardId)}
-                            className="p-2 text-white/60 hover:text-red-400 hover:bg-red-500/20 rounded-lg transition-colors"
-                            title="Disable Card"
-                          >
-                            <PowerOff className="w-4 h-4" />
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => activateMutation.mutate(card.cardId)}
-                            className="p-2 text-white/60 hover:text-emerald-400 hover:bg-emerald-500/20 rounded-lg transition-colors"
-                            title="Activate Card"
-                          >
-                            <Power className="w-4 h-4" />
-                          </button>
-                        )}
-                        <button
-                          onClick={() => setReplaceTarget(card)}
-                          className="p-2 text-white/60 hover:text-orange-400 hover:bg-orange-500/20 rounded-lg transition-colors"
-                          title="Replace Card"
-                        >
-                          <RefreshCw className="w-4 h-4" />
-                        </button>
-                        {! (card as any).isFromReservation && (
-                          <button
-                            onClick={() => setDeleteCard(card)}
-                            className="p-2 text-white/60 hover:text-red-400 hover:bg-red-500/20 rounded-lg transition-colors"
-                            title="Delete Card"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        )}
-                      </div>
-                    </td>
+            <div className="overflow-x-auto">
+              <div className="inline-block min-w-full align-middle">
+                <div className="overflow-hidden">
+                  <table className="min-w-full w-full">
+                <thead className="bg-white/10 border-b border-white/20">
+                  <tr>
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Card ID</th>
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Passenger Name</th>
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Type</th>
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Balance</th>
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Status</th>
+                    <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Issued Date</th>
+                    <th className="px-4 sm:px-6 py-3 text-right text-xs font-semibold text-white/60 uppercase tracking-wider">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-white/10">
+                  {paginatedCards.map((card) => (
+                    <tr 
+                      key={card.id} 
+                      className="hover:bg-white/10 transition-colors cursor-pointer"
+                      onClick={() => setViewCard(card)}
+                    >
+                      <td className="px-4 sm:px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-sm font-medium text-white">{card.cardId}</span>
+                          {card.isTemporary && (
+                            <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-orange-500/20 text-orange-400">TEMP</span>
+                          )}
+                          {(card as any).isFromReservation && (
+                            <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-emerald-500/20 text-emerald-400">CLAIMED</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 sm:px-6 py-4">
+                        <p className="text-sm font-medium text-white">{card.passengerName}</p>
+                        <p className="text-xs text-white/60">{card.contactNumber}</p>
+                      </td>
+                      <td className="px-4 sm:px-6 py-4">
+                        <span className={`inline-block px-2 py-1 rounded-lg text-xs font-medium ${
+                          card.passengerType === 'Regular' ? 'bg-blue-500/20 text-blue-400' :
+                          card.passengerType === 'Student' ? 'bg-green-500/20 text-green-400' :
+                          card.passengerType === 'Senior Citizen' ? 'bg-orange-500/20 text-orange-400' :
+                          'bg-purple-500/20 text-purple-400'
+                        }`}>
+                          {card.passengerType}
+                        </span>
+                      </td>
+                      <td className="px-4 sm:px-6 py-4">
+                        <p className="text-sm font-medium text-emerald-400">₱{(card.balance ?? 0).toFixed(2)}</p>
+                      </td>
+                      <td className="px-4 sm:px-6 py-4">
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          card.status === 'active' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'
+                        }`}>
+                          <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
+                            card.status === 'active' ? 'bg-emerald-400' : 'bg-red-400'
+                          }`} />
+                          {card.status}
+                        </span>
+                      </td>
+                      <td className="px-4 sm:px-6 py-4">
+                        <p className="text-sm text-white/60">{new Date(card.issuedAt).toLocaleDateString()}</p>
+                      </td>
+                      <td className="px-4 sm:px-6 py-4">
+                        <div className="flex items-center justify-end gap-2">
+                          {! (card as any).isFromReservation && (
+                            <>
+                              <button
+                                onClick={() => setViewCard(card)}
+                                className="p-2 text-white/60 hover:text-primary-400 hover:bg-primary-500/20 rounded-lg transition-colors"
+                                title="View Card"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => setViewCard(card)}
+                                className="p-2 text-white/60 hover:text-emerald-400 hover:bg-emerald-500/20 rounded-lg transition-colors"
+                                title="Download Card"
+                              >
+                                <Download className="w-4 h-4" />
+                              </button>
+                            </>
+                          )}
+                          <button
+                            onClick={() => setEditCard(card)}
+                            className="p-2 text-white/60 hover:text-blue-400 hover:bg-blue-500/20 rounded-lg transition-colors"
+                            title="Edit Card"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          {card.status === 'active' ? (
+                            <button
+                              onClick={() => disableMutation.mutate(card.cardId)}
+                              className="p-2 text-white/60 hover:text-red-400 hover:bg-red-500/20 rounded-lg transition-colors"
+                              title="Disable Card"
+                            >
+                              <PowerOff className="w-4 h-4" />
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => activateMutation.mutate(card.cardId)}
+                              className="p-2 text-white/60 hover:text-emerald-400 hover:bg-emerald-500/20 rounded-lg transition-colors"
+                              title="Activate Card"
+                            >
+                              <Power className="w-4 h-4" />
+                            </button>
+                          )}
+                          <button
+                            onClick={() => setReplaceTarget(card)}
+                            className="p-2 text-white/60 hover:text-orange-400 hover:bg-orange-500/20 rounded-lg transition-colors"
+                            title="Replace Card"
+                          >
+                            <RefreshCw className="w-4 h-4" />
+                          </button>
+                          {! (card as any).isFromReservation && (
+                            <button
+                              onClick={() => setDeleteCard(card)}
+                              className="p-2 text-white/60 hover:text-red-400 hover:bg-red-500/20 rounded-lg transition-colors"
+                              title="Delete Card"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+                </div>
+              </div>
+              </div>
 
             {displayCards.length > 0 && (
-              <div className="px-6 py-4 border-t border-white/10 flex items-center justify-between">
-                <p className="text-sm text-white/60">
+              <div className="px-4 sm:px-6 py-4 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-0">
+                <p className="text-xs sm:text-sm text-white/60">
                   Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, displayCards.length)} of {displayCards.length} cards
                 </p>
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
-                    className="px-3 py-2 border border-white/20 rounded-lg text-sm text-white/60 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="px-3 py-2 border border-white/20 rounded-lg text-xs sm:text-sm text-white/60 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     Previous
                   </button>
@@ -1016,7 +1026,7 @@ export default function QRCards() {
                         <button
                           key={pageNum}
                           onClick={() => setCurrentPage(pageNum)}
-                          className={`px-3 py-2 border rounded-lg text-sm transition-colors ${
+                          className={`px-3 py-2 border rounded-lg text-xs sm:text-sm transition-colors ${
                             currentPage === pageNum
                               ? 'bg-primary-500 text-white border-primary-400'
                               : 'border-white/20 text-white/60 hover:bg-white/10'
@@ -1030,7 +1040,7 @@ export default function QRCards() {
                   <button
                     onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                     disabled={currentPage === totalPages}
-                    className="px-3 py-2 border border-white/20 rounded-lg text-sm text-white/60 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="px-3 py-2 border border-white/20 rounded-lg text-xs sm:text-sm text-white/60 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     Next
                   </button>

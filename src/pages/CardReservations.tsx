@@ -224,7 +224,7 @@ function QRCardPrint({ reservations, onClose }: { reservations: CardReservation[
       }
 
       return `
-        <div class="card-section">
+        <div class="card-container">
           <div class="card-title">${reservation.name} - ${reservation.cardType}</div>
           <div class="card-images">
             <div class="card-image-wrapper">
@@ -252,23 +252,19 @@ function QRCardPrint({ reservations, onClose }: { reservations: CardReservation[
             body {
               font-family: Arial, sans-serif;
               padding: 20px;
+              margin: 0;
             }
-            .card-section {
-              margin-bottom: 40px;
-              padding: 20px 0;
-              border-bottom: 2px dashed #ddd;
+            .card-container {
+              max-width: 100%;
+              margin: 0 auto 50px auto;
               page-break-inside: avoid;
             }
-            .card-section:last-child {
-              border-bottom: none;
-            }
             .card-title {
-              font-size: 15px;
+              font-size: 14px;
               font-weight: bold;
               color: #333;
-              border-bottom: 2px solid #333;
-              padding-bottom: 6px;
-              margin-bottom: 20px;
+              text-align: center;
+              margin-bottom: 15px;
             }
             .card-images {
               display: flex;
@@ -278,22 +274,31 @@ function QRCardPrint({ reservations, onClose }: { reservations: CardReservation[
             }
             .card-image-wrapper {
               text-align: center;
-              flex: 0 0 auto;
+              flex: 1;
+              min-width: 0;
             }
             .card-image-wrapper h3 {
-              margin-bottom: 10px;
-              font-size: 13px;
+              margin-bottom: 8px;
+              font-size: 12px;
               color: #666;
             }
             .card-image {
-              max-width: 300px;
+              max-width: 100%;
               width: 100%;
               height: auto;
               display: block;
             }
             @media print {
-              body { padding: 10px; }
-              .card-section { border-bottom-style: solid; }
+              body { padding: 10px; margin: 0; }
+              .card-container {
+                max-width: 400px;
+                page-break-after: always;
+                page-break-inside: avoid;
+              }
+              .card-container:last-child {
+                page-break-after: auto;
+              }
+              .card-image { max-width: 100%; }
             }
           </style>
         </head>
@@ -326,7 +331,7 @@ function QRCardPrint({ reservations, onClose }: { reservations: CardReservation[
           </button>
         </div>
         <div className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div className="grid grid-cols-1 gap-6 mb-4">
             {printReservations.map((reservation) => (
               <div key={reservation.id} className="bg-gray-50 rounded-2xl p-4">
                 <div className="text-center mb-3">
@@ -340,7 +345,7 @@ function QRCardPrint({ reservations, onClose }: { reservations: CardReservation[
                       <CardCanvas reservation={reservation} />
                     </div>
                     <div className="relative">
-                      <img src={backCard} alt="Card Back" className="w-full rounded-2xl shadow-lg" />
+                      <img src={backCard} alt="Card Back" className="w-full max-w-md mx-auto rounded-2xl shadow-lg" />
                     </div>
                   </div>
                 </div>
@@ -883,25 +888,25 @@ export default function CardReservations() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
         <div>
-          <h1 className="text-white text-3xl font-bold mb-2">Card Reservations</h1>
-          <p className="text-white/60">Manage card pickup reservations</p>
+          <h1 className="text-white text-xl sm:text-2xl lg:text-3xl font-bold mb-2">Card Reservations</h1>
+          <p className="text-sm text-white/60">Manage card pickup reservations</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
           {selectedReservations.size > 0 && (
             <>
               <button
                 onClick={() => setSelectedReservations(new Set())}
-                className="flex items-center gap-2 px-4 py-2.5 border border-white/20 text-white/60 rounded-2xl text-sm font-medium hover:bg-white/10 transition-colors"
+                className="flex items-center justify-center gap-2 px-4 py-2.5 border border-white/20 text-white/60 rounded-2xl text-sm font-medium hover:bg-white/10 transition-colors"
               >
                 <XCircle className="w-4 h-4" />
                 Clear Selection
               </button>
               <button
                 onClick={() => setShowPrintModal(true)}
-                className="flex items-center gap-2 px-4 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-2xl text-sm font-semibold transition-colors shadow-soft border border-primary-400"
+                className="flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-2xl text-sm font-semibold transition-colors shadow-soft border border-primary-400"
               >
                 <Printer className="w-4 h-4" />
                 Print {selectedReservations.size} Card{selectedReservations.size > 1 ? 's' : ''}
@@ -910,7 +915,7 @@ export default function CardReservations() {
           )}
           <button
             onClick={() => setShowCreateModal(true)}
-            className="flex items-center gap-2 px-4 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-2xl text-sm font-semibold transition-colors shadow-soft border border-primary-400"
+            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-2xl text-sm font-semibold transition-colors shadow-soft border border-primary-400"
           >
             <Plus className="w-4 h-4" />
             New Reservation
@@ -919,8 +924,8 @@ export default function CardReservations() {
       </div>
 
       <div className="glass-card">
-        <div className="p-6 border-b border-white/10">
-          <div className="flex items-center gap-2 mb-4">
+        <div className="p-4 sm:p-6 border-b border-white/10">
+          <div className="flex flex-wrap items-center gap-2 mb-4">
             {[
               { value: 'all' as const, label: 'All Reservations' },
               { value: 'pending' as const, label: 'Pending' },
@@ -930,7 +935,7 @@ export default function CardReservations() {
               <button
                 key={tab.value}
                 onClick={() => handleTabChange(tab.value)}
-                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all border ${
+                className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium transition-all border ${
                   activeTab === tab.value
                     ? 'bg-primary-500 text-white border-primary-400'
                     : 'text-white/60 hover:bg-white/10 border-transparent'
@@ -941,43 +946,45 @@ export default function CardReservations() {
             ))}
           </div>
           <div className="relative">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-white/40 w-5 h-5" />
+            <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 text-white/40 w-4 h-4 sm:w-5 sm:h-5" />
             <input
               type="text"
               placeholder="Search by name, reservation ID, or contact..."
               value={searchTerm}
               onChange={(e) => handleSearchChange(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 border border-white/20 rounded-2xl focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white/10 text-white placeholder-white/40"
+              className="w-full pl-10 sm:pl-12 pr-3 sm:pr-4 py-2.5 sm:py-3 border border-white/20 rounded-xl sm:rounded-2xl focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white/10 text-sm text-white placeholder-white/40"
             />
           </div>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-white/5">
-              <tr>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider w-12">
-                  <input
-                    type="checkbox"
-                    checked={isAllSelected}
-                    onChange={(e) => handleSelectAll(e.target.checked)}
-                    className="w-4 h-4 rounded border-white/20 bg-white/10 text-primary-500 focus:ring-primary-500"
-                  />
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Reservation ID</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Name</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Contact</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Card Type</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Pickup Terminal</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Created</th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
+          <div className="inline-block min-w-full align-middle">
+            <div className="overflow-hidden">
+              <table className="min-w-full w-full">
+                <thead className="bg-white/5">
+                  <tr>
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider w-12">
+                      <input
+                        type="checkbox"
+                        checked={isAllSelected}
+                        onChange={(e) => handleSelectAll(e.target.checked)}
+                        className="w-4 h-4 rounded border-white/20 bg-white/10 text-primary-500 focus:ring-primary-500"
+                      />
+                    </th>
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Status</th>
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Reservation ID</th>
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Name</th>
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Contact</th>
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Card Type</th>
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Pickup Terminal</th>
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Created</th>
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
             <tbody className="divide-y divide-white/10">
               {paginatedReservations.map((reservation) => (
                 <tr key={reservation.id} className="hover:bg-white/5 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
                     <input
                       type="checkbox"
                       checked={selectedReservations.has(reservation.id)}
@@ -1058,6 +1065,8 @@ export default function CardReservations() {
               ))}
             </tbody>
           </table>
+            </div>
+          </div>
         </div>
 
         {filteredReservations.length === 0 && (
@@ -1068,15 +1077,15 @@ export default function CardReservations() {
         )}
 
         {filteredReservations.length > 0 && (
-          <div className="px-6 py-4 border-t border-white/10 flex items-center justify-between">
-            <p className="text-sm text-white/60">
+          <div className="px-4 sm:px-6 py-4 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-0">
+            <p className="text-xs sm:text-sm text-white/60">
               Showing {((currentPage - 1) * itemsPerPage) + 1} to {Math.min(currentPage * itemsPerPage, filteredReservations.length)} of {filteredReservations.length} reservations
             </p>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="px-3 py-2 border border-white/20 rounded-lg text-sm text-white/60 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="px-3 py-2 border border-white/20 rounded-lg text-xs sm:text-sm text-white/60 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Previous
               </button>
@@ -1097,7 +1106,7 @@ export default function CardReservations() {
                     <button
                       key={pageNum}
                       onClick={() => setCurrentPage(pageNum)}
-                      className={`px-3 py-2 border rounded-lg text-sm transition-colors ${
+                      className={`px-3 py-2 border rounded-lg text-xs sm:text-sm transition-colors ${
                         currentPage === pageNum
                           ? 'bg-primary-500 text-white border-primary-400'
                           : 'border-white/20 text-white/60 hover:bg-white/10'
@@ -1111,7 +1120,7 @@ export default function CardReservations() {
               <button
                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
-                className="px-3 py-2 border border-white/20 rounded-lg text-sm text-white/60 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="px-3 py-2 border border-white/20 rounded-lg text-xs sm:text-sm text-white/60 hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Next
               </button>
