@@ -370,7 +370,6 @@ export default function Reports() {
                 </table>
                 </div>
               </div>
-              </div>
                 {paginatedTransactions.length === 0 && (
                   <div className="text-center py-8 text-sm text-white/60">No data available</div>
                 )}
