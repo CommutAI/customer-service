@@ -240,10 +240,11 @@ export default function QRCardDisplay({ card, onClose }: Props) {
             <head>
               <title>QR Card - ${card.cardId}</title>
               <style>
-                body { font-family: Arial, sans-serif; padding: 20px; }
-                .page { page-break-after: always; }
+                body { font-family: Arial, sans-serif; padding: 20px; margin: 0; }
+                .page { page-break-after: always; min-height: 100vh; }
+                .page:last-child { page-break-after: auto; }
                 .card-image { max-width: 100%; height: auto; display: block; margin: 0 auto; }
-                .card-section { margin-bottom: 30px; }
+                .card-section { margin-bottom: 40px; clear: both; }
                 .card-section h2 { margin-bottom: 15px; color: #333; border-bottom: 2px solid #333; padding-bottom: 5px; }
                 .info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px; }
                 @media (max-width: 600px) {
@@ -259,7 +260,11 @@ export default function QRCardDisplay({ card, onClose }: Props) {
                 .header h1 { margin: 0; color: #333; }
                 .header p { margin: 5px 0; color: #666; }
                 @media print {
-                  .card-image { max-width: 350px; }
+                  body { padding: 0; }
+                  .card-image { max-width: 400px; }
+                  .card-section { page-break-inside: avoid; }
+                  .page { page-break-after: always; }
+                  .page:last-child { page-break-after: auto; }
                 }
               </style>
             </head>

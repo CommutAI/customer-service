@@ -252,15 +252,18 @@ function QRCardPrint({ reservations, onClose }: { reservations: CardReservation[
             body {
               font-family: Arial, sans-serif;
               padding: 20px;
+              margin: 0;
             }
             .card-section {
-              margin-bottom: 40px;
+              margin-bottom: 50px;
               padding: 20px 0;
               border-bottom: 2px dashed #ddd;
               page-break-inside: avoid;
+              clear: both;
             }
             .card-section:last-child {
               border-bottom: none;
+              margin-bottom: 0;
             }
             .card-title {
               font-size: 15px;
@@ -272,7 +275,7 @@ function QRCardPrint({ reservations, onClose }: { reservations: CardReservation[
             }
             .card-images {
               display: flex;
-              gap: 20px;
+              gap: 30px;
               justify-content: center;
               flex-wrap: wrap;
             }
@@ -292,9 +295,14 @@ function QRCardPrint({ reservations, onClose }: { reservations: CardReservation[
               display: block;
             }
             @media print {
-              body { padding: 10px; }
-              .card-section { border-bottom-style: solid; }
-              .card-image { max-width: 350px; }
+              body { padding: 10px; margin: 0; }
+              .card-section {
+                border-bottom-style: solid;
+                page-break-after: auto;
+                page-break-inside: avoid;
+              }
+              .card-image { max-width: 400px; }
+              .card-images { gap: 40px; }
             }
           </style>
         </head>
