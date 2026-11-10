@@ -370,6 +370,7 @@ export default function Reports() {
                 </table>
                 </div>
               </div>
+              </div>
                 {paginatedTransactions.length === 0 && (
                   <div className="text-center py-8 text-sm text-white/60">No data available</div>
                 )}
@@ -494,9 +495,9 @@ export default function Reports() {
                 </table>
                 </div>
               </div>
-                {paginatedRevenue.length === 0 && (
-                  <div className="text-center py-8 text-white/60">No data available</div>
-                )}
+              {paginatedRevenue.length === 0 && (
+                <div className="text-center py-8 text-white/60">No data available</div>
+              )}
               {revenueTotalPages > 1 && (
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-2 mt-4">
                   <span className="text-xs sm:text-sm text-white/60">
@@ -626,9 +627,9 @@ export default function Reports() {
                 </table>
                 </div>
               </div>
-                {paginatedCardTypes.length === 0 && (
-                  <div className="text-center py-8 text-white/60">No data available</div>
-                )}
+              {paginatedCardTypes.length === 0 && (
+                <div className="text-center py-8 text-white/60">No data available</div>
+              )}
               {cardTypeTotalPages > 1 && (
                 <div className="flex items-center justify-between mt-4">
                   <span className="text-sm text-white/60">
@@ -768,9 +769,9 @@ export default function Reports() {
                 </table>
                 </div>
               </div>
-                {paginatedTransactionTypes.length === 0 && (
-                  <div className="text-center py-8 text-white/60">No data available</div>
-                )}
+              {paginatedTransactionTypes.length === 0 && (
+                <div className="text-center py-8 text-white/60">No data available</div>
+              )}
               {transactionTypeTotalPages > 1 && (
                 <div className="flex items-center justify-between mt-4">
                   <span className="text-sm text-white/60">
@@ -914,8 +915,8 @@ export default function Reports() {
                   ))}
                 </tbody>
               </table>
-                </div>
               </div>
+            </div>
               {paginatedCardStatus.length === 0 && (
                 <div className="text-center py-8 text-white/60">No data available</div>
               )}
