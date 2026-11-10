@@ -880,7 +880,11 @@ export default function QRCards() {
                 </thead>
                 <tbody className="divide-y divide-white/10">
                   {paginatedCards.map((card) => (
-                    <tr key={card.id} className="hover:bg-white/10 transition-colors">
+                    <tr 
+                      key={card.id} 
+                      className="hover:bg-white/10 transition-colors cursor-pointer"
+                      onClick={() => setViewCard(card)}
+                    >
                       <td className="px-4 sm:px-6 py-4">
                         <div className="flex items-center gap-2">
                           <span className="font-mono text-sm font-medium text-white">{card.cardId}</span>
