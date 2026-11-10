@@ -286,7 +286,7 @@ function QRCardPrint({ reservations, onClose }: { reservations: CardReservation[
               color: #666;
             }
             .card-image {
-              max-width: 300px;
+              max-width: 100%;
               width: 100%;
               height: auto;
               display: block;
@@ -294,6 +294,7 @@ function QRCardPrint({ reservations, onClose }: { reservations: CardReservation[
             @media print {
               body { padding: 10px; }
               .card-section { border-bottom-style: solid; }
+              .card-image { max-width: 350px; }
             }
           </style>
         </head>
@@ -340,7 +341,7 @@ function QRCardPrint({ reservations, onClose }: { reservations: CardReservation[
                       <CardCanvas reservation={reservation} />
                     </div>
                     <div className="relative">
-                      <img src={backCard} alt="Card Back" className="w-full rounded-2xl shadow-lg" />
+                      <img src={backCard} alt="Card Back" className="w-full max-w-xs mx-auto rounded-2xl shadow-lg" />
                     </div>
                   </div>
                 </div>
