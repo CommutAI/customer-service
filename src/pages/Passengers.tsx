@@ -131,19 +131,21 @@ export default function Passengers() {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[800px]">
-            <thead className="bg-white/10">
-              <tr>
-                <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Name</th>
-                <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Phone</th>
-                <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Card ID</th>
-                <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Card Type</th>
-                <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Balance</th>
-                <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Status</th>
-                <th className="px-4 sm:px-6 py-4 text-right text-xs font-semibold text-white/60 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
+        <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
+          <div className="inline-block min-w-full align-middle">
+            <div className="overflow-hidden">
+              <table className="min-w-full w-full">
+                <thead className="bg-white/10">
+                  <tr>
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Name</th>
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Phone</th>
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Card ID</th>
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Card Type</th>
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Balance</th>
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Status</th>
+                    <th className="px-4 sm:px-6 py-4 text-right text-xs font-semibold text-white/60 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
             <tbody className="divide-y divide-white/10">
               {paginatedPassengers.map((passenger) => {
                 const passengerCard = cards?.find(c => c.cardId === passenger.cardId);
@@ -206,6 +208,8 @@ export default function Passengers() {
               })}
             </tbody>
           </table>
+            </div>
+          </div>
         </div>
 
         {filteredPassengers.length === 0 && (

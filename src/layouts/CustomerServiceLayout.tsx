@@ -160,13 +160,20 @@ const Header = ({ onMenuClick, isMobile }: { onMenuClick: () => void; isMobile?:
 };
 
 export default function CustomerServiceLayout() {
-  const [isOpen, setIsOpen] = useState(false); // Start closed on mobile
+  const [isOpen, setIsOpen] = useState(true); // Start open on desktop
   const [isMobile, setIsMobile] = useState(false);
 
   // Detect mobile on mount and resize
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 1024);
+      const mobile = window.innerWidth < 1024;
+      setIsMobile(mobile);
+      // Auto-close on mobile, auto-open on desktop
+      if (mobile) {
+        setIsOpen(false);
+      } else {
+        setIsOpen(true);
+      }
     };
     checkMobile();
     window.addEventListener('resize', checkMobile);
@@ -176,7 +183,7 @@ export default function CustomerServiceLayout() {
   return (
     <div className="min-h-screen">
       <Sidebar isOpen={isOpen} setIsOpen={setIsOpen} />
-      <main className={`transition-all duration-300 lg:${isOpen ? 'ml-64' : 'ml-20'} p-3 sm:p-4 md:p-6`}>
+      <main className={`transition-all duration-300 ${isMobile ? '' : (isOpen ? 'lg:ml-64' : 'lg:ml-20')} p-3 sm:p-4 md:p-6`}>
         <Header onMenuClick={() => setIsOpen(true)} isMobile={isMobile} />
         <Outlet />
       </main>

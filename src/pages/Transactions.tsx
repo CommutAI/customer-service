@@ -247,19 +247,21 @@ export default function Transactions() {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[800px]">
-            <thead className="bg-white/5">
-              <tr>
-                <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Type</th>
-                <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Passenger</th>
-                <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Card ID</th>
-                <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Amount</th>
-                <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Balance After</th>
-                <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Method</th>
-                <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Date</th>
-              </tr>
-            </thead>
+        <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
+          <div className="inline-block min-w-full align-middle">
+            <div className="overflow-hidden">
+              <table className="min-w-full w-full">
+                <thead className="bg-white/5">
+                  <tr>
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Type</th>
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Passenger</th>
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Card ID</th>
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Amount</th>
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Balance After</th>
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Method</th>
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Date</th>
+                  </tr>
+                </thead>
             <tbody className="divide-y divide-white/10">
               {paginatedTransactions.map((transaction) => (
                 <tr key={transaction.id} className="hover:bg-white/5 transition-colors">
@@ -298,6 +300,8 @@ export default function Transactions() {
               ))}
             </tbody>
           </table>
+            </div>
+          </div>
         </div>
 
         {filteredTransactions.length === 0 && (

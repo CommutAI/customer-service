@@ -952,28 +952,30 @@ export default function CardReservations() {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[900px]">
-            <thead className="bg-white/5">
-              <tr>
-                <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider w-12">
-                  <input
-                    type="checkbox"
-                    checked={isAllSelected}
-                    onChange={(e) => handleSelectAll(e.target.checked)}
-                    className="w-4 h-4 rounded border-white/20 bg-white/10 text-primary-500 focus:ring-primary-500"
-                  />
-                </th>
-                <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Status</th>
-                <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Reservation ID</th>
-                <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Name</th>
-                <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Contact</th>
-                <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Card Type</th>
-                <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Pickup Terminal</th>
-                <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Created</th>
-                <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
+        <div className="overflow-x-auto -mx-4 sm:mx-0 px-4 sm:px-0">
+          <div className="inline-block min-w-full align-middle">
+            <div className="overflow-hidden">
+              <table className="min-w-full w-full">
+                <thead className="bg-white/5">
+                  <tr>
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider w-12">
+                      <input
+                        type="checkbox"
+                        checked={isAllSelected}
+                        onChange={(e) => handleSelectAll(e.target.checked)}
+                        className="w-4 h-4 rounded border-white/20 bg-white/10 text-primary-500 focus:ring-primary-500"
+                      />
+                    </th>
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Status</th>
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Reservation ID</th>
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Name</th>
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Contact</th>
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Card Type</th>
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Pickup Terminal</th>
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Created</th>
+                    <th className="px-4 sm:px-6 py-4 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
             <tbody className="divide-y divide-white/10">
               {paginatedReservations.map((reservation) => (
                 <tr key={reservation.id} className="hover:bg-white/5 transition-colors">
@@ -1058,6 +1060,8 @@ export default function CardReservations() {
               ))}
             </tbody>
           </table>
+            </div>
+          </div>
         </div>
 
         {filteredReservations.length === 0 && (
