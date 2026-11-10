@@ -242,10 +242,13 @@ export default function QRCardDisplay({ card, onClose }: Props) {
               <style>
                 body { font-family: Arial, sans-serif; padding: 20px; }
                 .page { page-break-after: always; }
-                .card-image { max-width: 400px; height: auto; display: block; margin: 0 auto; }
+                .card-image { max-width: 100%; height: auto; display: block; margin: 0 auto; }
                 .card-section { margin-bottom: 30px; }
                 .card-section h2 { margin-bottom: 15px; color: #333; border-bottom: 2px solid #333; padding-bottom: 5px; }
                 .info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px; }
+                @media (max-width: 600px) {
+                  .info-grid { grid-template-columns: 1fr; }
+                }
                 .info-item { }
                 .info-label { font-weight: bold; color: #666; font-size: 12px; }
                 .info-value { font-size: 14px; color: #333; }
@@ -255,6 +258,9 @@ export default function QRCardDisplay({ card, onClose }: Props) {
                 .header { text-align: center; margin-bottom: 20px; }
                 .header h1 { margin: 0; color: #333; }
                 .header p { margin: 5px 0; color: #666; }
+                @media print {
+                  .card-image { max-width: 350px; }
+                }
               </style>
             </head>
             <body>
@@ -384,13 +390,13 @@ export default function QRCardDisplay({ card, onClose }: Props) {
               <QRCodeCanvas value={card.cardId} size={512} level="H" includeMargin={true} />
             </div>
 
-            <div className="px-5 pt-4 pb-3">
+            <div className="px-4 sm:px-5 pt-4 pb-3">
               {showBack ? (
-                <img src={backCard} alt="Card back" className="w-full rounded-2xl shadow-lg" />
+                <img src={backCard} alt="Card back" className="w-full max-w-md mx-auto rounded-2xl shadow-lg" />
               ) : (
                 <canvas
                   ref={canvasRef}
-                  className="w-full rounded-2xl shadow-lg"
+                  className="w-full max-w-md mx-auto rounded-2xl shadow-lg"
                   style={{ imageRendering: 'crisp-edges' }}
                 />
               )}
@@ -486,7 +492,7 @@ export default function QRCardDisplay({ card, onClose }: Props) {
               </button>
             </div>
             <div className="px-5 py-4">
-              <img src={combinedImage} alt="Card Preview" className="w-full rounded-2xl shadow-lg" />
+              <img src={combinedImage} alt="Card Preview" className="w-full max-w-4xl mx-auto rounded-2xl shadow-lg" />
             </div>
             <div className="px-5 pb-5">
               <div className="flex gap-3">
