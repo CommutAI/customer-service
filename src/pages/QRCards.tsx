@@ -994,6 +994,7 @@ export default function QRCards() {
               </table>
                 </div>
               </div>
+              </div>
 
             {displayCards.length > 0 && (
               <div className="px-4 sm:px-6 py-4 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-0">
@@ -1046,6 +1047,7 @@ export default function QRCards() {
                 </div>
               </div>
             )}
+          </div>
           </div>
         );
       })()}
