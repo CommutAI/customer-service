@@ -241,62 +241,32 @@ export default function QRCardDisplay({ card, onClose }: Props) {
               <title>QR Card - ${card.cardId}</title>
               <style>
                 body { font-family: Arial, sans-serif; padding: 20px; margin: 0; }
-                .page { page-break-after: always; min-height: 100vh; }
-                .page:last-child { page-break-after: auto; }
+                .card-container { max-width: 400px; margin: 0 auto; }
                 .card-image { max-width: 100%; height: auto; display: block; margin: 0 auto; }
-                .card-section { margin-bottom: 40px; clear: both; }
-                .card-section h2 { margin-bottom: 15px; color: #333; border-bottom: 2px solid #333; padding-bottom: 5px; }
-                .info-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-bottom: 20px; }
-                @media (max-width: 600px) {
-                  .info-grid { grid-template-columns: 1fr; }
-                }
-                .info-item { }
-                .info-label { font-weight: bold; color: #666; font-size: 12px; }
-                .info-value { font-size: 14px; color: #333; }
-                table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-                th { background: #f5f5f5; padding: 10px; text-align: left; font-weight: bold; }
-                td { padding: 8px; }
-                .header { text-align: center; margin-bottom: 20px; }
-                .header h1 { margin: 0; color: #333; }
-                .header p { margin: 5px 0; color: #666; }
+                .card-section { margin-bottom: 40px; text-align: center; }
+                .card-section h2 { margin-bottom: 15px; color: #333; font-size: 16px; }
                 @media print {
-                  body { padding: 0; }
+                  body { padding: 10px; }
                   .card-image { max-width: 400px; }
                   .card-section { page-break-inside: avoid; }
-                  .page { page-break-after: always; }
-                  .page:last-child { page-break-after: auto; }
                 }
               </style>
             </head>
             <body>
-              <!-- Page 1: Card Front and Back -->
-              <div class="page">
-                <div class="header">
-                  <h1>QR Card</h1>
-                  <p>${card.cardId}</p>
-                </div>
-
+              <div class="card-container">
                 <div class="card-section">
-                  <h2>Front of Card</h2>
+                  <h2>Front</h2>
                   <img src="${canvasDataUrl}" alt="QR Card Front" class="card-image" />
                 </div>
 
                 <div class="card-section">
-                  <h2>Back of Card</h2>
+                  <h2>Back</h2>
                   <img src="${backCard}" alt="QR Card Back" class="card-image" />
                 </div>
               </div>
-
-              <!-- Page 2: Card Details and Transactions -->
-              <div class="page">
-                <div class="header">
-                  <h1>Card Details</h1>
-                  <p>${card.cardId}</p>
-                </div>
-
-                <div class="card-section">
-                  <h2>Cardholder Information</h2>
-                  <div class="info-grid">
+            </body>
+          </html>
+        `);
                     <div class="info-item">
                       <div class="info-label">Cardholder Name</div>
                       <div class="info-value">${card.passengerName}</div>

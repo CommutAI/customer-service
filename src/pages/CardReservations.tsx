@@ -224,7 +224,7 @@ function QRCardPrint({ reservations, onClose }: { reservations: CardReservation[
       }
 
       return `
-        <div class="card-section">
+        <div class="card-container">
           <div class="card-title">${reservation.name} - ${reservation.cardType}</div>
           <div class="card-images">
             <div class="card-image-wrapper">
@@ -254,38 +254,29 @@ function QRCardPrint({ reservations, onClose }: { reservations: CardReservation[
               padding: 20px;
               margin: 0;
             }
-            .card-section {
-              margin-bottom: 50px;
-              padding: 20px 0;
-              border-bottom: 2px dashed #ddd;
+            .card-container {
+              max-width: 400px;
+              margin: 0 auto 50px auto;
               page-break-inside: avoid;
-              clear: both;
-            }
-            .card-section:last-child {
-              border-bottom: none;
-              margin-bottom: 0;
             }
             .card-title {
-              font-size: 15px;
+              font-size: 14px;
               font-weight: bold;
               color: #333;
-              border-bottom: 2px solid #333;
-              padding-bottom: 6px;
-              margin-bottom: 20px;
+              text-align: center;
+              margin-bottom: 15px;
             }
             .card-images {
               display: flex;
-              gap: 30px;
+              gap: 20px;
               justify-content: center;
-              flex-wrap: wrap;
             }
             .card-image-wrapper {
               text-align: center;
-              flex: 0 0 auto;
             }
             .card-image-wrapper h3 {
-              margin-bottom: 10px;
-              font-size: 13px;
+              margin-bottom: 8px;
+              font-size: 12px;
               color: #666;
             }
             .card-image {
@@ -296,13 +287,14 @@ function QRCardPrint({ reservations, onClose }: { reservations: CardReservation[
             }
             @media print {
               body { padding: 10px; margin: 0; }
-              .card-section {
-                border-bottom-style: solid;
-                page-break-after: auto;
+              .card-container {
+                page-break-after: always;
                 page-break-inside: avoid;
               }
+              .card-container:last-child {
+                page-break-after: auto;
+              }
               .card-image { max-width: 400px; }
-              .card-images { gap: 40px; }
             }
           </style>
         </head>
