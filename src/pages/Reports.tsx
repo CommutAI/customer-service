@@ -309,7 +309,9 @@ export default function Reports() {
           {transactionsView === 'list' ? (
             <>
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[400px]">
+                <div className="inline-block min-w-full align-middle">
+                  <div className="overflow-hidden">
+                    <table className="min-w-full w-full">
                   <thead className="bg-white/5">
                     <tr>
                       <th
@@ -366,10 +368,11 @@ export default function Reports() {
                     ))}
                   </tbody>
                 </table>
+                </div>
+              </div>
                 {paginatedTransactions.length === 0 && (
                   <div className="text-center py-8 text-sm text-white/60">No data available</div>
                 )}
-              </div>
               {transactionsTotalPages > 1 && (
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-2 mt-4">
                   <span className="text-xs sm:text-sm text-white/60">
@@ -445,7 +448,9 @@ export default function Reports() {
           {revenueView === 'list' ? (
             <>
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[400px]">
+                <div className="inline-block min-w-full align-middle">
+                  <div className="overflow-hidden">
+                    <table className="min-w-full w-full">
                   <thead className="bg-white/5">
                     <tr>
                       <th
@@ -487,10 +492,11 @@ export default function Reports() {
                     ))}
                   </tbody>
                 </table>
+                </div>
+              </div>
                 {paginatedRevenue.length === 0 && (
                   <div className="text-center py-8 text-white/60">No data available</div>
                 )}
-              </div>
               {revenueTotalPages > 1 && (
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-2 mt-4">
                   <span className="text-xs sm:text-sm text-white/60">
@@ -570,7 +576,9 @@ export default function Reports() {
           {cardTypeView === 'list' ? (
             <>
               <div className="overflow-x-auto">
-                <table className="w-full">
+                <div className="inline-block min-w-full align-middle">
+                  <div className="overflow-hidden">
+                    <table className="min-w-full w-full">
                   <thead className="bg-white/5">
                     <tr>
                       <th
@@ -616,10 +624,11 @@ export default function Reports() {
                     ))}
                   </tbody>
                 </table>
+                </div>
+              </div>
                 {paginatedCardTypes.length === 0 && (
                   <div className="text-center py-8 text-white/60">No data available</div>
                 )}
-              </div>
               {cardTypeTotalPages > 1 && (
                 <div className="flex items-center justify-between mt-4">
                   <span className="text-sm text-white/60">
@@ -713,7 +722,9 @@ export default function Reports() {
           {transactionTypeView === 'list' ? (
             <>
               <div className="overflow-x-auto">
-                <table className="w-full">
+                <div className="inline-block min-w-full align-middle">
+                  <div className="overflow-hidden">
+                    <table className="min-w-full w-full">
                   <thead className="bg-white/5">
                     <tr>
                       <th
@@ -755,10 +766,11 @@ export default function Reports() {
                     ))}
                   </tbody>
                 </table>
+                </div>
+              </div>
                 {paginatedTransactionTypes.length === 0 && (
                   <div className="text-center py-8 text-white/60">No data available</div>
                 )}
-              </div>
               {transactionTypeTotalPages > 1 && (
                 <div className="flex items-center justify-between mt-4">
                   <span className="text-sm text-white/60">
@@ -854,7 +866,9 @@ export default function Reports() {
         {cardStatusView === 'list' ? (
           <>
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <div className="inline-block min-w-full align-middle">
+                <div className="overflow-hidden">
+                  <table className="min-w-full w-full">
                 <thead className="bg-white/5">
                   <tr>
                     <th
@@ -900,10 +914,11 @@ export default function Reports() {
                   ))}
                 </tbody>
               </table>
+                </div>
+              </div>
               {paginatedCardStatus.length === 0 && (
                 <div className="text-center py-8 text-white/60">No data available</div>
               )}
-            </div>
             {cardStatusTotalPages > 1 && (
               <div className="flex items-center justify-between mt-4">
                 <span className="text-sm text-white/60">

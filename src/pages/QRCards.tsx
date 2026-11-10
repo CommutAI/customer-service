@@ -864,7 +864,9 @@ export default function QRCards() {
         return (
           <div className="glass-card overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[800px]">
+              <div className="inline-block min-w-full align-middle">
+                <div className="overflow-hidden">
+                  <table className="min-w-full w-full">
                 <thead className="bg-white/10 border-b border-white/20">
                   <tr>
                     <th className="px-4 sm:px-6 py-3 text-left text-xs font-semibold text-white/60 uppercase tracking-wider">Card ID</th>
@@ -986,7 +988,8 @@ export default function QRCards() {
                   ))}
                 </tbody>
               </table>
-            </div>
+                </div>
+              </div>
 
             {displayCards.length > 0 && (
               <div className="px-4 sm:px-6 py-4 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-0">
