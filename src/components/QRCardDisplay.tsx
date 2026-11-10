@@ -240,14 +240,16 @@ export default function QRCardDisplay({ card, onClose }: Props) {
             <head>
               <title>QR Card - ${card.cardId}</title>
               <style>
+                * { box-sizing: border-box; }
                 body { font-family: Arial, sans-serif; padding: 20px; margin: 0; }
-                .card-container { max-width: 400px; margin: 0 auto; }
+                .card-container { max-width: 100%; margin: 0 auto; }
                 .card-image { max-width: 100%; height: auto; display: block; margin: 0 auto; }
-                .card-section { margin-bottom: 40px; text-align: center; }
-                .card-section h2 { margin-bottom: 15px; color: #333; font-size: 16px; }
+                .card-section { margin-bottom: 30px; text-align: center; }
+                .card-section h2 { margin-bottom: 10px; color: #333; font-size: 14px; }
                 @media print {
                   body { padding: 10px; }
-                  .card-image { max-width: 400px; }
+                  .card-container { max-width: 400px; }
+                  .card-image { max-width: 100%; }
                   .card-section { page-break-inside: avoid; }
                 }
               </style>
