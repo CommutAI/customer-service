@@ -446,23 +446,23 @@ export default function QRCardDisplay({ card, onClose }: Props) {
                   <p className="text-gray-600">{card.cardId}</p>
                 </div>
 
-                <div className="mb-6">
+                <div className="mb-8">
                   <h2 className="text-lg font-bold mb-3 border-b-2 border-gray-900 pb-2">Front of Card</h2>
                   {canvasRef.current && canvasRef.current.width > 0 ? (
-                    <img src={canvasRef.current.toDataURL()} alt="QR Card Front" className="mx-auto max-w-sm" />
+                    <img src={canvasRef.current.toDataURL()} alt="QR Card Front" className="mx-auto w-full max-w-md" />
                   ) : (
                     <div className="text-center text-gray-500 py-8">Loading card preview...</div>
                   )}
                 </div>
 
-                <div className="mb-6">
+                <div className="mb-8">
                   <h2 className="text-lg font-bold mb-3 border-b-2 border-gray-900 pb-2">Back of Card</h2>
-                  <img src={backCard} alt="QR Card Back" className="mx-auto max-w-sm" />
+                  <img src={backCard} alt="QR Card Back" className="mx-auto w-full max-w-md" />
                 </div>
 
-                <div className="border-t-2 border-gray-300 pt-6">
+                <div className="border-t-2 border-gray-300 pt-8">
                   <h2 className="text-lg font-bold mb-3 border-b-2 border-gray-900 pb-2">Cardholder Information</h2>
-                  <div className="grid grid-cols-2 gap-4 mb-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
                     <div className="bg-gray-50 p-3 rounded">
                       <div className="font-bold text-gray-600 text-xs">Cardholder Name</div>
                       <div className="text-sm">{card.passengerName}</div>
@@ -500,7 +500,8 @@ export default function QRCardDisplay({ card, onClose }: Props) {
                   </div>
 
                   <h2 className="text-lg font-bold mb-3 border-b-2 border-gray-900 pb-2">Transaction History</h2>
-                  <table className="w-full border-collapse">
+                  <div className="overflow-x-auto">
+                    <table className="w-full border-collapse min-w-full">
                     <thead>
                       <tr>
                         <th className="bg-gray-100 p-2 text-left font-bold">Date</th>
@@ -526,6 +527,7 @@ export default function QRCardDisplay({ card, onClose }: Props) {
                       )}
                     </tbody>
                   </table>
+                  </div>
                 </div>
               </div>
             </div>

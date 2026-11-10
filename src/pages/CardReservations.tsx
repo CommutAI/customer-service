@@ -331,7 +331,7 @@ function QRCardPrint({ reservations, onClose }: { reservations: CardReservation[
           </button>
         </div>
         <div className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div className="grid grid-cols-1 gap-6 mb-4">
             {printReservations.map((reservation) => (
               <div key={reservation.id} className="bg-gray-50 rounded-2xl p-4">
                 <div className="text-center mb-3">
@@ -345,7 +345,7 @@ function QRCardPrint({ reservations, onClose }: { reservations: CardReservation[
                       <CardCanvas reservation={reservation} />
                     </div>
                     <div className="relative">
-                      <img src={backCard} alt="Card Back" className="w-full max-w-xs mx-auto rounded-2xl shadow-lg" />
+                      <img src={backCard} alt="Card Back" className="w-full max-w-md mx-auto rounded-2xl shadow-lg" />
                     </div>
                   </div>
                 </div>
