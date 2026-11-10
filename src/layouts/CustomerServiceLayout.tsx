@@ -14,7 +14,7 @@ import {
   Calendar,
   type LucideIcon,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import logo from '../assets/logo.png';
 
@@ -123,13 +123,31 @@ const Sidebar = ({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (value: bo
   );
 };
 
-const Header = () => {
+const Header = ({ onMenuClick, isMobile }: { onMenuClick: () => void; isMobile?: boolean }) => {
   const { staffProfile } = useAuth();
 
   return (
-    <header className="glass-card h-16 flex items-center justify-between px-4 sm:px-6 mb-6">
-      <div className="flex items-center gap-4">
-        <div className="text-left lg:text-right">
+    <header className="glass-card h-16 flex items-center justify-between px-4 sm:px-6 mb-4 sm:mb-6">
+      {/* Left side - Menu button (mobile only) and Logo/Title */}
+      <div className="flex items-center gap-3">
+        {isMobile && (
+          <button
+            onClick={onMenuClick}
+            className="lg:hidden p-2 hover:bg-white/10 rounded-xl text-white transition-colors"
+            aria-label="Open menu"
+          >
+            <Menu size={24} />
+          </button>
+        )}
+        <div className="hidden sm:flex items-center gap-2">
+          <img src={logo} alt="CommutAI" className="w-8 h-8" />
+          <span className="text-white font-bold text-lg">CommutAI</span>
+        </div>
+      </div>
+
+      {/* Right side - Profile */}
+      <div className="flex items-center gap-3">
+        <div className="text-right">
           <p className="text-white font-medium text-sm sm:text-base">{staffProfile?.full_name ?? 'Staff'}</p>
           <p className="text-white/60 text-xs sm:text-sm">Customer Service</p>
         </div>
@@ -143,20 +161,23 @@ const Header = () => {
 
 export default function CustomerServiceLayout() {
   const [isOpen, setIsOpen] = useState(false); // Start closed on mobile
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detect mobile on mount and resize
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 1024);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   return (
     <div className="min-h-screen">
       <Sidebar isOpen={isOpen} setIsOpen={setIsOpen} />
       <main className={`transition-all duration-300 lg:${isOpen ? 'ml-64' : 'ml-20'} p-3 sm:p-4 md:p-6`}>
-        {/* Mobile menu button */}
-        <button
-          onClick={() => setIsOpen(true)}
-          className="lg:hidden fixed top-4 left-4 z-30 p-2 bg-orange-500 rounded-xl text-white shadow-lg"
-        >
-          <Menu size={24} />
-        </button>
-        
-        <Header />
+        <Header onMenuClick={() => setIsOpen(true)} isMobile={isMobile} />
         <Outlet />
       </main>
     </div>
