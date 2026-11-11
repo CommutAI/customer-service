@@ -1,9 +1,13 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.example.customerservice',
-  appName: 'customer-service',
-  webDir: 'dist'
+  appId: 'com.commutai.customerservice',
+  appName: 'CS App',
+  webDir: 'dist',
+  bundledWebRuntime: false,
+  server: {
+    androidScheme: 'https'
+  }
 };
 
 export default config;
