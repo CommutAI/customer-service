@@ -127,7 +127,7 @@ const Header = ({ onMenuClick, isMobile }: { onMenuClick: () => void; isMobile?:
   const { staffProfile } = useAuth();
 
   return (
-    <header className="glass-card h-16 flex items-center justify-between px-4 sm:px-6 mb-4 sm:mb-6">
+    <header className="glass-card h-16 flex items-center justify-between px-4 sm:px-6 mb-4 sm:mb-6 sticky top-0 z-10">
       {/* Left side - Menu button (mobile only) and Logo/Title */}
       <div className="flex items-center gap-3">
         {isMobile && (
