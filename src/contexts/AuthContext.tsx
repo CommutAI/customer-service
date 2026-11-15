@@ -45,14 +45,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { error: 'Invalid email or password' };
       }
 
-      // Verify password using bcrypt comparison
-      // Note: This uses the server-side function for verification
-      const { data: { isValid }, error: verifyError } = await supabase.rpc('verify_password', {
-        password: password,
-        hashed_password: staffUser.password
-      });
-
-      if (verifyError || !isValid) {
+      // Verify password using plain text comparison
+      if (staffUser.password !== password) {
         return { error: 'Invalid email or password' };
       }
 
