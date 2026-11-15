@@ -44,8 +44,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { data: staffUser, error } = await supabase
         .from('staff_users')
         .select('*')
-        .eq('email', email)
-        .single();
+        .eq('email', email.toLowerCase())
+        .maybeSingle();
 
       // Restore console logs
       console.log = originalConsoleLog;
