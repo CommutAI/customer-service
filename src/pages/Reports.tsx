@@ -214,15 +214,105 @@ export default function Reports() {
     toast.success(`Exported ${filename}.csv`);
   };
 
-  // Export transactions
+  // Export comprehensive audit report
+  const exportAuditReport = () => {
+    const now = new Date().toLocaleString();
+    const report = [
+      `COMPREHENSIVE AUDIT REPORT`,
+      `Generated: ${now}`,
+      ``,
+      `=== SUMMARY STATISTICS ===`,
+      `Total Revenue,₱${totalRevenue.toFixed(2)}`,
+      `Total Cards,${totalCards}`,
+      `Total Reloads,${totalReloads}`,
+      ``,
+      `=== CARD TYPE DISTRIBUTION ===`,
+      `Card Type,Count,Percentage`,
+      ...cardTypeData.map(d => [
+        d.name,
+        d.value,
+        totalCards > 0 ? ((d.value / totalCards) * 100).toFixed(1) + '%' : '0%'
+      ].join(',')),
+      ``,
+      `=== CARD STATUS DISTRIBUTION ===`,
+      `Status,Count,Percentage`,
+      ...cardStatusData.map(d => [
+        d.name,
+        d.value,
+        totalCards > 0 ? ((d.value / totalCards) * 100).toFixed(1) + '%' : '0%'
+      ].join(',')),
+      ``,
+      `=== TRANSACTION TYPE DISTRIBUTION ===`,
+      `Transaction Type,Count`,
+      ...transactionTypeData.map(d => [d.name, d.value].join(',')),
+      ``,
+      `=== ALL TRANSACTIONS (Detailed) ===`,
+      `Date,Type,Amount,Card ID,Passenger Name,Passenger Type,Balance After`,
+      ...(transactions || []).map(t => [
+        new Date(t.timestamp).toLocaleString(),
+        t.type,
+        t.amount.toFixed(2),
+        t.cardId || 'N/A',
+        t.passengerName || 'N/A',
+        t.passengerType || 'N/A',
+        t.balanceAfter?.toFixed(2) || 'N/A'
+      ].join(',')),
+      ``,
+      `=== ALL CARDS (Detailed) ===`,
+      `Card ID,Passenger Name,Contact Number,Passenger Type,Status,Balance,Issued Date,Expiration Date`,
+      ...(cards || []).map(c => [
+        c.cardId,
+        c.passengerName,
+        c.contactNumber || 'N/A',
+        c.passengerType,
+        c.status,
+        (c.balance ?? 0).toFixed(2),
+        new Date(c.issuedAt).toLocaleString(),
+        c.expiresAt ? new Date(c.expiresAt).toLocaleString() : 'N/A'
+      ].join(',')),
+    ].join('\n');
+
+    const blob = new Blob([report], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `comprehensive-audit-report-${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success('Exported comprehensive audit report');
+  };
+
+  // Export transactions (detailed)
   const exportTransactions = () => {
-    const headers = ['Date', 'Transactions', 'Revenue'];
-    const data = sortedTransactions.map(d => [
-      d.date,
-      d.transactions,
-      d.revenue.toFixed(2)
+    const headers = ['Date', 'Type', 'Amount', 'Card ID', 'Passenger Name', 'Passenger Type', 'Balance After'];
+    const data = (transactions || []).map(t => [
+      new Date(t.timestamp).toLocaleString(),
+      t.type,
+      t.amount.toFixed(2),
+      t.cardId || 'N/A',
+      t.passengerName || 'N/A',
+      t.passengerType || 'N/A',
+      t.balanceAfter?.toFixed(2) || 'N/A'
     ]);
-    exportToCSV(data, 'transactions-report', headers);
+    exportToCSV(data, 'transactions-detailed', headers);
+  };
+
+  // Export cards (detailed)
+  const exportCards = () => {
+    const headers = ['Card ID', 'Passenger Name', 'Contact Number', 'Passenger Type', 'Status', 'Balance', 'Issued Date', 'Expiration Date'];
+    const data = (cards || []).map(c => [
+      c.cardId,
+      c.passengerName,
+      c.contactNumber || 'N/A',
+      c.passengerType,
+      c.status,
+      (c.balance ?? 0).toFixed(2),
+      new Date(c.issuedAt).toLocaleString(),
+      c.expiresAt ? new Date(c.expiresAt).toLocaleString() : 'N/A'
+    ]);
+    exportToCSV(data, 'cards-detailed', headers);
   };
 
   // Export card types
@@ -256,8 +346,15 @@ export default function Reports() {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <h1 className="text-xl sm:text-2xl font-bold text-white">Reports & Analytics</h1>
+        <button
+          onClick={exportAuditReport}
+          className="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-2xl text-sm font-semibold flex items-center justify-center gap-2 transition-colors border border-primary-400"
+        >
+          <FileText className="w-4 h-4" />
+          Export Audit Report
+        </button>
       </div>
 
       {/* Stat Cards */}
@@ -719,6 +816,13 @@ export default function Reports() {
                 title="Export CSV"
               >
                 <Download className="w-4 h-4" />
+              </button>
+              <button
+                onClick={exportCards}
+                className="p-2 rounded-lg text-white/60 hover:bg-white/10 transition-colors"
+                title="Export All Cards"
+              >
+                <CreditCard className="w-4 h-4" />
               </button>
             </div>
           </div>
