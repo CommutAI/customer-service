@@ -34,12 +34,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn = async (email: string, password: string): Promise<{ error: string | null }> => {
     try {
+      // Suppress console logs temporarily
+      const originalConsoleLog = console.log;
+      const originalConsoleError = console.error;
+      console.log = () => {};
+      console.error = () => {};
+
       // Query staff_users table for the user
       const { data: staffUser, error } = await supabase
         .from('staff_users')
         .select('*')
         .eq('email', email)
         .single();
+
+      // Restore console logs
+      console.log = originalConsoleLog;
+      console.error = originalConsoleError;
 
       if (error || !staffUser) {
         return { error: 'Invalid email or password' };
