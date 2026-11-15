@@ -417,7 +417,7 @@ function CardListItem({
                   onClick={onTopUp}
                   className="px-3 py-2 bg-green-500/20 hover:bg-green-500/30 text-green-400 rounded-xl text-xs font-semibold transition-colors border border-green-500/30"
                 >
-                  Top Up
+                  Reload
                 </button>
                 <button
                   onClick={onDeactivate}
