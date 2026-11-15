@@ -1,11 +1,9 @@
 import { createContext, useContext, useEffect, useState } from 'react';
-import type { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import type { DbStaffUser } from '../types';
 
 interface AuthContextValue {
-  user: User | null;
-  session: Session | null;
+  user: any;
   staffProfile: DbStaffUser | null;
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
@@ -15,57 +13,74 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<any>(null);
   const [staffProfile, setStaffProfile] = useState<DbStaffUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchStaffProfile = async (userId: string) => {
-    const { data } = await supabase
-      .from('staff_users')
-      .select('*')
-      .eq('id', userId)
-      .single();
-    setStaffProfile(data ?? null);
-  };
-
+  // Check for existing session on mount
   useEffect(() => {
-    // Load existing session
-    supabase.auth.getSession().then(({ data: { session } }: any) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchStaffProfile(session.user.id);
+    const storedUser = localStorage.getItem('csd_user');
+    if (storedUser) {
+      try {
+        const userData = JSON.parse(storedUser);
+        setUser(userData);
+        setStaffProfile(userData);
+      } catch (e) {
+        localStorage.removeItem('csd_user');
       }
-      setIsLoading(false);
-    });
-
-    // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: any, session: Session | null) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchStaffProfile(session.user.id);
-      } else {
-        setStaffProfile(null);
-      }
-    });
-
-    return () => subscription.unsubscribe();
+    }
+    setIsLoading(false);
   }, []);
 
   const signIn = async (email: string, password: string): Promise<{ error: string | null }> => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) return { error: error.message };
-    return { error: null };
+    try {
+      // Query staff_users table for the user
+      const { data: staffUser, error } = await supabase
+        .from('staff_users')
+        .select('*')
+        .eq('email', email)
+        .single();
+
+      if (error || !staffUser) {
+        return { error: 'Invalid email or password' };
+      }
+
+      // Verify password using bcrypt comparison
+      // Note: This uses the server-side function for verification
+      const { data: { isValid }, error: verifyError } = await supabase.rpc('verify_password', {
+        password: password,
+        hashed_password: staffUser.password
+      });
+
+      if (verifyError || !isValid) {
+        return { error: 'Invalid email or password' };
+      }
+
+      // Update last login
+      await supabase
+        .from('staff_users')
+        .update({ last_login_at: new Date().toISOString() })
+        .eq('id', staffUser.id);
+
+      // Store user in localStorage
+      localStorage.setItem('csd_user', JSON.stringify(staffUser));
+      setUser(staffUser);
+      setStaffProfile(staffUser);
+
+      return { error: null };
+    } catch (error: any) {
+      return { error: error.message || 'Login failed' };
+    }
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    localStorage.removeItem('csd_user');
+    setUser(null);
+    setStaffProfile(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, staffProfile, isLoading, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, staffProfile, isLoading, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );
