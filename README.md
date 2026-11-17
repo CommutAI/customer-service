@@ -31,10 +31,11 @@ A comprehensive React + TypeScript + Vite application for managing QR cards, tra
 #### **Temporary QR Cards**
 - Generate temporary cards with configurable initial balance
 - Same passenger type support as regular cards
-- Card top-up functionality
+- Card reload functionality (reload cards with custom amounts)
 - Deactivate temporary cards
 - Print temporary cards
 - Visual card preview with QR code overlay
+- Back button in generate modal for easy navigation
 
 #### **Card Reload/Top-up**
 - Reload cards with predefined amounts (₱50, ₱100, ₱200, ₱500, ₱1000)

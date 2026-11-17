@@ -14,7 +14,7 @@ import tempBackCard from '../assets/temp-back.png';
 
 export default function TemporaryQRCards() {
   const [showGenerateModal, setShowGenerateModal] = useState(false);
-  const [showTopUpModal, setShowTopUpModal] = useState(false);
+  const [showReloadModal, setShowReloadModal] = useState(false);
   const [selectedCard, setSelectedCard] = useState<QRCard | null>(null);
   const [topUpAmount, setTopUpAmount] = useState('');
   const [activePage, setActivePage] = useState(1);
@@ -87,9 +87,9 @@ export default function TemporaryQRCards() {
     },
   });
 
-  const handleTopUp = (card: QRCard) => {
+  const handleReload = (card: QRCard) => {
     setSelectedCard(card);
-    setShowTopUpModal(true);
+    setShowReloadModal(true);
   };
 
   const activeCards = cards?.filter(c => c.status === 'active') ?? [];
@@ -165,7 +165,7 @@ export default function TemporaryQRCards() {
                     onView={() => setSelectedCard(card)}
                     onDeactivate={() => deactivateMutation.mutate(card.id)}
                     onActivate={() => activateMutation.mutate(card.cardId)}
-                    onTopUp={() => handleTopUp(card)}
+                    onReload={() => handleReload(card)}
                     isDeactivating={deactivateMutation.isPending}
                     isActivating={activateMutation.isPending}
                   />
@@ -312,17 +312,17 @@ export default function TemporaryQRCards() {
       )}
 
       {/* Top Up Modal */}
-      {showTopUpModal && selectedCard && (
-        <TopUpModal
+      {showReloadModal && selectedCard && (
+        <ReloadModal
           card={selectedCard}
           amount={topUpAmount}
           onAmountChange={setTopUpAmount}
           onClose={() => {
-            setShowTopUpModal(false);
+            setShowReloadModal(false);
             setTopUpAmount('');
             setSelectedCard(null);
           }}
-          onTopUp={() => topUpMutation.mutate(selectedCard.id)}
+          onReload={() => topUpMutation.mutate(selectedCard.id)}
           isProcessing={topUpMutation.isPending}
         />
       )}
@@ -488,6 +488,12 @@ function GenerateModal({
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="glass-card w-full max-w-2xl shadow-soft-xl border border-white/20 overflow-hidden p-6">
         <div className="flex items-center justify-between mb-6">
+          <button
+            onClick={onClose}
+            className="text-white/60 hover:text-white p-2 rounded-xl hover:bg-white/10 transition-colors border border-white/20"
+          >
+            ← Back
+          </button>
           <h2 className="text-2xl font-bold text-white flex items-center">
             <Plus className="w-6 h-6 mr-2 text-green-400" />
             Generate Temporary Card
@@ -776,19 +782,19 @@ function CardDetailModal({ card, onClose }: { card: QRCard; onClose: () => void 
   );
 }
 
-function TopUpModal({
+function ReloadModal({
   card,
   amount,
   onAmountChange,
   onClose,
-  onTopUp,
+  onReload,
   isProcessing,
 }: {
   card: QRCard;
   amount: string;
   onAmountChange: (value: string) => void;
   onClose: () => void;
-  onTopUp: () => void;
+  onReload: () => void;
   isProcessing: boolean;
 }) {
   const isValid = amount && parseFloat(amount) > 0;
@@ -799,7 +805,7 @@ function TopUpModal({
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold text-white flex items-center">
             <DollarSign className="w-6 h-6 mr-2 text-green-400" />
-            Top Up Card
+            Reload Card
           </h2>
           <button
             onClick={onClose}
@@ -815,7 +821,7 @@ function TopUpModal({
           </div>
           <div>
             <label className="block text-sm font-semibold text-white/60 mb-2">
-              Top-up Amount (₱)
+              Reload Amount (₱)
             </label>
             <input
               type="number"
@@ -830,7 +836,7 @@ function TopUpModal({
           <div className="p-4 bg-blue-500/20 border border-blue-500/30 rounded-2xl">
             <p className="text-xs text-blue-300 mb-2 font-semibold">Note:</p>
             <p className="text-xs text-blue-200">
-              Temporary cards can be topped up with any amount. The balance will be added to the card for multiple trips.
+              Temporary cards can be reloaded with any amount. The balance will be added to the card for multiple trips.
             </p>
           </div>
         </div>
@@ -842,11 +848,11 @@ function TopUpModal({
             Cancel
           </button>
           <button
-            onClick={onTopUp}
+            onClick={onReload}
             disabled={!isValid || isProcessing}
             className="flex-1 py-3 bg-green-500 hover:bg-green-600 text-white rounded-2xl text-sm font-semibold transition-colors disabled:opacity-50 border border-green-400"
           >
-            {isProcessing ? 'Processing...' : 'Top Up'}
+            {isProcessing ? 'Processing...' : 'Reload'}
           </button>
         </div>
       </div>
