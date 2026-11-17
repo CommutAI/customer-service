@@ -10,7 +10,7 @@ A comprehensive React + TypeScript + Vite application for managing QR cards, tra
 
 #### **Dashboard**
 - Real-time statistics and KPIs
-- Today's registrations, top-ups, transactions, and revenue
+- Today's registrations, reloads, transactions, and revenue
 - Interactive charts for weekly transactions and revenue
 - Card type distribution visualization
 - Quick action shortcuts to major features
@@ -37,7 +37,7 @@ A comprehensive React + TypeScript + Vite application for managing QR cards, tra
 - Visual card preview with QR code overlay
 - Back button in generate modal for easy navigation
 
-#### **Card Reload/Top-up**
+#### **Card Reload**
 - Reload cards with predefined amounts (₱50, ₱100, ₱200, ₱500, ₱1000)
 - Custom amount input
 - Real-time card validation and suggestions
@@ -51,7 +51,7 @@ A comprehensive React + TypeScript + Vite application for managing QR cards, tra
 - View all transaction records
 - Search by passenger name or transaction ID
 - Filter by date range (daily, monthly, yearly, custom)
-- Transaction type indicators (top-up, fare, ticket purchase)
+- Transaction type indicators (reload, fare, ticket purchase)
 - Balance tracking
 - Payment method display
 
@@ -229,7 +229,7 @@ The system uses a comprehensive PostgreSQL schema with the following main tables
    - Print cards for distribution
 
 3. **Reload Cards**
-   - Process card top-ups
+   - Process card reloads
    - Generate receipts
    - Track reload history
 
