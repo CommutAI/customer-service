@@ -1,0 +1,3 @@
+-- No password verification function needed
+-- Authentication uses plain text password comparison directly in the application
+-- Passwords are stored as plain text in the staff_users table

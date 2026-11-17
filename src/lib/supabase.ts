@@ -11,4 +11,16 @@ if (!supabaseUrl || !supabaseAnonKey) {
   );
 }
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+  global: {
+    headers: { 'X-Client-Info': 'customer-service' }
+  },
+  db: {
+    schema: 'public'
+  },
+  auth: {
+    autoRefreshToken: true,
+    persistSession: false,
+    detectSessionInUrl: false
+  }
+});

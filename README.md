@@ -1,4 +1,4 @@
-# CommutAI Customer Service System
+# CS App
 
 A comprehensive React + TypeScript + Vite application for managing QR cards, transactions, and customer service operations for a public transportation system.
 
@@ -10,12 +10,12 @@ A comprehensive React + TypeScript + Vite application for managing QR cards, tra
 
 #### **Dashboard**
 - Real-time statistics and KPIs
-- Today's registrations, top-ups, transactions, and revenue
+- Today's registrations, reloads, transactions, and revenue
 - Interactive charts for weekly transactions and revenue
 - Card type distribution visualization
 - Quick action shortcuts to major features
 
-#### **QR Card Management**
+#### **QR Cards**
 - Issue new QR cards with a 3-step registration wizard
 - Support for multiple passenger types:
   - **Regular** - Standard fare
@@ -31,12 +31,13 @@ A comprehensive React + TypeScript + Vite application for managing QR cards, tra
 #### **Temporary QR Cards**
 - Generate temporary cards with configurable initial balance
 - Same passenger type support as regular cards
-- Card top-up functionality
+- Card reload functionality (reload cards with custom amounts)
 - Deactivate temporary cards
 - Print temporary cards
 - Visual card preview with QR code overlay
+- Back button in generate modal for easy navigation
 
-#### **Card Reload/Top-up**
+#### **Card Reload**
 - Reload cards with predefined amounts (₱50, ₱100, ₱200, ₱500, ₱1000)
 - Custom amount input
 - Real-time card validation and suggestions
@@ -50,11 +51,11 @@ A comprehensive React + TypeScript + Vite application for managing QR cards, tra
 - View all transaction records
 - Search by passenger name or transaction ID
 - Filter by date range (daily, monthly, yearly, custom)
-- Transaction type indicators (top-up, fare, ticket purchase)
+- Transaction type indicators (reload, fare, ticket purchase)
 - Balance tracking
 - Payment method display
 
-#### **Reports & Analytics**
+#### **Reports**
 - Comprehensive reporting dashboard
 - Time-based filtering (weekly, monthly, yearly, custom)
 - Revenue and transaction trend charts
@@ -107,11 +108,27 @@ A comprehensive React + TypeScript + Vite application for managing QR cards, tra
 #### **UI/UX**
 - Modern glassmorphism design
 - Responsive layout with collapsible sidebar
+- Sticky header for easy navigation while scrolling
 - Dark theme optimized for customer service environments
 - Real-time data updates with React Query
 - Loading states and error handling
 - Modal dialogs for complex operations
 - Toast notifications for user feedback
+- Consistent page titles matching sidebar navigation:
+  - Dashboard
+  - QR Cards
+  - Temporary QR Cards
+  - Reload Card
+  - Passengers
+  - Transactions
+  - Card Reservations
+  - Reports
+
+#### **Mobile Deployment**
+- Android APK build via Capacitor
+- App name: CS App
+- Package ID: com.commutai.customerservice
+- Signed release APK for production deployment
 
 ## 🛠️ Tech Stack
 
@@ -228,7 +245,7 @@ The system uses a comprehensive PostgreSQL schema with the following main tables
    - Print cards for distribution
 
 3. **Reload Cards**
-   - Process card top-ups
+   - Process card reloads
    - Generate receipts
    - Track reload history
 
@@ -304,6 +321,13 @@ npm run preview
 
 # Run linter
 npm run lint
+
+# Build Android APK
+npm run build
+npx cap sync android
+cd android
+./gradlew assembleDebug      # Debug APK
+./gradlew assembleRelease    # Release APK (signed)
 ```
 
 ## 🤝 Contributing

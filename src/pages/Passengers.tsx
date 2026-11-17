@@ -100,7 +100,7 @@ export default function Passengers() {
   return (
     <div className="space-y-3 sm:space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl sm:text-2xl font-bold text-white">Card Management</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-white">Passengers</h1>
       </div>
 
       <div className="glass-card">

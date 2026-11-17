@@ -6,7 +6,7 @@ interface ProtectedRouteProps {
 }
 
 export default function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { user, staffProfile, isLoading } = useAuth();
+  const { staffProfile, isLoading } = useAuth();
 
   if (isLoading) {
     return (
@@ -16,12 +16,12 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
     );
   }
 
-  if (!user) {
+  if (!staffProfile) {
     return <Navigate to="/login" replace />;
   }
 
   // Client-side check (fast fail)
-  if (staffProfile?.role !== 'cs_desk') {
+  if (staffProfile.role !== 'cs_desk') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 via-white to-accent-50">
         <div className="text-center">
@@ -31,10 +31,6 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
       </div>
     );
   }
-
-  // Server-side verification via RLS (already enforced by database policies)
-  // The RLS policies ensure only cs_desk and admin roles can perform operations
-  // This is enforced at the database level, so no additional client code needed
 
   return <>{children}</>;
 }
