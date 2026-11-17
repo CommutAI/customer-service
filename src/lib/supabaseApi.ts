@@ -510,7 +510,7 @@ export const supabaseApiCalls = {
       .from('qr_cards')
       .select('*')
       .eq('card_uid', passengerId)
-      .single();
+      .maybeSingle();
 
     if (cardErr) {
       console.error('Top-up - Card fetch error:', cardErr);
