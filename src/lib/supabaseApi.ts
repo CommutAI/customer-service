@@ -751,7 +751,7 @@ export const supabaseApiCalls = {
   getCardReservations: async (): Promise<CardReservation[]> => {
     const { data, error } = await supabase
       .from('card_reservations')
-      .select('*, qr_cards!inner(card_uid)')
+      .select('*, qr_cards(card_uid)')
       .order('created_at', { ascending: false })
       .limit(500); // Hard cap for reservations
 
