@@ -712,7 +712,7 @@ export default function QRCards() {
     <div className="space-y-4 sm:space-y-6">
       {/* Page header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <h1 className="text-xl sm:text-2xl font-bold text-white">QR Card Management</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-white">QR Cards</h1>
         <button
           onClick={() => setShowRegister(true)}
           className="flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-2xl text-sm font-semibold transition-colors shadow-soft border border-primary-400"

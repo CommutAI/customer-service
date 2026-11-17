@@ -187,7 +187,7 @@ export default function Transactions() {
   return (
     <div className="space-y-4 sm:space-y-6">
       <div>
-        <h1 className="text-white text-xl sm:text-2xl lg:text-3xl font-bold mb-2">Transaction History</h1>
+        <h1 className="text-white text-xl sm:text-2xl lg:text-3xl font-bold mb-2">Transactions</h1>
         <p className="text-sm text-white/60">View all transaction records</p>
       </div>
 

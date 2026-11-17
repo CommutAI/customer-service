@@ -347,7 +347,7 @@ export default function Reports() {
   return (
     <div className="space-y-4 sm:space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <h1 className="text-xl sm:text-2xl font-bold text-white">Reports & Analytics</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-white">Reports</h1>
         <button
           onClick={exportAuditReport}
           className="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-2xl text-sm font-semibold flex items-center justify-center gap-2 transition-colors border border-primary-400"
