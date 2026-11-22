@@ -76,7 +76,7 @@ export interface DashboardStats {
 }
 
 export interface CardReservation {
-  id: number;
+  id: number | string;
   reservationId: string;
   name: string;
   contact: string;

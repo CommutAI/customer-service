@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiCalls } from '../lib/api';
+import { supabase } from '../lib/supabase';
 import type { CardReservation } from '../types';
 import { Search, Plus, User, Phone, MapPin, CheckCircle, XCircle, Clock, Trash2, Calendar, Printer, Check, X, RotateCcw, Eye } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
@@ -617,7 +618,7 @@ function StatusConfirmModal({
               onClick={onClose}
               className="flex-1 py-2.5 border border-white/20 rounded-2xl text-sm font-medium text-white/60 hover:bg-white/10 transition-colors"
             >
-              Cancel
+              {isCancellation ? 'Keep Reservation' : 'Cancel'}
             </button>
             <button
               onClick={onConfirm}
@@ -630,9 +631,63 @@ function StatusConfirmModal({
                   : 'bg-primary-500 hover:bg-primary-600 text-white border-primary-400'
               }`}
             >
-              {isPending ? 'Processing...' : isApprove ? 'Approve & Create Card' : isCancellation ? 'Cancel' : 'Confirm'}
+              {isPending
+                ? isCancellation
+                  ? 'Cancelling...'
+                  : isApprove
+                  ? 'Approving...'
+                  : 'Processing...'
+                : isApprove
+                ? 'Approve & Create Card'
+                : isCancellation
+                ? 'Cancel Reservation'
+                : 'Confirm'}
             </button>
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function IdFileModal({
+  passengerName,
+  idFile,
+  onClose,
+}: {
+  passengerName: string;
+  idFile: string;
+  onClose: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="glass-card w-full max-w-lg border border-white/20 overflow-hidden shadow-2xl">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-white/20">
+          <div>
+            <h2 className="text-base font-bold text-white">Verification ID Document</h2>
+            <p className="text-xs text-white/60">{passengerName}</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 rounded-xl hover:bg-white/10 text-white/60 border border-white/20 transition-colors"
+          >
+            <XCircle className="w-4 h-4" />
+          </button>
+        </div>
+        <div className="p-6 flex items-center justify-center bg-black/40">
+          <img
+            src={idFile}
+            alt={`ID for ${passengerName}`}
+            className="max-h-[65vh] w-auto max-w-full rounded-xl object-contain border border-white/10 shadow-lg"
+          />
+        </div>
+        <div className="px-6 py-3 border-t border-white/20 flex justify-end">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 border border-white/20 rounded-xl text-sm font-medium text-white/70 hover:bg-white/10 transition-colors"
+          >
+            Close
+          </button>
         </div>
       </div>
     </div>
@@ -651,20 +706,40 @@ function ViewCardModal({ card, onClose }: { card: QRCard; onClose: () => void })
 export default function CardReservations() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [selectedReservations, setSelectedReservations] = useState<Set<number>>(new Set());
+  const [selectedReservations, setSelectedReservations] = useState<Set<number | string>>(new Set());
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [statusConfirm, setStatusConfirm] = useState<{ reservation: CardReservation; newStatus: CardReservation['status'] } | null>(null);
   const [cardId, setCardId] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   const [viewCard, setViewCard] = useState<QRCard | null>(null);
+  const [viewingIdFile, setViewingIdFile] = useState<{ name: string; file: string } | null>(null);
   const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'approved' | 'claimed'>('all');
   const queryClient = useQueryClient();
 
-  const { data: reservations, isLoading } = useQuery({
+  const { data: reservations, isLoading, refetch, isFetching } = useQuery({
     queryKey: ['cardReservations'],
     queryFn: apiCalls.getCardReservations,
+    refetchInterval: 15000,
   });
+
+  // Realtime subscription for incoming card reservations
+  useEffect(() => {
+    const channel = supabase
+      .channel('realtime_card_reservations_changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'card_reservations' },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['cardReservations'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   const deleteMutation = useMutation({
     mutationFn: apiCalls.deleteCardReservation,
@@ -678,7 +753,7 @@ export default function CardReservations() {
   });
 
   const updateStatusMutation = useMutation({
-    mutationFn: ({ id, status }: { id: number; status: 'pending' | 'approved' | 'expired' | 'cancelled' }) => {
+    mutationFn: ({ id, status }: { id: number | string; status: 'pending' | 'approved' | 'expired' | 'cancelled' }) => {
       console.log('Calling updateCardReservationStatus with:', { id, status });
       return apiCalls.updateCardReservationStatus(id, status);
     },
@@ -707,7 +782,7 @@ export default function CardReservations() {
   });
 
   const approveMutation = useMutation({
-    mutationFn: ({ id, cardId }: { id: number; cardId: string }) =>
+    mutationFn: ({ id, cardId }: { id: number | string; cardId: string }) =>
       apiCalls.approveCardReservation(id, cardId),
     onMutate: async ({ id }) => {
       await queryClient.cancelQueries({ queryKey: ['cardReservations'] });
@@ -736,7 +811,7 @@ export default function CardReservations() {
   });
 
   const claimMutation = useMutation({
-    mutationFn: (id: number) => apiCalls.claimCardReservation(id),
+    mutationFn: (id: number | string) => apiCalls.claimCardReservation(id),
     onSuccess: () => {
       toast.success('Reservation claimed successfully');
       queryClient.invalidateQueries({ queryKey: ['cardReservations'] });
@@ -796,7 +871,7 @@ export default function CardReservations() {
     }
   };
 
-  const handleSelectOne = (id: number, checked: boolean, status: CardReservation['status']) => {
+  const handleSelectOne = (id: number | string, checked: boolean, status: CardReservation['status']) => {
     // In non-claimed tabs, prevent selecting claimed reservations
     if (activeTab !== 'claimed' && status === 'claimed') return;
 
@@ -914,6 +989,18 @@ export default function CardReservations() {
             </>
           )}
           <button
+            onClick={() => {
+              refetch();
+              toast.success('Reservations refreshed');
+            }}
+            disabled={isFetching}
+            className="flex items-center justify-center gap-2 px-4 py-2.5 border border-white/20 text-white/80 hover:text-white rounded-2xl text-sm font-semibold hover:bg-white/10 transition-colors disabled:opacity-50"
+            title="Refresh reservations"
+          >
+            <RotateCcw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+          <button
             onClick={() => setShowCreateModal(true)}
             className="flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-2xl text-sm font-semibold transition-colors shadow-soft border border-primary-400"
           >
@@ -1008,9 +1095,20 @@ export default function CardReservations() {
                     {reservation.contact}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="px-3 py-1.5 text-xs font-semibold bg-white/10 text-white/70 rounded-xl">
-                      {reservation.cardType}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="px-3 py-1.5 text-xs font-semibold bg-white/10 text-white/70 rounded-xl">
+                        {reservation.cardType}
+                      </span>
+                      {reservation.idFile && (
+                        <button
+                          onClick={() => setViewingIdFile({ name: reservation.name, file: reservation.idFile! })}
+                          className="p-1.5 rounded-lg bg-orange-500/20 text-orange-400 hover:bg-orange-500/30 transition-colors border border-orange-500/30"
+                          title="View ID Document"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-white/60">
                     {reservation.pickupTerminal}
@@ -1168,6 +1266,14 @@ export default function CardReservations() {
         <ViewCardModal
           card={viewCard}
           onClose={() => setViewCard(null)}
+        />
+      )}
+
+      {viewingIdFile && (
+        <IdFileModal
+          passengerName={viewingIdFile.name}
+          idFile={viewingIdFile.file}
+          onClose={() => setViewingIdFile(null)}
         />
       )}
     </div>

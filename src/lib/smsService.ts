@@ -12,6 +12,28 @@ export interface SMSSendResult {
   error?: string;
 }
 
+// Valid SMS types matching database constraint
+const VALID_SMS_TYPES = new Set([
+  'card_reserved',
+  'card_approved',
+  'card_claimed',
+  'card_declined',
+  'card_cancelled',
+  'card_expired',
+  'card_expiration',
+  'reservation_status',
+  'reservation_confirmation',
+  'fare_validation',
+  'alighting',
+  'trip_completion',
+  'emergency',
+  'emergency_bus',
+  'topup',
+  'other',
+  'admin',
+  'test',
+]);
+
 /**
  * Queue SMS to be sent by backend service
  */
@@ -19,18 +41,22 @@ async function queueSMS(
   phoneNumber: string,
   message: string,
   smsType: string,
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
 ): Promise<SMSSendResult> {
   try {
-    console.log('Attempting to queue SMS:', { phoneNumber, smsType, messageLength: message.length });
+    // Sanitize smsType against valid types
+    const safeType = VALID_SMS_TYPES.has(smsType) ? smsType : 'other';
+    console.log('Attempting to queue SMS:', { phoneNumber, smsType: safeType, messageLength: message.length });
 
     // Try inserting with metadata first (new schema)
-    const { error: error1 } = await supabase
-      .from('sms_queue' as any)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const smsQueue = (supabase as any).from('sms_queue');
+
+    const { error: error1 } = await smsQueue
       .insert({
         phone_number: phoneNumber,
         message: message,
-        sms_type: smsType,
+        sms_type: safeType,
         status: 'pending',
         metadata: metadata || {},
       });
@@ -38,18 +64,16 @@ async function queueSMS(
     // If metadata column doesn't exist, try without it (old schema)
     if (error1 && error1.message.includes('metadata')) {
       console.log('Metadata column not found, using old schema...');
-      const { error: error2 } = await supabase
-        .from('sms_queue' as any)
+      const { error: error2 } = await smsQueue
         .insert({
           phone_number: phoneNumber,
           message: message,
-          sms_type: smsType,
+          sms_type: safeType,
           status: 'pending',
         });
 
       if (error2) {
-        console.error('Failed to queue SMS (old schema):', error2);
-        console.error('Error details:', JSON.stringify(error2, null, 2));
+        console.warn('Failed to queue SMS (old schema):', error2.message);
         return {
           success: false,
           error: error2.message,
@@ -64,8 +88,25 @@ async function queueSMS(
     }
 
     if (error1) {
-      console.error('Failed to queue SMS:', error1);
-      console.error('Error details:', JSON.stringify(error1, null, 2));
+      // If check constraint fails on sms_type, fallback to 'other' or 'card_declined'
+      if (error1.message?.includes('sms_type_check') || error1.code === '23514') {
+        console.warn('sms_type constraint violation, retrying with fallback type (other)...');
+        const { error: fallbackError } = await smsQueue
+          .insert({
+            phone_number: phoneNumber,
+            message: message,
+            sms_type: 'other',
+            status: 'pending',
+            metadata: metadata || {},
+          });
+
+        if (!fallbackError) {
+          console.log('SMS queued successfully using fallback type');
+          return { success: true, message: 'SMS queued successfully' };
+        }
+      }
+
+      console.warn('Failed to queue SMS:', error1.message);
       return {
         success: false,
         error: error1.message,
@@ -78,7 +119,7 @@ async function queueSMS(
       message: 'SMS queued successfully',
     };
   } catch (error) {
-    console.error('SMS queue error:', error);
+    console.warn('SMS queue error:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
@@ -118,7 +159,7 @@ export async function sendCardClaimNotification(
 ): Promise<SMSSendResult> {
   const message = `CommuteAI: Card Claimed Successfully!\n\nPassenger: ${passengerName}\nCard ID: ${cardId}\nType: ${cardType}\nInitial Balance: ₱${initialBalance.toFixed(2)}\n\nYour card is now active. Use it for seamless travel with CommuteAI!`;
 
-  return queueSMS(phoneNumber, message, 'card_claim', {
+  return queueSMS(phoneNumber, message, 'card_claimed', {
     passengerName,
     cardId,
     initialBalance,
@@ -174,16 +215,20 @@ export async function sendReservationStatusNotification(
   status: 'claimed' | 'cancelled' | 'expired'
 ): Promise<SMSSendResult> {
   let message = '';
+  let smsType = 'other';
 
   if (status === 'claimed') {
-    message = `CommuteAI: Reservation Claimed!\n\nPassenger: ${passengerName}\nReservation ID: ${reservationId}\n\nYour card is ready for pickup at the terminal. Please bring a valid ID.`;
+    message = `CommutAI: Reservation ${reservationId} for ${passengerName} is ready for pickup at the terminal. Bring a valid ID.`;
+    smsType = 'card_claimed';
   } else if (status === 'cancelled') {
-    message = `CommuteAI: Reservation Cancelled\n\nPassenger: ${passengerName}\nReservation ID: ${reservationId}\n\nYour reservation has been cancelled. If this was a mistake, please visit the terminal to make a new reservation.`;
+    message = `CommutAI: Reservation ${reservationId} for ${passengerName} is cancelled. Visit the terminal to make a new request.`;
+    smsType = 'card_cancelled';
   } else if (status === 'expired') {
-    message = `CommuteAI: Reservation Expired\n\nPassenger: ${passengerName}\nReservation ID: ${reservationId}\n\nYour reservation has expired. Please visit the terminal to make a new reservation.`;
+    message = `CommutAI: Reservation ${reservationId} for ${passengerName} has expired. Visit the terminal to make a new request.`;
+    smsType = 'card_expired';
   }
 
-  return queueSMS(phoneNumber, message, 'reservation_status', {
+  return queueSMS(phoneNumber, message, smsType, {
     passengerName,
     reservationId,
     status,
