@@ -45,6 +45,15 @@ function rowToPassenger(row: any): Passenger {
   };
 }
 
+export function normalizeCardType(rawType?: string | null): 'Regular' | 'Student' | 'Senior Citizen' | 'PWD' {
+  if (!rawType) return 'Regular';
+  const clean = rawType.toLowerCase().trim().replace(/[\s-]+/g, '_');
+  if (clean === 'student') return 'Student';
+  if (clean === 'senior_citizen' || clean === 'senior') return 'Senior Citizen';
+  if (clean === 'pwd') return 'PWD';
+  return 'Regular';
+}
+
 /** Map DB qr_cards row → app QRCard */
 function rowToQRCard(row: any): QRCard {
   const statusMap: Record<string, 'active' | 'disabled' | 'lost'> = {
@@ -54,14 +63,8 @@ function rowToQRCard(row: any): QRCard {
     deactivated: 'disabled',
   };
   
-  // Map database card_type enum to app passengerType
-  const cardTypeMap: Record<string, QRCard['passengerType']> = {
-    regular: 'Regular',
-    student: 'Student',
-    senior_citizen: 'Senior Citizen',
-    pwd: 'PWD',
-  };
-  const passengerType = cardTypeMap[row.card_type] ?? 'Regular';
+  // Map database card_type enum/string to app passengerType
+  const passengerType = normalizeCardType(row.card_type);
   
   // Detect temporary cards by checking for "temporary" tag in allowed_routes
   const isTemporary = (row.allowed_routes ?? []).some((r: string) => r === 'temporary');
@@ -751,26 +754,18 @@ export const supabaseApiCalls = {
   getCardReservations: async (): Promise<CardReservation[]> => {
     const { data, error } = await supabase
       .from('card_reservations')
-      .select('*, qr_cards!inner(card_uid)')
+      .select('*, qr_cards(card_uid)')
       .order('created_at', { ascending: false })
       .limit(500); // Hard cap for reservations
 
     if (error) throw new Error(error.message);
-
-    // Map database card_type enum to app cardType
-    const cardTypeMap: Record<string, CardReservation['cardType']> = {
-      regular: 'Regular',
-      student: 'Student',
-      senior_citizen: 'Senior Citizen',
-      pwd: 'PWD',
-    };
 
     return (data ?? []).map((row): CardReservation => ({
       id: row.id,
       reservationId: row.reservation_id,
       name: row.name,
       contact: row.contact,
-      cardType: cardTypeMap[row.card_type] ?? 'Regular',
+      cardType: normalizeCardType(row.card_type),
       pickupTerminal: row.pickup_terminal,
       status: row.status as CardReservation['status'],
       cardId: row.qr_cards?.card_uid ?? undefined,
@@ -831,7 +826,7 @@ export const supabaseApiCalls = {
   },
 
   updateCardReservationStatus: async (
-    id: number,
+    id: number | string,
     status: 'pending' | 'approved' | 'expired' | 'cancelled'
   ): Promise<void> => {
     console.log('Updating card reservation status:', { id, status });
@@ -841,16 +836,21 @@ export const supabaseApiCalls = {
       throw new Error("Cannot set status to 'claimed' directly. Use claimCardReservation to claim a reservation.");
     }
 
-    // First, check if the reservation exists
-    const { data: existing, error: checkError } = await supabase
+    // First, check if the reservation exists (using limit(1) to avoid 406 Cannot coerce to single object)
+    const { data: existingRows, error: checkError } = await supabase
       .from('card_reservations')
       .select('*')
       .eq('id', id)
-      .single();
+      .limit(1);
 
     if (checkError) {
       console.error('Error checking reservation:', checkError);
       throw new Error(`Reservation not found: ${checkError.message}`);
+    }
+
+    const existing = existingRows?.[0];
+    if (!existing) {
+      throw new Error(`Reservation not found with ID ${id}`);
     }
 
     console.log('Existing reservation:', existing);
@@ -860,52 +860,72 @@ export const supabaseApiCalls = {
       .from('card_reservations')
       .update({ status })
       .eq('id', id)
-      .select()
-      .single();
+      .select();
 
     if (error) {
       console.error('Error updating card reservation status:', error);
-      console.error('Error details:', {
-        message: error.message,
-        code: error.code,
-        details: error.details,
-        hint: error.hint,
-      });
       throw new Error(`Failed to update status: ${error.message}`);
     }
 
-    console.log('Card reservation status updated successfully:', data);
+    if (!data || data.length === 0) {
+      throw new Error(
+        'Database permission denied: Supabase Row Level Security (RLS) prevented updating card_reservations. Run fix_card_reservations_rls.sql in Supabase SQL Editor.'
+      );
+    }
+
+    console.log('Card reservation status updated successfully:', data[0]);
 
     // Send SMS notification for status changes (cancelled or expired)
+    // De-duplicated: checks if database trigger already queued the SMS
     if (status === 'cancelled' || status === 'expired') {
       try {
-        await sendReservationStatusNotification(
-          existing.contact,
-          existing.name,
-          existing.reservation_id,
-          status
-        );
-        console.log('SMS notification sent successfully');
+        const { data: recentSMS } = await supabase
+          .from('sms_queue')
+          .select('id')
+          .eq('phone_number', existing.contact)
+          .in('sms_type', ['card_declined', 'other', 'reservation_status', 'card_cancelled', 'card_expired'])
+          .gte('created_at', new Date(Date.now() - 10000).toISOString())
+          .limit(1);
+
+        if (!recentSMS || recentSMS.length === 0) {
+          const res = await sendReservationStatusNotification(
+            existing.contact,
+            existing.name,
+            existing.reservation_id,
+            status
+          );
+          if (res.success) {
+            console.log('Status notification SMS queued successfully');
+          } else {
+            console.warn('Failed to queue status SMS:', res.error);
+          }
+        } else {
+          console.log('SMS was already queued by database trigger');
+        }
       } catch (smsError) {
-        // Log SMS error but don't fail the entire operation
-        console.error('Failed to send SMS notification:', smsError);
+        console.warn('Status notification SMS notice:', smsError);
       }
     }
   },
 
-  approveCardReservation: async (id: number, cardId: string): Promise<QRCard> => {
+  approveCardReservation: async (id: number | string, cardId: string): Promise<QRCard> => {
     console.log('Approving reservation:', { id, cardId });
 
-    // First, get the reservation details
-    const { data: reservation, error: reservationError } = await supabase
+    // First, get the reservation details without .single() to avoid 406
+    const { data: reservationRows, error: reservationError } = await supabase
       .from('card_reservations')
       .select('*')
       .eq('id', id)
-      .single();
+      .limit(1);
 
     if (reservationError) {
       console.error('Error fetching reservation:', reservationError);
       throw new Error(reservationError.message);
+    }
+
+    const reservation = reservationRows?.[0];
+    if (!reservation) {
+      throw new Error(`Reservation not found with ID ${id}`);
     }
 
     console.log('Reservation found:', reservation);
@@ -1130,20 +1150,25 @@ export const supabaseApiCalls = {
     }
   },
 
-  claimCardReservation: async (id: number): Promise<void> => {
+  claimCardReservation: async (id: number | string): Promise<void> => {
     console.log('=== CLAIM RESERVATION START ===');
     console.log('Claiming reservation:', { id });
 
-    // First, get the reservation details
-    const { data: reservation, error: reservationError } = await supabase
+    // First, get the reservation details without .single() to avoid 406
+    const { data: reservationRows, error: reservationError } = await supabase
       .from('card_reservations')
       .select('*')
       .eq('id', id)
-      .single();
+      .limit(1);
 
     if (reservationError) {
       console.error('Error fetching reservation:', reservationError);
       throw new Error(reservationError.message);
+    }
+
+    const reservation = reservationRows?.[0];
+    if (!reservation) {
+      throw new Error(`Reservation not found with ID ${id}`);
     }
 
     console.log('Reservation found:', reservation);

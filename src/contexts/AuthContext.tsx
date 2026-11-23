@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react';
+import bcrypt from 'bcryptjs';
 import { supabase } from '../lib/supabase';
 import type { DbStaffUser } from '../types';
 
@@ -41,7 +42,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error = () => {};
 
       // Query staff_users table for the user
-      const { data: staffUser, error } = await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: staffUser, error } = await (supabase as any)
         .from('staff_users')
         .select('*')
         .eq('email', email.toLowerCase())
@@ -55,21 +57,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { error: 'Invalid email or password' };
       }
 
-      // Verify password using plain text comparison
-      if (staffUser.password !== password) {
+      // Verify password (supports bcrypt hash and plain text fallback)
+      let isPasswordValid = false;
+      const storedPassword = staffUser.password;
+
+      if (storedPassword) {
+        if (storedPassword.startsWith('$2')) {
+          try {
+            isPasswordValid = await bcrypt.compare(password, storedPassword);
+          } catch {
+            isPasswordValid = false;
+          }
+        }
+
+        // Fallback for plain text passwords or direct match
+        if (!isPasswordValid && storedPassword === password) {
+          isPasswordValid = true;
+        }
+      }
+
+      if (!isPasswordValid) {
         return { error: 'Invalid email or password' };
       }
 
+      // Remove sensitive password from user session
+      const { password: _password, ...safeStaffUser } = staffUser;
+
       // Update last login
-      await supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (supabase as any)
         .from('staff_users')
         .update({ last_login_at: new Date().toISOString() })
         .eq('id', staffUser.id);
 
       // Store user in localStorage
-      localStorage.setItem('csd_user', JSON.stringify(staffUser));
-      setUser(staffUser);
-      setStaffProfile(staffUser);
+      localStorage.setItem('csd_user', JSON.stringify(safeStaffUser));
+      setUser(safeStaffUser);
+      setStaffProfile(safeStaffUser as DbStaffUser);
 
       return { error: null };
     } catch (error: any) {

@@ -1,7 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiCalls } from '../lib/api';
+import { supabase } from '../lib/supabase';
 import type { CardReservation } from '../types';
-import { Search, Plus, User, Phone, MapPin, CheckCircle, XCircle, Clock, Trash2, Calendar, Printer, Check, X, RotateCcw, Eye } from 'lucide-react';
+import { Search, Plus, User, Phone, MapPin, CheckCircle, XCircle, Clock, Calendar, Printer, Check, X, RotateCcw, Eye, Maximize2, Minimize2, ZoomIn, ZoomOut, Download } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { QRCodeCanvas } from 'qrcode.react';
@@ -617,7 +618,7 @@ function StatusConfirmModal({
               onClick={onClose}
               className="flex-1 py-2.5 border border-white/20 rounded-2xl text-sm font-medium text-white/60 hover:bg-white/10 transition-colors"
             >
-              Cancel
+              {isCancellation ? 'Keep Reservation' : 'Cancel'}
             </button>
             <button
               onClick={onConfirm}
@@ -630,8 +631,283 @@ function StatusConfirmModal({
                   : 'bg-primary-500 hover:bg-primary-600 text-white border-primary-400'
               }`}
             >
-              {isPending ? 'Processing...' : isApprove ? 'Approve & Create Card' : isCancellation ? 'Cancel' : 'Confirm'}
+              {isPending
+                ? isCancellation
+                  ? 'Cancelling...'
+                  : isApprove
+                  ? 'Approving...'
+                  : 'Processing...'
+                : isApprove
+                ? 'Approve & Create Card'
+                : isCancellation
+                ? 'Cancel Reservation'
+                : 'Confirm'}
             </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function IdFileModal({
+  reservation,
+  onClose,
+}: {
+  reservation: CardReservation;
+  onClose: () => void;
+}) {
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [zoom, setZoom] = useState(1);
+  const [rotation, setRotation] = useState(0);
+
+  // Close on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
+  const statusConfig = STATUS_OPTIONS.find((s) => s.value === reservation.status) || {
+    label: reservation.status,
+    color: 'bg-gray-500/20 text-gray-400 border-gray-500/30',
+  };
+
+  const handleDownload = () => {
+    if (!reservation.idFile) return;
+    const a = document.createElement('a');
+    a.href = reservation.idFile;
+    a.download = `${reservation.reservationId}_${reservation.name}_ID.jpg`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
+  const handleZoomIn = () => setZoom((prev) => Math.min(prev + 0.25, 3));
+  const handleZoomOut = () => setZoom((prev) => Math.max(prev - 0.25, 0.5));
+  const handleRotate = () => setRotation((prev) => (prev + 90) % 360);
+  const handleReset = () => {
+    setZoom(1);
+    setRotation(0);
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center z-50 p-2 sm:p-4">
+      <div
+        className={`glass-card border border-white/20 overflow-hidden shadow-2xl flex flex-col transition-all duration-300 ${
+          isFullscreen
+            ? 'w-full h-full max-w-none max-h-none rounded-none'
+            : 'w-full max-w-4xl max-h-[92vh] rounded-3xl'
+        }`}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/20 bg-black/40">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="p-2 rounded-xl bg-orange-500/20 text-orange-400 border border-orange-500/30 shrink-0">
+              <Eye className="w-5 h-5" />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <h2 className="text-base font-bold text-white truncate">Verification ID Document</h2>
+                <span className={`text-xs px-2.5 py-0.5 rounded-full border font-medium shrink-0 ${statusConfig.color}`}>
+                  {statusConfig.label}
+                </span>
+              </div>
+              <p className="text-xs text-white/60 truncate">
+                {reservation.name} • <span className="font-mono">{reservation.reservationId}</span> •{' '}
+                <span className="text-orange-300 font-medium">{reservation.cardType}</span>
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            {/* Zoom / Rotate Controls */}
+            <div className="hidden sm:flex items-center gap-1 bg-white/5 border border-white/10 rounded-xl px-2 py-1">
+              <button
+                type="button"
+                onClick={handleZoomOut}
+                disabled={zoom <= 0.5}
+                className="p-1.5 rounded-lg hover:bg-white/10 text-white/70 hover:text-white transition-colors disabled:opacity-30"
+                title="Zoom Out"
+              >
+                <ZoomOut className="w-4 h-4" />
+              </button>
+              <span className="text-xs font-mono text-white/70 min-w-[38px] text-center">
+                {Math.round(zoom * 100)}%
+              </span>
+              <button
+                type="button"
+                onClick={handleZoomIn}
+                disabled={zoom >= 3}
+                className="p-1.5 rounded-lg hover:bg-white/10 text-white/70 hover:text-white transition-colors disabled:opacity-30"
+                title="Zoom In"
+              >
+                <ZoomIn className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={handleRotate}
+                className="p-1.5 rounded-lg hover:bg-white/10 text-white/70 hover:text-white transition-colors"
+                title="Rotate 90°"
+              >
+                <RotateCcw className="w-4 h-4" />
+              </button>
+              {(zoom !== 1 || rotation !== 0) && (
+                <button
+                  type="button"
+                  onClick={handleReset}
+                  className="text-[11px] px-1.5 py-0.5 rounded hover:bg-white/10 text-orange-400 font-medium"
+                >
+                  Reset
+                </button>
+              )}
+            </div>
+
+            {/* Download */}
+            <button
+              type="button"
+              onClick={handleDownload}
+              className="p-2 rounded-xl hover:bg-white/10 text-white/70 hover:text-white border border-white/20 transition-colors"
+              title="Download ID Image"
+            >
+              <Download className="w-4 h-4" />
+            </button>
+
+            {/* Fullscreen Toggle */}
+            <button
+              type="button"
+              onClick={() => setIsFullscreen(!isFullscreen)}
+              className="p-2 rounded-xl hover:bg-white/10 text-white/70 hover:text-white border border-white/20 transition-colors"
+              title={isFullscreen ? 'Exit Full Screen' : 'View Full Screen'}
+            >
+              {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+            </button>
+
+            {/* Close Button */}
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-2 rounded-xl hover:bg-white/10 text-white/70 hover:text-white border border-white/20 transition-colors"
+              title="Close (Esc)"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* Content Body */}
+        <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
+          {/* Left: Image Container */}
+          <div className="flex-1 bg-black/70 relative flex items-center justify-center p-4 overflow-auto min-h-[300px]">
+            {reservation.idFile ? (
+              <div
+                className="transition-transform duration-200 cursor-zoom-in"
+                style={{
+                  transform: `scale(${zoom}) rotate(${rotation}deg)`,
+                }}
+                onClick={() => {
+                  if (zoom === 1) handleZoomIn();
+                  else handleReset();
+                }}
+              >
+                <img
+                  src={reservation.idFile}
+                  alt={`ID Document for ${reservation.name}`}
+                  className={`${
+                    isFullscreen ? 'max-h-[82vh]' : 'max-h-[60vh] md:max-h-[68vh]'
+                  } w-auto max-w-full rounded-2xl object-contain border border-white/15 shadow-2xl select-none`}
+                  draggable={false}
+                />
+              </div>
+            ) : (
+              <div className="text-center p-8 text-white/50">
+                <p className="text-sm">No ID document uploaded for this reservation.</p>
+              </div>
+            )}
+
+            <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-sm border border-white/10 px-3 py-1 rounded-xl text-[11px] text-white/60 pointer-events-none">
+              Click image to zoom • {Math.round(zoom * 100)}%
+            </div>
+          </div>
+
+          {/* Right: Reservation Details Sidebar */}
+          <div className="w-full md:w-80 border-t md:border-t-0 md:border-l border-white/20 bg-white/[0.02] p-5 flex flex-col justify-between overflow-y-auto shrink-0">
+            <div className="space-y-3.5">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-white/50 border-b border-white/10 pb-2">
+                Passenger & Reservation Details
+              </h3>
+
+              {/* Single unified details card */}
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-4 divide-y divide-white/10 shadow-lg">
+                <div className="pb-3">
+                  <span className="text-[11px] font-medium text-white/50 block">Passenger Name</span>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <User className="w-4 h-4 text-orange-400 shrink-0" />
+                    <span className="text-sm font-semibold text-white truncate">{reservation.name}</span>
+                  </div>
+                </div>
+
+                <div className="py-2.5">
+                  <span className="text-[11px] font-medium text-white/50 block">Reservation ID</span>
+                  <span className="text-sm font-mono font-semibold text-white/90 block mt-0.5">
+                    {reservation.reservationId}
+                  </span>
+                </div>
+
+                <div className="py-2.5">
+                  <span className="text-[11px] font-medium text-white/50 block">Card Type Category</span>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-sm font-semibold text-orange-400">{reservation.cardType}</span>
+                  </div>
+                </div>
+
+                <div className="py-2.5">
+                  <span className="text-[11px] font-medium text-white/50 block">Contact Number</span>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <Phone className="w-4 h-4 text-white/60 shrink-0" />
+                    <span className="text-sm font-medium text-white/90">{reservation.contact}</span>
+                  </div>
+                </div>
+
+                <div className="py-2.5">
+                  <span className="text-[11px] font-medium text-white/50 block">Pickup Terminal</span>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <MapPin className="w-4 h-4 text-white/60 shrink-0" />
+                    <span className="text-sm font-medium text-white/90">{reservation.pickupTerminal}</span>
+                  </div>
+                </div>
+
+                <div className="pt-2.5">
+                  <span className="text-[11px] font-medium text-white/50 block">Submission Date</span>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <Calendar className="w-4 h-4 text-white/60 shrink-0" />
+                    <span className="text-sm font-medium text-white/90">
+                      {new Date(reservation.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-4 border-t border-white/10 flex gap-2 mt-4">
+              <button
+                type="button"
+                onClick={handleDownload}
+                className="flex-1 py-2.5 rounded-xl border border-white/20 bg-white/5 hover:bg-white/10 text-xs font-semibold text-white/80 transition-colors flex items-center justify-center gap-1.5"
+              >
+                <Download className="w-3.5 h-3.5" />
+                Download
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex-1 py-2.5 rounded-xl border border-white/20 bg-white/10 hover:bg-white/20 text-xs font-semibold text-white transition-colors"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -651,20 +927,40 @@ function ViewCardModal({ card, onClose }: { card: QRCard; onClose: () => void })
 export default function CardReservations() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [selectedReservations, setSelectedReservations] = useState<Set<number>>(new Set());
+  const [selectedReservations, setSelectedReservations] = useState<Set<number | string>>(new Set());
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [statusConfirm, setStatusConfirm] = useState<{ reservation: CardReservation; newStatus: CardReservation['status'] } | null>(null);
   const [cardId, setCardId] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
   const [viewCard, setViewCard] = useState<QRCard | null>(null);
+  const [viewingIdReservation, setViewingIdReservation] = useState<CardReservation | null>(null);
   const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'approved' | 'claimed'>('all');
   const queryClient = useQueryClient();
 
-  const { data: reservations, isLoading } = useQuery({
+  const { data: reservations, isLoading, refetch, isFetching } = useQuery({
     queryKey: ['cardReservations'],
     queryFn: apiCalls.getCardReservations,
+    refetchInterval: 15000,
   });
+
+  // Realtime subscription for incoming card reservations
+  useEffect(() => {
+    const channel = supabase
+      .channel('realtime_card_reservations_changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'card_reservations' },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['cardReservations'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   const deleteMutation = useMutation({
     mutationFn: apiCalls.deleteCardReservation,
@@ -678,7 +974,7 @@ export default function CardReservations() {
   });
 
   const updateStatusMutation = useMutation({
-    mutationFn: ({ id, status }: { id: number; status: 'pending' | 'approved' | 'expired' | 'cancelled' }) => {
+    mutationFn: ({ id, status }: { id: number | string; status: 'pending' | 'approved' | 'expired' | 'cancelled' }) => {
       console.log('Calling updateCardReservationStatus with:', { id, status });
       return apiCalls.updateCardReservationStatus(id, status);
     },
@@ -707,7 +1003,7 @@ export default function CardReservations() {
   });
 
   const approveMutation = useMutation({
-    mutationFn: ({ id, cardId }: { id: number; cardId: string }) =>
+    mutationFn: ({ id, cardId }: { id: number | string; cardId: string }) =>
       apiCalls.approveCardReservation(id, cardId),
     onMutate: async ({ id }) => {
       await queryClient.cancelQueries({ queryKey: ['cardReservations'] });
@@ -736,7 +1032,7 @@ export default function CardReservations() {
   });
 
   const claimMutation = useMutation({
-    mutationFn: (id: number) => apiCalls.claimCardReservation(id),
+    mutationFn: (id: number | string) => apiCalls.claimCardReservation(id),
     onSuccess: () => {
       toast.success('Reservation claimed successfully');
       queryClient.invalidateQueries({ queryKey: ['cardReservations'] });
@@ -796,7 +1092,7 @@ export default function CardReservations() {
     }
   };
 
-  const handleSelectOne = (id: number, checked: boolean, status: CardReservation['status']) => {
+  const handleSelectOne = (id: number | string, checked: boolean, status: CardReservation['status']) => {
     // In non-claimed tabs, prevent selecting claimed reservations
     if (activeTab !== 'claimed' && status === 'claimed') return;
 
@@ -914,6 +1210,18 @@ export default function CardReservations() {
             </>
           )}
           <button
+            onClick={() => {
+              refetch();
+              toast.success('Reservations refreshed');
+            }}
+            disabled={isFetching}
+            className="flex items-center justify-center gap-2 px-4 py-2.5 border border-white/20 text-white/80 hover:text-white rounded-2xl text-sm font-semibold hover:bg-white/10 transition-colors disabled:opacity-50"
+            title="Refresh reservations"
+          >
+            <RotateCcw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+          <button
             onClick={() => setShowCreateModal(true)}
             className="flex items-center justify-center gap-2 px-4 py-2.5 bg-primary-500 hover:bg-primary-600 text-white rounded-2xl text-sm font-semibold transition-colors shadow-soft border border-primary-400"
           >
@@ -1008,9 +1316,20 @@ export default function CardReservations() {
                     {reservation.contact}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="px-3 py-1.5 text-xs font-semibold bg-white/10 text-white/70 rounded-xl">
-                      {reservation.cardType}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="px-3 py-1.5 text-xs font-semibold bg-white/10 text-white/70 rounded-xl">
+                        {reservation.cardType}
+                      </span>
+                      {reservation.idFile && (
+                        <button
+                          onClick={() => setViewingIdReservation(reservation)}
+                          className="p-1.5 rounded-lg bg-orange-500/20 text-orange-400 hover:bg-orange-500/30 transition-colors border border-orange-500/30"
+                          title="View ID Document"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-white/60">
                     {reservation.pickupTerminal}
@@ -1168,6 +1487,13 @@ export default function CardReservations() {
         <ViewCardModal
           card={viewCard}
           onClose={() => setViewCard(null)}
+        />
+      )}
+
+      {viewingIdReservation && (
+        <IdFileModal
+          reservation={viewingIdReservation}
+          onClose={() => setViewingIdReservation(null)}
         />
       )}
     </div>
